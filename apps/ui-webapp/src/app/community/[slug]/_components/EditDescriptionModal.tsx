@@ -1,10 +1,19 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import { Send } from "lucide-react";
 import CustomModal from "./CustomModal";
 import { CommunityDetails } from "./types";
 import { Button } from "@/components/ui/button";
+import { COMMUNITY_DESCRIPTION_MAX_LENGTH } from "@oppskills/types/constants";
+import { getPlainTextLengthFromHtml } from "@/lib/community/textUtils";
+import { toast } from "sonner";
+
+const RichTextEditor = dynamic(
+  () => import("@/components/ui/editor/RichtextEditor"),
+  { ssr: false },
+);
 
 interface EditDescriptionModalProps {
   isOpen: boolean;
@@ -19,34 +28,29 @@ export default function EditDescriptionModal({
   details,
   onUpdate,
 }: EditDescriptionModalProps) {
-  const [description, setDescription] = useState(details.description || "");
   const [aboutText, setAboutText] = useState(details.aboutText || "");
-  const [aboutSecondaryText, setAboutSecondaryText] = useState(
-    details.aboutSecondaryText || "",
-  );
-  const [bulletsText, setBulletsText] = useState("");
+  const [website, setWebsite] = useState(details.website || "");
 
-  // Populate state on open
   useEffect(() => {
     if (isOpen) {
-      setDescription(details.description || "");
       setAboutText(details.aboutText || "");
-      setAboutSecondaryText(details.aboutSecondaryText || "");
-      setBulletsText((details.aboutBullets || []).join("\n"));
+      setWebsite(details.website || "");
     }
   }, [isOpen, details]);
 
   const handleUpdate = () => {
-    const aboutBullets = bulletsText
-      .split("\n")
-      .map((b) => b.trim())
-      .filter((b) => b.length > 0);
-
+    if (
+      getPlainTextLengthFromHtml(aboutText) > COMMUNITY_DESCRIPTION_MAX_LENGTH
+    ) {
+      toast.error(
+        `Description cannot exceed ${COMMUNITY_DESCRIPTION_MAX_LENGTH} characters.`,
+      );
+      return;
+    }
     onUpdate({
-      description,
       aboutText,
-      aboutSecondaryText,
-      aboutBullets,
+      description: aboutText,
+      website: website.trim() || null,
     });
     onClose();
   };
@@ -64,64 +68,34 @@ export default function EditDescriptionModal({
     <CustomModal
       isOpen={isOpen}
       onClose={onClose}
-      title="Edit Description"
+      title="Edit About"
       footer={footer}
-      className="max-w-2xl"
+      className="max-w-3xl"
     >
-      <div className="flex flex-col gap-6 select-none">
-        {/* Short Tagline / Description Field */}
+      <div className="flex flex-col gap-5 select-none">
         <div className="flex flex-col gap-2">
           <label className="text-xs font-bold text-neutral-400 uppercase tracking-wider">
-            Short Tagline (Header Description)
+            About this community
           </label>
-          <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="A short description displayed under the community header..."
-            rows={2}
-            className="w-full border border-neutral-200 rounded-2xl p-4 text-sm font-semibold text-neutral-700 placeholder-neutral-400 outline-none focus:border-[#5D3EBB]/60 transition-all resize-none"
-          />
-        </div>
-
-        {/* About Main Narrative Paragraph */}
-        <div className="flex flex-col gap-2">
-          <label className="text-xs font-bold text-neutral-400 uppercase tracking-wider">
-            About - Main Paragraph
-          </label>
-          <textarea
+          <RichTextEditor
             value={aboutText}
-            onChange={(e) => setAboutText(e.target.value)}
-            placeholder="The main introduction paragraph of your community..."
-            rows={4}
-            className="w-full border border-neutral-200 rounded-2xl p-4 text-sm font-semibold text-neutral-700 placeholder-neutral-400 outline-none focus:border-[#5D3EBB]/60 transition-all resize-none"
+            onChange={setAboutText}
+            placeholder="Describe your community, its mission, and what members can expect..."
+            maxLength={COMMUNITY_DESCRIPTION_MAX_LENGTH}
+            className="min-h-[240px]"
           />
         </div>
 
-        {/* About Bullet Insights (one per line) */}
         <div className="flex flex-col gap-2">
           <label className="text-xs font-bold text-neutral-400 uppercase tracking-wider">
-            Key Highlights (One per line)
+            Website URL
           </label>
-          <textarea
-            value={bulletsText}
-            onChange={(e) => setBulletsText(e.target.value)}
-            placeholder="Point 1&#10;Point 2&#10;Point 3..."
-            rows={4}
-            className="w-full border border-neutral-200 rounded-2xl p-4 text-sm font-semibold text-neutral-700 placeholder-neutral-400 outline-none focus:border-[#5D3EBB]/60 transition-all resize-none"
-          />
-        </div>
-
-        {/* About Secondary Paragraph */}
-        <div className="flex flex-col gap-2">
-          <label className="text-xs font-bold text-neutral-400 uppercase tracking-wider">
-            About - Secondary Paragraph
-          </label>
-          <textarea
-            value={aboutSecondaryText}
-            onChange={(e) => setAboutSecondaryText(e.target.value)}
-            placeholder="A secondary, concluding paragraph for the about section..."
-            rows={3}
-            className="w-full border border-neutral-200 rounded-2xl p-4 text-sm font-semibold text-neutral-700 placeholder-neutral-400 outline-none focus:border-[#5D3EBB]/60 transition-all resize-none"
+          <input
+            type="url"
+            value={website}
+            onChange={(e) => setWebsite(e.target.value)}
+            placeholder="https://example.com"
+            className="w-full border border-neutral-200 rounded-2xl px-4 py-3 text-sm font-semibold text-neutral-700 placeholder-neutral-400 outline-none focus:border-[#5D3EBB]/60 transition-all"
           />
         </div>
       </div>

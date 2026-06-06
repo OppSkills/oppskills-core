@@ -246,6 +246,8 @@ export class MediaService {
       prefix = 'public/community-covers';
     } else if (purpose === 'COMMUNITY_AVATAR') {
       prefix = 'public/community-avatars';
+    } else if (purpose === 'COMMUNITY_POST_IMAGE') {
+      prefix = 'public/community-post-images';
     } else if (purpose === 'COMMUNITY_BANNER') {
       prefix = 'community-banner';
     } else if (purpose === 'COMMUNITY_LOGO') {

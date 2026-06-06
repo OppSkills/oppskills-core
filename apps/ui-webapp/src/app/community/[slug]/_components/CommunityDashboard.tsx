@@ -1,200 +1,438 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
+import Link from "next/link";
+import { useAuth } from "@clerk/nextjs";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
-import { Plus, X, Image as ImageIcon } from "lucide-react";
-import { initialCommunityDetails, mockFollowers, mockPosts } from "./mockData";
-import { Post, NestedComment } from "./types";
+import { Loader2 } from "lucide-react";
+
 import CommunityHeader from "./CommunityHeader";
 import AboutCard from "./AboutCard";
-import FollowersSidebar from "./FollowersSidebar";
 import PostCard from "./PostCard";
+import CreatePostModal from "./CreatePostModal";
+import EditDescriptionModal from "./EditDescriptionModal";
+import RepostModal from "./RepostModal";
 import { Button } from "@/components/ui/button";
 import { ShareModal } from "@/components/common/ShareModal";
+import { CommunityDetails, Post } from "./types";
 
-export default function CommunityDashboard() {
-  const [details, setDetails] = useState(initialCommunityDetails);
-  const [followers] = useState(mockFollowers);
-  const [posts, setPosts] = useState<Post[]>(mockPosts);
+import {
+  followCommunity,
+  getPublicCommunityByHandle,
+  unfollowCommunity,
+  updateCommunity,
+} from "@/lib/api/communityApi";
+import {
+  useCommunityPosts,
+  useCreateCommunityPost,
+  useDeleteCommunityPost,
+  useToggleCommunityPostLike,
+  useRepostPost,
+  useUndoRepost,
+} from "@/hooks/useCommunityPosts";
+import { stripHtmlPreview } from "./communityUtils";
+import { presignImageUpload } from "@/lib/api/mediaApi";
+import { uploadImageToS3PresignedPost } from "@/lib/uploads/uploadImageToS3";
 
-  // New post modal states
+interface CommunityDashboardProps {
+  handle: string;
+}
+
+function canManageCommunity(
+  myRole: string | null | undefined,
+): boolean {
+  return myRole === "OWNER" || myRole === "ADMIN" || myRole === "MODERATOR";
+}
+
+export default function CommunityDashboard({ handle }: CommunityDashboardProps) {
+  const { getToken, isSignedIn } = useAuth();
+  const queryClient = useQueryClient();
+  const coverInputRef = useRef<HTMLInputElement>(null);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+
   const [isCreatingPost, setIsCreatingPost] = useState(false);
-  const [newPostContent, setNewPostContent] = useState("");
-  const [attachImage, setAttachImage] = useState(false);
-
-  // Share modal states
+  const [isEditAboutOpen, setIsEditAboutOpen] = useState(false);
   const [isShareOpen, setIsShareOpen] = useState(false);
+  const [isRepostOpen, setIsRepostOpen] = useState(false);
+  const [repostPostId, setRepostPostId] = useState<string | null>(null);
   const [shareTitle, setShareTitle] = useState("");
   const [shareLink, setShareLink] = useState("");
   const [shareDescription, setShareDescription] = useState("");
+  const [isUploadingImages, setIsUploadingImages] = useState(false);
+  const [isFollowLoading, setIsFollowLoading] = useState(false);
+
+  const { data: profile, isLoading: profileLoading, error: profileError } =
+    useQuery({
+      queryKey: ["community-profile", handle, isSignedIn],
+      queryFn: async () => {
+        const token = isSignedIn ? await getToken() : undefined;
+        return getPublicCommunityByHandle(handle, token ?? undefined);
+      },
+      enabled: !!handle,
+    });
+
+  const {
+    data: postsData,
+    isLoading: postsLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useCommunityPosts(handle, { enabled: !!handle });
+
+  const createPostMutation = useCreateCommunityPost(profile?.id ?? "", handle);
+  const deletePostMutation = useDeleteCommunityPost(profile?.id ?? "", handle);
+  const likeMutation = useToggleCommunityPostLike(profile?.id ?? "", handle);
+  const repostMutation = useRepostPost(profile?.id ?? "", handle);
+  const undoRepostMutation = useUndoRepost(profile?.id ?? "", handle);
+
+  const canManage = canManageCommunity(profile?.myRole);
+  const isFollowing = profile?.myRole === "READ_ONLY";
+
+  const details: CommunityDetails | null = useMemo(() => {
+    if (!profile) return null;
+    return {
+      name: profile.name,
+      handle: profile.handle,
+      isVerified: false,
+      followers: profile.memberCount,
+      following: profile.postCount,
+      bannerUrl: profile.coverImage,
+      logoUrl: profile.avatarImage,
+      website: profile.website,
+      description: profile.description ?? "",
+      aboutText: profile.description ?? "",
+    };
+  }, [profile]);
+
+  const posts: Post[] = useMemo(() => {
+    const items = postsData?.pages.flatMap((p) => p.items) ?? [];
+    return items.map((item) => ({
+      id: item.id,
+      authorName: item.community.name,
+      authorAvatar: item.community.avatarImage ?? "",
+      followersCount: profile?.memberCount ?? 0,
+      timeframe: formatDistanceToNow(new Date(item.createdAt), {
+        addSuffix: true,
+      }),
+      content: item.content,
+      images: item.images,
+      likes: item.likeCount,
+      commentsCount: item.commentCount,
+      reposts: item.repostCount,
+      postKind: item.postKind,
+      repostedFrom: item.repostedFrom,
+      isLiked: item.isLikedByMe ?? false,
+      isReposted: item.isRepostedByMe ?? false,
+      communityHandle: item.community.handle,
+    }));
+  }, [postsData, profile?.memberCount]);
+
+  async function uploadImageFile(
+    file: File,
+    purpose: "COMMUNITY_COVER" | "COMMUNITY_AVATAR" | "COMMUNITY_POST_IMAGE",
+  ): Promise<string | null> {
+    const token = await getToken();
+    if (!token) {
+      toast.error("Please sign in to upload.");
+      return null;
+    }
+
+    const presign = await presignImageUpload(token, {
+      purpose,
+      mimeType: file.type,
+    });
+    await uploadImageToS3PresignedPost({ presign, file });
+
+    const publicUrl = presign.publicUrl.startsWith("http")
+      ? presign.publicUrl
+      : presign.publicUrl.startsWith("//")
+        ? `https:${presign.publicUrl}`
+        : `https://${presign.publicUrl}`;
+
+    return publicUrl;
+  }
+
+  async function resolveImageUrls(images: string[]): Promise<string[]> {
+    const urls: string[] = [];
+    for (const img of images) {
+      if (img.startsWith("http://") || img.startsWith("https://")) {
+        urls.push(img);
+        continue;
+      }
+      if (img.startsWith("blob:")) {
+        try {
+          const res = await fetch(img);
+          const blob = await res.blob();
+          const file = new File([blob], "post-image.jpg", {
+            type: blob.type || "image/jpeg",
+          });
+          const uploaded = await uploadImageFile(file, "COMMUNITY_POST_IMAGE");
+          if (uploaded) urls.push(uploaded);
+        } catch {
+          toast.error("Failed to upload an image.");
+        }
+      }
+    }
+    return urls;
+  }
+
+  const handleCreatePost = async (content: string, images: string[]) => {
+    if (!profile) return;
+    setIsUploadingImages(true);
+    try {
+      const imageUrls = await resolveImageUrls(images);
+      await createPostMutation.mutateAsync({ content, imageUrls });
+      toast.success("Post published!");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to create post.");
+    } finally {
+      setIsUploadingImages(false);
+    }
+  };
+
+  const handleFollow = async () => {
+    if (!profile) return;
+    if (!isSignedIn) {
+      toast.error("Sign in to follow this community.");
+      return;
+    }
+    setIsFollowLoading(true);
+    try {
+      const token = await getToken();
+      if (!token) {
+        toast.error("Sign in to follow this community.");
+        return;
+      }
+      await followCommunity(token, profile.id);
+      await queryClient.invalidateQueries({
+        queryKey: ["community-profile", handle],
+      });
+      toast.success(`You are now following ${profile.name}.`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to follow.");
+    } finally {
+      setIsFollowLoading(false);
+    }
+  };
+
+  const handleUnfollow = async () => {
+    if (!profile) return;
+    setIsFollowLoading(true);
+    try {
+      const token = await getToken();
+      if (!token) return;
+      await unfollowCommunity(token, profile.id);
+      await queryClient.invalidateQueries({
+        queryKey: ["community-profile", handle],
+      });
+      toast.success(`You unfollowed ${profile.name}.`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to unfollow.");
+    } finally {
+      setIsFollowLoading(false);
+    }
+  };
+
+  const handleLikePost = async (postId: string) => {
+    if (!isSignedIn) {
+      toast.error("Sign in to like posts.");
+      return;
+    }
+    try {
+      await likeMutation.mutateAsync(postId);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to like post.");
+    }
+  };
+
+  const handleDeletePost = async (postId: string) => {
+    try {
+      await deletePostMutation.mutateAsync(postId);
+      toast.success("Post deleted.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete post.");
+    }
+  };
 
   const handleSharePost = (postId: string) => {
     const post = posts.find((p) => p.id === postId);
-    if (!post) return;
+    if (!post || !details) return;
     setShareTitle(`${details.name}'s Post`);
-    setShareDescription(post.content.substring(0, 100) + "...");
-    setShareLink(`https://oppskills.com/c/${details.handle}/post/${post.id}`);
+    setShareDescription(stripHtmlPreview(post.content));
+    setShareLink(
+      `${typeof window !== "undefined" ? window.location.origin : ""}/community/${details.handle}/posts/${post.id}`,
+    );
     setIsShareOpen(true);
   };
 
-  // Handlers for post interactions
-  const handleLikePost = (postId: string) => {
-    setPosts((prevPosts) =>
-      prevPosts.map((post) => {
-        if (post.id === postId) {
-          const isLiked = !post.isLiked;
-          return {
-            ...post,
-            isLiked,
-            likes: isLiked ? post.likes + 1 : post.likes - 1,
-          };
-        }
-        return post;
-      }),
-    );
-  };
-
-  const handleDeletePost = (postId: string) => {
-    setPosts((prevPosts) => prevPosts.filter((post) => post.id !== postId));
-    toast.success("Post deleted successfully.");
-  };
-
-  const handleAddComment = (postId: string, content: string) => {
-    const newComment: NestedComment = {
-      id: `comment-${Date.now()}`,
-      authorName: details.name,
-      authorAvatar: details.logoUrl || "/logos/anthropic.png",
-      followersCount: details.followers,
-      timeframe: "Just now",
-      content,
-      likes: 0,
-      isLiked: false,
-    };
-
-    setPosts((prevPosts) =>
-      prevPosts.map((post) => {
-        if (post.id === postId) {
-          return {
-            ...post,
-            commentsCount: post.commentsCount + 1,
-            comments: [newComment, ...post.comments],
-          };
-        }
-        return post;
-      }),
-    );
-    toast.success("Comment added.");
-  };
-
-  const handleToggleCommentLike = (postId: string, commentId: string) => {
-    setPosts((prevPosts) =>
-      prevPosts.map((post) => {
-        if (post.id === postId) {
-          return {
-            ...post,
-            comments: post.comments.map((comment) => {
-              if (comment.id === commentId) {
-                const isLiked = !comment.isLiked;
-                return {
-                  ...comment,
-                  isLiked,
-                  likes: isLiked ? comment.likes + 1 : comment.likes - 1,
-                };
-              }
-              return comment;
-            }),
-          };
-        }
-        return post;
-      }),
-    );
-  };
-
-  const handleCreatePostSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newPostContent.trim()) {
-      toast.error("Please enter some content for your post.");
+  const handleRepostPost = (postId: string) => {
+    if (!isSignedIn) {
+      toast.error("Sign in to repost.");
       return;
     }
-
-    const newPost: Post = {
-      id: `post-${Date.now()}`,
-      authorName: details.name,
-      authorAvatar: details.logoUrl || "/logos/anthropic.png",
-      followersCount: details.followers,
-      timeframe: "Just now",
-      content: newPostContent,
-      images: attachImage
-        ? [
-            "https://images.unsplash.com/photo-1515187029135-18ee286d815b?w=1200&auto=format&fit=crop&q=80",
-          ]
-        : [],
-      likes: 0,
-      commentsCount: 0,
-      reposts: 0,
-      shares: 0,
-      isLiked: false,
-      comments: [],
-    };
-
-    setPosts([newPost, ...posts]);
-    setNewPostContent("");
-    setAttachImage(false);
-    setIsCreatingPost(false);
-    toast.success("Post created successfully!");
+    setRepostPostId(postId);
+    setIsRepostOpen(true);
   };
 
-  const handleMockUpload = () => {
-    // Generate beautiful random colors or Unsplash banner/logo
-    const rand = Math.floor(Math.random() * 1000);
-    setDetails((prev) => ({
-      ...prev,
-      bannerUrl: `https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200&auto=format&fit=crop&q=80&rand=${rand}`,
-      logoUrl: `https://images.unsplash.com/photo-1614741118887-7a4ee193a5fa?w=200&h=200&fit=crop&rand=${rand}`,
-    }));
-    toast.success("Banner and Logo updated from media library!");
+  const repostTarget = repostPostId
+    ? posts.find((p) => p.id === repostPostId)
+    : null;
+
+  const handleUpdateCommunity = async (updates: Partial<CommunityDetails>) => {
+    if (!profile) return;
+    const token = await getToken();
+    if (!token) {
+      toast.error("Please sign in to edit.");
+      return;
+    }
+    try {
+      await updateCommunity(token, profile.id, {
+        description: updates.aboutText ?? updates.description,
+        website:
+          updates.website !== undefined
+            ? updates.website || undefined
+            : undefined,
+        coverImage: updates.bannerUrl ?? undefined,
+        avatarImage: updates.logoUrl ?? undefined,
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ["community-profile", handle],
+      });
+      toast.success("Community updated!");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Update failed.");
+    }
   };
+
+  const handleImageUpload = async (
+    file: File,
+    type: "cover" | "avatar",
+  ) => {
+    const purpose = type === "cover" ? "COMMUNITY_COVER" : "COMMUNITY_AVATAR";
+    const url = await uploadImageFile(file, purpose);
+    if (!url) return;
+    if (type === "cover") {
+      await handleUpdateCommunity({ bannerUrl: url });
+    } else {
+      await handleUpdateCommunity({ logoUrl: url });
+    }
+  };
+
+  if (profileLoading) {
+    return (
+      <div className="w-full flex justify-center py-24">
+        <Loader2 className="w-8 h-8 animate-spin text-[#5D3EBB]" />
+      </div>
+    );
+  }
+
+  if (profileError || !details) {
+    return (
+      <div className="w-full max-w-5xl mx-auto px-4 py-16 text-center">
+        <p className="text-lg font-bold text-neutral-700">Community not found.</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-4 py-8 flex flex-col gap-6 animate-in fade-in duration-500">
-      {/* 2-Column Responsive Layout */}
-      <div className="w-full flex flex-col lg:flex-row gap-6 items-start">
-        {/* Left main column: header, about, feed */}
-        <div className="w-full lg:w-[68%] flex flex-col gap-6">
+    <div className="w-full max-w-5xl mx-auto px-4 py-8 flex flex-col gap-6 animate-in fade-in duration-500">
+      <input
+        ref={coverInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) void handleImageUpload(file, "cover");
+          e.target.value = "";
+        }}
+      />
+      <input
+        ref={avatarInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) void handleImageUpload(file, "avatar");
+          e.target.value = "";
+        }}
+      />
+
+      <div className="w-full flex flex-col gap-6">
           <CommunityHeader
             details={details}
-            onEditHeader={handleMockUpload}
-            onCreatePost={() => setIsCreatingPost(true)}
+            canManage={canManage}
+            isFollowing={isFollowing}
+            isFollowLoading={isFollowLoading}
+            onEditCover={
+              canManage ? () => coverInputRef.current?.click() : undefined
+            }
+            onEditAvatar={
+              canManage ? () => avatarInputRef.current?.click() : undefined
+            }
+            onCreatePost={
+              canManage ? () => setIsCreatingPost(true) : undefined
+            }
+            onFollow={canManage ? undefined : handleFollow}
+            onUnfollow={canManage ? undefined : handleUnfollow}
           />
 
           <AboutCard
             details={details}
-            onEditAbout={() =>
-              toast.info("Mock feature: Community About editing form.")
+            onEditAbout={
+              canManage ? () => setIsEditAboutOpen(true) : undefined
             }
           />
 
-          {/* Posts Feed section */}
           <div className="flex flex-col gap-5 w-full">
             <div className="flex items-center justify-between border-b border-neutral-100 pb-2">
               <h3 className="text-xl font-extrabold text-neutral-800 tracking-tight">
                 Community Feed
               </h3>
+              {isSignedIn && (
+                <Link
+                  href={`/community/${handle}/activity`}
+                  className="text-sm font-bold text-[#5D3EBB] hover:underline"
+                >
+                  My Activity
+                </Link>
+              )}
             </div>
 
-            {posts.length > 0 ? (
+            {postsLoading ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="w-6 h-6 animate-spin text-[#5D3EBB]" />
+              </div>
+            ) : posts.length > 0 ? (
               <div className="flex flex-col gap-6 w-full">
                 {posts.map((post) => (
-                  <PostCard
-                    key={post.id}
-                    post={post}
-                    onLike={handleLikePost}
-                    onDelete={handleDeletePost}
-                    onAddComment={handleAddComment}
-                    onToggleCommentLike={handleToggleCommentLike}
-                    onShare={handleSharePost}
-                  />
+                  <div key={post.id} id={`post-${post.id}`}>
+                    <PostCard
+                      post={post}
+                      communityHandle={handle}
+                      onLike={handleLikePost}
+                      onDelete={handleDeletePost}
+                      onRepost={handleRepostPost}
+                      onShare={handleSharePost}
+                      canManage={canManage}
+                    />
+                  </div>
                 ))}
+                {hasNextPage && (
+                  <div className="flex justify-center pt-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => fetchNextPage()}
+                      disabled={isFetchingNextPage}
+                      className="rounded-full"
+                    >
+                      {isFetchingNextPage ? "Loading..." : "Load more posts"}
+                    </Button>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="w-full bg-white border border-neutral-200 rounded-3xl p-12 text-center flex flex-col items-center justify-center gap-3">
@@ -204,91 +442,32 @@ export default function CommunityDashboard() {
                 <span className="text-neutral-500 text-sm">
                   Be the first to create a post in this community!
                 </span>
-                <Button
-                  onClick={() => setIsCreatingPost(true)}
-                  className="mt-2 bg-[#2E1E66] hover:bg-[#1E1146] text-white font-bold px-6 rounded-full"
-                >
-                  Create Post
-                </Button>
+                {canManage && (
+                  <Button
+                    onClick={() => setIsCreatingPost(true)}
+                    className="mt-2 bg-[#2E1E66] hover:bg-[#1E1146] text-white font-bold px-6 rounded-full"
+                  >
+                    Create Post
+                  </Button>
+                )}
               </div>
             )}
           </div>
-        </div>
-
-        {/* Right sidebar: Recent Followers */}
-        <div className="w-full lg:w-[32%] sticky lg:top-8">
-          <FollowersSidebar followers={followers} />
-        </div>
       </div>
 
-      {/* Floating Create Post Modal */}
-      {isCreatingPost && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div
-            className="fixed inset-0 bg-neutral-900/60 backdrop-blur-xs transition-opacity duration-300"
-            onClick={() => setIsCreatingPost(false)}
-          />
+      <CreatePostModal
+        isOpen={isCreatingPost}
+        onClose={() => setIsCreatingPost(false)}
+        onPublish={handleCreatePost}
+      />
 
-          <div className="bg-white rounded-3xl w-full max-w-xl p-6 border border-neutral-100 shadow-2xl relative z-10 flex flex-col gap-5 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between pb-3 border-b border-neutral-100">
-              <h3 className="text-lg font-extrabold text-neutral-800 tracking-tight">
-                Create New Post
-              </h3>
-              <button
-                onClick={() => setIsCreatingPost(false)}
-                className="text-neutral-400 hover:text-neutral-600 hover:bg-neutral-50 p-1.5 rounded-full transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+      <EditDescriptionModal
+        isOpen={isEditAboutOpen}
+        onClose={() => setIsEditAboutOpen(false)}
+        details={details}
+        onUpdate={handleUpdateCommunity}
+      />
 
-            <form
-              onSubmit={handleCreatePostSubmit}
-              className="flex flex-col gap-4"
-            >
-              <textarea
-                value={newPostContent}
-                onChange={(e) => setNewPostContent(e.target.value)}
-                placeholder="What would you like to broadcast to your community?"
-                className="w-full min-h-32 border border-neutral-200 rounded-2xl p-4 text-sm outline-none focus:border-[#5D3EBB]/60 text-neutral-700 font-semibold placeholder-neutral-400 resize-none transition-all"
-              />
-
-              {/* Attach Image option */}
-              <div className="flex items-center justify-between border-t border-b border-neutral-100 py-3">
-                <button
-                  type="button"
-                  onClick={() => setAttachImage(!attachImage)}
-                  className={`flex items-center gap-2 text-xs sm:text-sm font-bold transition-all px-3 py-1.5 rounded-full ${
-                    attachImage
-                      ? "text-[#5D3EBB] bg-[#E6E0FA]/40 shadow-2xs"
-                      : "text-neutral-500 hover:text-neutral-700 hover:bg-neutral-50"
-                  }`}
-                >
-                  <ImageIcon className="w-4.5 h-4.5" />
-                  <span>{attachImage ? "Image Attached" : "Attach Image"}</span>
-                </button>
-              </div>
-
-              <div className="flex justify-end gap-3 pt-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsCreatingPost(false)}
-                  className="rounded-full font-semibold border-neutral-300 px-5"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  className="bg-[#2E1E66] hover:bg-[#1E1146] text-white font-bold px-6 rounded-full shadow-md transition-all duration-300"
-                >
-                  Publish Post
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
       <ShareModal
         isOpen={isShareOpen}
         onOpenChange={setIsShareOpen}
@@ -296,6 +475,36 @@ export default function CommunityDashboard() {
         description={shareDescription}
         link={shareLink}
       />
+
+      {repostPostId && (
+        <RepostModal
+          isOpen={isRepostOpen}
+          onClose={() => {
+            setIsRepostOpen(false);
+            setRepostPostId(null);
+          }}
+          isReposted={repostTarget?.isReposted}
+          onDirectRepost={async () => {
+            await repostMutation.mutateAsync({ postId: repostPostId });
+            toast.success("Reposted to your feed!");
+          }}
+          onQuoteRepost={async (caption) => {
+            await repostMutation.mutateAsync({
+              postId: repostPostId,
+              data: { caption },
+            });
+            toast.success("Reposted with caption!");
+          }}
+          onUndoRepost={
+            repostTarget?.isReposted
+              ? async () => {
+                  await undoRepostMutation.mutateAsync(repostPostId);
+                  toast.success("Repost removed.");
+                }
+              : undefined
+          }
+        />
+      )}
     </div>
   );
 }

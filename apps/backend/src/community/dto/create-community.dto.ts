@@ -12,24 +12,28 @@ import {
 import {
   COMMUNITY_INDUSTRY_VALUES,
   type CommunityIndustryValue,
+  COMMUNITY_DESCRIPTION_MAX_LENGTH,
+  COMMUNITY_HANDLE_MAX_LENGTH,
+  COMMUNITY_HANDLE_MIN_LENGTH,
+  COMMUNITY_NAME_MAX_LENGTH,
 } from '@oppskills/types';
 
 export class CreateCommunityDto {
   @ApiProperty({
     description: 'Display name of the community',
     minLength: 3,
-    maxLength: 60,
+    maxLength: COMMUNITY_NAME_MAX_LENGTH,
     example: 'OppSkills Developers',
   })
   @IsString()
   @MinLength(3)
-  @MaxLength(60)
+  @MaxLength(COMMUNITY_NAME_MAX_LENGTH)
   name: string;
 
   @ApiProperty({
     description: 'Unique handle (slug) for the community URL',
-    minLength: 3,
-    maxLength: 30,
+    minLength: COMMUNITY_HANDLE_MIN_LENGTH,
+    maxLength: COMMUNITY_HANDLE_MAX_LENGTH,
     example: 'oppskills-devs',
   })
   @IsString()
@@ -37,18 +41,18 @@ export class CreateCommunityDto {
     message:
       'handle must contain only lowercase letters, numbers, underscores, and hyphens',
   })
-  @MinLength(3)
-  @MaxLength(30)
+  @MinLength(COMMUNITY_HANDLE_MIN_LENGTH)
+  @MaxLength(COMMUNITY_HANDLE_MAX_LENGTH)
   handle: string;
 
   @ApiPropertyOptional({
     description: 'Short description of the community',
-    maxLength: 500,
+    maxLength: COMMUNITY_DESCRIPTION_MAX_LENGTH,
     example: 'A community for builders and learners.',
   })
   @IsOptional()
   @IsString()
-  @MaxLength(500)
+  @MaxLength(COMMUNITY_DESCRIPTION_MAX_LENGTH)
   description?: string;
 
   @ApiPropertyOptional({

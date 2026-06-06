@@ -26,6 +26,7 @@ import { ReferralModule } from './referral/referral.module';
 import { NotificationModule } from './notification/notification.module';
 import { RecommendationModule } from './recommendation/recommendation.module';
 import { CommunityModule } from './community/community.module';
+import { CommunityPostModule } from './community/post/community-post.module';
 import { MeetModule } from './meet/meet.module';
 import { ChatModule } from './chat/chat.module';
 import { CommunityTaskModule } from './community-task/community-task.module';
@@ -58,6 +59,7 @@ import { CommunityTaskModule } from './community-task/community-task.module';
     NotificationModule,
     RecommendationModule,
     CommunityModule,
+    CommunityPostModule,
     MeetModule,
     ChatModule,
     CommunityTaskModule,

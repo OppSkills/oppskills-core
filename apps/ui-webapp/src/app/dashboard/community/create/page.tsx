@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useMemo, useRef, useState } from "react";
+import React, { useMemo, useRef, useState, useCallback } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { useForm } from "@tanstack/react-form";
 import { z } from "zod";
 import { isAxiosError } from "axios";
-import { Upload, Globe, Loader2 } from "lucide-react";
+import { Upload, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -31,8 +31,15 @@ import {
   COMMUNITY_INDUSTRY_VALUES,
   type CommunityIndustryValue,
 } from "@oppskills/types/enums";
+import {
+  COMMUNITY_DESCRIPTION_MAX_LENGTH,
+  COMMUNITY_HANDLE_MAX_LENGTH,
+  COMMUNITY_HANDLE_MIN_LENGTH,
+  COMMUNITY_NAME_MAX_LENGTH,
+} from "@oppskills/types/constants";
 import RegistrationSidebar from "./_components/RegistrationSidebar";
 import ImageCropDialog from "./_components/ImageCropDialog";
+import CreateCommunityIdentityFields from "./_components/CreateCommunityIdentityFields";
 
 const topColleges = [
   { img: "iith.png", name: "IIT Hyderabad" },
@@ -45,16 +52,19 @@ const topColleges = [
 ];
 
 const createCommunitySchema = z.object({
-  name: z.string().min(3, "Name must be at least 3 characters").max(60),
+  name: z
+    .string()
+    .min(3, "Name must be at least 3 characters")
+    .max(COMMUNITY_NAME_MAX_LENGTH),
   handle: z
     .string()
-    .min(3, "Handle must be at least 3 characters")
-    .max(30)
+    .min(COMMUNITY_HANDLE_MIN_LENGTH, "Handle must be at least 3 characters")
+    .max(COMMUNITY_HANDLE_MAX_LENGTH)
     .regex(
       /^[a-z0-9_-]+$/,
       "Handle may only contain lowercase letters, numbers, underscores, and hyphens",
     ),
-  description: z.string().max(500).optional(),
+  description: z.string().max(COMMUNITY_DESCRIPTION_MAX_LENGTH).optional(),
   website: z
     .union([z.string().url("Enter a valid URL"), z.literal("")])
     .optional(),
@@ -72,16 +82,6 @@ type CreateCommunityFormValues = z.infer<typeof createCommunitySchema>;
 
 type FieldName = keyof CreateCommunityFormValues;
 
-function deriveHandleFromName(name: string): string {
-  const normalized = name
-    .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-  return normalized.slice(0, 30);
-}
-
 export default function CreateCommunityPage() {
   const router = useRouter();
   const { getToken } = useAuth();
@@ -98,9 +98,12 @@ export default function CreateCommunityPage() {
   const [fieldErrors, setFieldErrors] = useState<
     Partial<Record<FieldName, string>>
   >({});
-  const handleManuallyEdited = useRef(false);
-  /** Skip auto-handle sync while IME composition is active (avoids breaking CJK input). */
-  const nameIsComposingRef = useRef(false);
+  const [handleReady, setHandleReady] = useState(false);
+  const handleReadyRef = useRef(false);
+  const handleHandleReadyChange = useCallback((ready: boolean) => {
+    handleReadyRef.current = ready;
+    setHandleReady(ready);
+  }, []);
 
   const coverInputRef = useRef<HTMLInputElement>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
@@ -168,6 +171,11 @@ export default function CreateCommunityPage() {
       if (!parsed.success) {
         const first = parsed.error.issues[0];
         toast.error(first?.message ?? "Please fix the form errors.");
+        return;
+      }
+
+      if (!handleReadyRef.current) {
+        toast.error("Choose an available community handle before listing.");
         return;
       }
 
@@ -352,11 +360,6 @@ export default function CreateCommunityPage() {
             <form.Subscribe
               selector={(state) => state.values}
               children={(formValues) => {
-                const displayHandle =
-                  formValues.handle
-                    .toLowerCase()
-                    .replace(/[^a-z0-9_-]/g, "")
-                    .slice(0, 30) || "your-handle";
                 const consentChecked = formValues.consent === true;
                 const industryValue =
                   formValues.industry.length > 0
@@ -478,108 +481,40 @@ export default function CreateCommunityPage() {
 
                     <div className="h-10 md:h-12 w-full" />
 
-                    <div className="flex flex-col gap-3">
-                      <label htmlFor="community-name" className="sr-only">
-                        Community Name
-                      </label>
-                      <input
-                        id="community-name"
-                        type="text"
-                        value={formValues.name}
-                        onCompositionStart={() => {
-                          nameIsComposingRef.current = true;
-                        }}
-                        onCompositionEnd={(e) => {
-                          nameIsComposingRef.current = false;
-                          if (!handleManuallyEdited.current) {
-                            form.setFieldValue(
-                              "handle",
-                              deriveHandleFromName(e.currentTarget.value),
-                            );
-                          }
-                        }}
-                        onChange={(e) => {
-                          const nextName = e.target.value;
-                          form.setFieldValue("name", nextName);
-                          if (nameIsComposingRef.current) return;
-                          if (!handleManuallyEdited.current) {
-                            form.setFieldValue(
-                              "handle",
-                              deriveHandleFromName(nextName),
-                            );
-                          }
-                        }}
-                        onBlur={() => handleBlur("name")}
-                        placeholder="Community Name"
-                        aria-invalid={touched.name && !!fieldErrors.name}
-                        className="text-3xl md:text-4xl font-extrabold text-neutral-800 placeholder-neutral-300 outline-none w-full bg-transparent border-b border-transparent focus:border-neutral-200 pb-1 transition-colors"
-                      />
-                      {touched.name && fieldErrors.name ? (
-                        <p className="text-sm text-red-600">
-                          {fieldErrors.name}
-                        </p>
-                      ) : null}
-
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 pt-1">
-                        <div className="flex flex-col gap-1 max-w-fit">
-                          <label htmlFor="community-handle" className="sr-only">
-                            Community handle
-                          </label>
-                          <div className="flex items-center gap-1 bg-neutral-50 px-3 py-1.5 rounded-full border border-neutral-100">
-                            <span className="text-neutral-400 font-semibold text-sm">
-                              @
-                            </span>
-                            <input
-                              id="community-handle"
-                              type="text"
-                              value={formValues.handle}
-                              onChange={(e) => {
-                                handleManuallyEdited.current = true;
-                                form.setFieldValue("handle", e.target.value);
-                              }}
-                              onBlur={() => handleBlur("handle")}
-                              placeholder="community-handle"
-                              aria-invalid={
-                                touched.handle && !!fieldErrors.handle
-                              }
-                              className="bg-transparent outline-none text-neutral-700 text-sm font-semibold placeholder-neutral-400 w-40"
-                            />
-                          </div>
-                          {touched.handle && fieldErrors.handle ? (
-                            <p className="text-sm text-red-600 pl-1">
-                              {fieldErrors.handle}
-                            </p>
-                          ) : null}
-                        </div>
-
-                        <div className="flex items-center gap-1.5 text-indigo-600/80 font-medium italic text-sm">
-                          <Globe className="w-4 h-4 shrink-0" aria-hidden />
-                          <span
-                            className="break-all select-all"
-                            aria-label="Community URL"
-                          >
-                            https://oppskills.com/c/
-                            <span className="font-bold underline decoration-dotted">
-                              {displayHandle}
-                            </span>
-                          </span>
-                        </div>
-                      </div>
-                    </div>
+                    <CreateCommunityIdentityFields
+                      form={form}
+                      touched={touched}
+                      fieldErrors={fieldErrors}
+                      onBlur={handleBlur}
+                      onHandleReadyChange={handleHandleReadyChange}
+                    />
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
                       <div className="flex flex-col gap-2">
-                        <label
-                          htmlFor="community-description"
-                          className="text-xs text-neutral-700 tracking-wider pl-1"
-                        >
-                          Community Description
-                        </label>
+                        <div className="flex items-center justify-between pl-1">
+                          <label
+                            htmlFor="community-description"
+                            className="text-xs text-neutral-700 tracking-wider"
+                          >
+                            Community Description
+                          </label>
+                          <span className="text-xs text-neutral-400 tabular-nums">
+                            {formValues.description.length}/
+                            {COMMUNITY_DESCRIPTION_MAX_LENGTH}
+                          </span>
+                        </div>
                         <Textarea
                           id="community-description"
                           value={formValues.description}
+                          maxLength={COMMUNITY_DESCRIPTION_MAX_LENGTH}
                           onChange={(e) =>
-                            form.setFieldValue("description", e.target.value)
+                            form.setFieldValue(
+                              "description",
+                              e.target.value.slice(
+                                0,
+                                COMMUNITY_DESCRIPTION_MAX_LENGTH,
+                              ),
+                            )
                           }
                           onBlur={() => handleBlur("description")}
                           placeholder="Tell Us about the community"
@@ -707,7 +642,7 @@ export default function CreateCommunityPage() {
                     <div className="flex justify-end w-full pt-2">
                       <Button
                         type="submit"
-                        disabled={!consentChecked || isSubmitting}
+                        disabled={!consentChecked || isSubmitting || !handleReady}
                         className="bg-[#2E1E66] hover:bg-[#1E1146] text-white font-bold px-8 py-3 rounded-full text-base h-auto"
                       >
                         {isSubmitting ? (
