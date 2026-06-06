@@ -26,6 +26,7 @@ interface AddMemberModalProps {
     accessControl: string,
   ) => void;
   availableRoles?: string[];
+  existingMemberUserIds?: string[];
 }
 
 export default function AddMemberModal({
@@ -38,6 +39,7 @@ export default function AddMemberModal({
     "Content Writer",
     "Circle",
   ],
+  existingMemberUserIds = [],
 }: AddMemberModalProps) {
   const { getToken, userId } = useAuth();
   const [emailQuery, setEmailQuery] = useState("");
@@ -77,8 +79,10 @@ export default function AddMemberModal({
         if (!token) return;
         const results = await searchUsers(token, query);
         if (active) {
-          // Exclude self (current logged-in user) from search results
-          const filteredResults = results.filter((u) => u.id !== userId);
+          // Exclude self (current logged-in user) and already community members from search results
+          const filteredResults = results.filter(
+            (u) => u.id !== userId && !existingMemberUserIds.includes(u.id),
+          );
           setSearchResults(filteredResults);
         }
       } catch (err) {

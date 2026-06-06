@@ -15,6 +15,7 @@ import { randomBytes } from 'crypto';
 import { EmailService } from 'src/email/email.service';
 import { ReferralAuthzService } from './referral-authz.service';
 import { ReferralCounterService } from './referral-counter.service';
+import { Logger } from 'src/_utils/logger';
 
 const ONBOARDING_PROFILE_SELECT = {
   select: {
@@ -34,6 +35,8 @@ const ONBOARDING_PROFILE_SELECT = {
 
 @Injectable()
 export class ReferralService {
+  private readonly logger = new Logger(ReferralService.name);
+
   constructor(
     private readonly authz: ReferralAuthzService,
     private readonly emailService: EmailService,
@@ -126,6 +129,17 @@ export class ReferralService {
         },
       },
     });
+
+    if (dto.entityType === 'COMMUNITY') {
+      this.logger.info({
+        action: 'COMMUNITY_REFERRAL_CREATED',
+        communityId: dto.entityId,
+        userId,
+        referrerId: referrer.id,
+        referralId: referral.id,
+        code: referral.code,
+      });
+    }
 
     if (dto.sendEmail !== false) {
       const slug = await this.authz.getEntityPublicSlug(
@@ -648,6 +662,17 @@ export class ReferralService {
       where: { id: referral.id },
       data: { isDeleted: true, isActive: false, deletedAt: new Date() },
     });
+
+    if (referral.entityType === 'COMMUNITY') {
+      this.logger.info({
+        action: 'COMMUNITY_REFERRAL_DELETED',
+        communityId: referral.entityId,
+        userId,
+        referrerId: referral.referrerId,
+        referralId: referral.id,
+      });
+    }
+
     return { success: true };
   }
 
@@ -721,7 +746,7 @@ export class ReferralService {
   }) {
     const referral = await prisma.referralEntity.findUnique({
       where: { code: input.code },
-      select: { id: true, isDeleted: true, isActive: true },
+      select: { id: true, isDeleted: true, isActive: true, entityType: true, entityId: true },
     });
     if (!referral || referral.isDeleted || !referral.isActive) {
       throw new NotFoundException('Referral code not found');
@@ -733,6 +758,17 @@ export class ReferralService {
       source: input.source,
       isBot: /bot|crawl|spider|preview/i.test(input.userAgent || ''),
     });
+
+    if (referral.entityType === 'COMMUNITY') {
+      this.logger.info({
+        action: 'COMMUNITY_REFERRAL_CLICKED',
+        communityId: referral.entityId,
+        referralId: referral.id,
+        ip: input.ip,
+        isBot: /bot|crawl|spider|preview/i.test(input.userAgent || ''),
+      });
+    }
+
     return { success: true };
   }
 

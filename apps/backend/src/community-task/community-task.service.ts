@@ -14,9 +14,12 @@ import {
   TaskThreadMessageResponseDto,
 } from './dto/task-response.dto';
 import { TaskStatus } from '@prisma/client';
+import { Logger } from '../_utils/logger';
 
 @Injectable()
 export class CommunityTaskService {
+  private readonly logger = new Logger(CommunityTaskService.name);
+
   constructor(private readonly emailService: EmailService) {}
 
   /**
@@ -90,6 +93,14 @@ export class CommunityTaskService {
 
     // 2. Validate hierarchy rule: Assigners can only assign to equal/lower levels
     if (assignerLevel < assigneeLevel) {
+      this.logger.warn({
+        action: 'COMMUNITY_TASK_HIERARCHY_VIOLATION',
+        communityId,
+        userId: currentUserId,
+        assigneeUserId: dto.toUserId,
+        assignerLevel,
+        assigneeLevel,
+      });
       throw new ForbiddenException(
         'You do not have permission to assign tasks to users with a higher access role in the hierarchy.',
       );
@@ -119,6 +130,17 @@ export class CommunityTaskService {
         assignedBy: true,
         community: true,
       },
+    });
+
+    this.logger.info({
+      action: 'COMMUNITY_TASK_CREATED',
+      communityId,
+      userId: currentUserId,
+      taskId: task.id,
+      assignedToUserId: task.toUserId,
+      priority: task.priority,
+      tags: task.tags,
+      optForMail: task.optForMail,
     });
 
     // 4. Send email notification if optForMail is true
@@ -284,7 +306,7 @@ export class CommunityTaskService {
   ): Promise<TaskThreadMessageResponseDto> {
     const task = await prisma.communityTaskEntity.findUnique({
       where: { id: taskId },
-      select: { toUserId: true, byUserId: true, status: true },
+      select: { toUserId: true, byUserId: true, status: true, communityId: true },
     });
 
     if (!task) {
@@ -293,6 +315,11 @@ export class CommunityTaskService {
 
     // Verify user is assignee or assigner
     if (currentUserId !== task.toUserId && currentUserId !== task.byUserId) {
+      this.logger.warn({
+        action: 'COMMUNITY_TASK_COMMENT_PERMISSION_DENIED',
+        userId: currentUserId,
+        taskId,
+      });
       throw new ForbiddenException(
         'Only the assignee or assigner can comment on this task thread.',
       );
@@ -311,6 +338,16 @@ export class CommunityTaskService {
       include: {
         user: true,
       },
+    });
+
+    this.logger.info({
+      action: 'COMMUNITY_TASK_COMMENT_CREATED',
+      communityId: task.communityId,
+      userId: currentUserId,
+      taskId,
+      commentId: message.id,
+      commentType: dto.type,
+      hasAttachment: !!dto.fileName,
     });
 
     return {
@@ -350,6 +387,11 @@ export class CommunityTaskService {
 
     // Verify user belongs to assignee or assigner
     if (!isAssigner && !isAssignee) {
+      this.logger.warn({
+        action: 'COMMUNITY_TASK_UPDATE_PERMISSION_DENIED',
+        taskId,
+        userId: currentUserId,
+      });
       throw new ForbiddenException(
         'You do not have permission to modify this task.',
       );
@@ -396,6 +438,16 @@ export class CommunityTaskService {
         assignedBy: true,
         community: true,
       },
+    });
+
+    this.logger.info({
+      action: 'COMMUNITY_TASK_STATUS_UPDATED',
+      communityId: updatedTask.communityId,
+      userId: currentUserId,
+      taskId,
+      oldStatus: task.status,
+      newStatus: dto.status,
+      optForMail: updatedTask.optForMail,
     });
 
     let alertContent = '';
@@ -508,6 +560,14 @@ export class CommunityTaskService {
 
     await prisma.communityTaskThreadMessageEntity.delete({
       where: { id: commentId },
+    });
+
+    this.logger.info({
+      action: 'COMMUNITY_TASK_COMMENT_DELETED',
+      communityId: comment.task.communityId,
+      userId: currentUserId,
+      taskId,
+      commentId,
     });
   }
 }

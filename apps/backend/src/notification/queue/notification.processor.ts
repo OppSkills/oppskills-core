@@ -7,6 +7,9 @@ import {
   HackathonNotificationEmail,
   CommunityNotificationEmail,
 } from '@oppskills/emails';
+import { Logger } from 'src/_utils/logger';
+
+const logger = new Logger('NotificationProcessor');
 
 export async function processNotification(notificationId: string) {
   const notification = await prisma.notifications.findUnique({
@@ -14,6 +17,15 @@ export async function processNotification(notificationId: string) {
   });
 
   if (!notification) return;
+
+  if (notification.communityId) {
+    logger.info({
+      action: 'COMMUNITY_NOTIFICATION_PROCESSING_STARTED',
+      communityId: notification.communityId,
+      notificationId,
+      totalRecipients: notification.totalRecipients,
+    });
+  }
 
   // Fetch event/hackathon details for template
   let entityDetails: { name: string; slug: string } | null = null;
@@ -190,6 +202,14 @@ export async function processNotification(notificationId: string) {
 
         if (result.error) {
           failedCount += batchRecipients.length;
+          if (notification.communityId) {
+            logger.error({
+              action: 'COMMUNITY_NOTIFICATION_BATCH_FAILED',
+              communityId: notification.communityId,
+              notificationId,
+              error: result.error.message,
+            });
+          }
           await prisma.notificationLogs.create({
             data: {
               notificationId,
@@ -203,6 +223,14 @@ export async function processNotification(notificationId: string) {
         }
       } catch (error: any) {
         failedCount += batchRecipients.length;
+        if (notification.communityId) {
+          logger.error({
+            action: 'COMMUNITY_NOTIFICATION_BATCH_FAILED',
+            communityId: notification.communityId,
+            notificationId,
+            error: error.message || String(error),
+          });
+        }
         await prisma.notificationLogs.create({
           data: {
             notificationId,
@@ -241,6 +269,17 @@ export async function processNotification(notificationId: string) {
       },
     });
 
+    if (notification.communityId) {
+      logger.info({
+        action: 'COMMUNITY_NOTIFICATION_PROCESSING_COMPLETED',
+        communityId: notification.communityId,
+        notificationId,
+        status: finalStatus,
+        successCount,
+        failedCount,
+      });
+    }
+
     await prisma.notificationLogs.create({
       data: {
         notificationId,
@@ -252,6 +291,15 @@ export async function processNotification(notificationId: string) {
 
     console.log('Processing complete for notification:', notificationId);
   } catch (error: any) {
+    if (notification && notification.communityId) {
+      logger.error({
+        action: 'COMMUNITY_NOTIFICATION_PROCESSING_FAILED',
+        communityId: notification.communityId,
+        notificationId,
+        error: error.message || String(error),
+      });
+    }
+
     await prisma.notifications.update({
       where: { id: notificationId },
       data: {

@@ -14,9 +14,12 @@ import type { CommunityListItemDto } from './dto/community-list-item.dto';
 import { AddCommunityMembersDto } from './dto/add-community-members.dto';
 import { CommunityEmailQueue } from '../email/queue/community-email.queue';
 import { CommunityStatsResponseDto } from './dto/community-stats-response.dto';
+import { Logger } from '../_utils/logger';
 
 @Injectable()
 export class CommunityService {
+  private readonly logger = new Logger(CommunityService.name);
+
   constructor(private readonly communityEmailQueue: CommunityEmailQueue) {}
 
   /**
@@ -139,8 +142,22 @@ export class CommunityService {
         return created;
       });
 
+      this.logger.info({
+        action: 'COMMUNITY_CREATED',
+        communityId: community.id,
+        communitySlug: community.handle,
+        userId: ownerId,
+      });
+
       return this.toResponseDto(community);
     } catch (error) {
+      this.logger.error({
+        action: 'COMMUNITY_CREATION_FAILED',
+        userId: ownerId,
+        handle: dto.handle,
+        error: error instanceof Error ? error.message : String(error),
+      });
+
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
           const target = error.meta?.target;
@@ -217,6 +234,12 @@ export class CommunityService {
     const isMember = community.members.length > 0;
 
     if (!isOwner && !isMember) {
+      this.logger.warn({
+        action: 'COMMUNITY_PERMISSION_DENIED',
+        permissionType: 'MANAGE',
+        communityId,
+        userId,
+      });
       throw new ForbiddenException(
         'You do not have permission to manage this community.',
       );
@@ -242,6 +265,12 @@ export class CommunityService {
     const isMember = community.members.length > 0;
 
     if (!isOwner && !isMember) {
+      this.logger.warn({
+        action: 'COMMUNITY_PERMISSION_DENIED',
+        permissionType: 'READ',
+        communityId,
+        userId,
+      });
       throw new ForbiddenException(
         'You do not have permission to view this community.',
       );
@@ -271,6 +300,12 @@ export class CommunityService {
         ['ADMIN', 'MODERATOR'].includes(myMemberRecord.accessControlRole));
 
     if (!isWriteEligible) {
+      this.logger.warn({
+        action: 'COMMUNITY_PERMISSION_DENIED',
+        permissionType: 'WRITE',
+        communityId,
+        userId,
+      });
       throw new ForbiddenException(
         'You do not have permission to modify data in this community.',
       );
@@ -297,6 +332,12 @@ export class CommunityService {
     const isAdmin = myMemberRecord?.accessControlRole === 'ADMIN';
 
     if (!isOwner && !isAdmin) {
+      this.logger.warn({
+        action: 'COMMUNITY_PERMISSION_DENIED',
+        permissionType: 'ADMIN',
+        communityId,
+        userId,
+      });
       throw new ForbiddenException(
         'You do not have permission to perform administrative actions in this community.',
       );
@@ -753,6 +794,11 @@ export class CommunityService {
     }
 
     if (dto.userIds.includes(currentUserId)) {
+      this.logger.warn({
+        action: 'COMMUNITY_ADD_MEMBERS_SELF_FORBIDDEN',
+        communityId,
+        userId: currentUserId,
+      });
       throw new BadRequestException(
         'You cannot add your own user ID to the community members.',
       );
@@ -768,6 +814,12 @@ export class CommunityService {
       (id) => !foundUserIds.includes(id),
     );
     if (invalidUserIds.length > 0) {
+      this.logger.warn({
+        action: 'COMMUNITY_ADD_MEMBERS_NOT_FOUND',
+        communityId,
+        userId: currentUserId,
+        invalidUserIds,
+      });
       throw new NotFoundException(
         `The following user IDs do not exist: ${invalidUserIds.join(', ')}`,
       );
@@ -783,6 +835,12 @@ export class CommunityService {
     });
     const existingUserIds = existingMembers.map((m) => m.userId);
     if (existingUserIds.length > 0) {
+      this.logger.warn({
+        action: 'COMMUNITY_ADD_MEMBERS_CONFLICT',
+        communityId,
+        userId: currentUserId,
+        existingUserIds,
+      });
       throw new ConflictException(
         `The following users are already members of this community: ${existingUserIds.join(', ')}`,
       );
@@ -796,6 +854,15 @@ export class CommunityService {
         role: dto.role,
         accessControlRole: dto.accessControlRole,
       })),
+    });
+
+    this.logger.info({
+      action: 'COMMUNITY_MEMBERS_BULK_ADDED',
+      communityId,
+      userId: currentUserId,
+      addedUserIds: dto.userIds,
+      role: dto.role,
+      accessControlRole: dto.accessControlRole,
     });
 
     // Queue welcome emails in chunks of 100 to avoid resource/rate limiting issues
@@ -842,11 +909,21 @@ export class CommunityService {
 
     // no-one can edit himself
     if (targetMember.userId === currentUserId) {
+      this.logger.warn({
+        action: 'COMMUNITY_HIERARCHY_VIOLATION_SELF_EDIT',
+        userId: currentUserId,
+        targetUserId: targetMember.userId,
+      });
       throw new ForbiddenException('You cannot modify your own member record.');
     }
 
     // Target is owner, but requester is not owner
     if (isTargetOwner) {
+      this.logger.warn({
+        action: 'COMMUNITY_HIERARCHY_VIOLATION_OWNER_EDIT',
+        userId: currentUserId,
+        targetUserId: targetMember.userId,
+      });
       throw new ForbiddenException(
         'Only the community owner can modify the owner.',
       );
@@ -864,6 +941,13 @@ export class CommunityService {
     const targetRank = getRank(targetMember.accessControlRole);
 
     if (requesterRank <= targetRank) {
+      this.logger.warn({
+        action: 'COMMUNITY_HIERARCHY_VIOLATION_LOWER_RANK',
+        userId: currentUserId,
+        targetUserId: targetMember.userId,
+        requesterRank,
+        targetRank,
+      });
       throw new ForbiddenException(
         'Only users with a higher access role can modify this member.',
       );
@@ -895,10 +979,22 @@ export class CommunityService {
       member,
     );
 
-    return prisma.communityMemberEntity.update({
+    const updated = await prisma.communityMemberEntity.update({
       where: { id: memberId },
       data: { role },
     });
+
+    this.logger.info({
+      action: 'COMMUNITY_MEMBER_ROLE_UPDATED',
+      communityId,
+      userId: currentUserId,
+      targetMemberId: memberId,
+      targetUserId: member.userId,
+      oldRole: member.role,
+      newRole: role,
+    });
+
+    return updated;
   }
 
   async updateMemberAccess(
@@ -933,10 +1029,22 @@ export class CommunityService {
       member,
     );
 
-    return prisma.communityMemberEntity.update({
+    const updated = await prisma.communityMemberEntity.update({
       where: { id: memberId },
       data: { accessControlRole },
     });
+
+    this.logger.info({
+      action: 'COMMUNITY_MEMBER_ACCESS_UPDATED',
+      communityId,
+      userId: currentUserId,
+      targetMemberId: memberId,
+      targetUserId: member.userId,
+      oldAccessControlRole: member.accessControlRole,
+      newAccessControlRole: accessControlRole,
+    });
+
+    return updated;
   }
 
   async deleteMember(
@@ -968,9 +1076,20 @@ export class CommunityService {
       member,
     );
 
-    return prisma.communityMemberEntity.delete({
+    const deleted = await prisma.communityMemberEntity.delete({
       where: { id: memberId },
     });
+
+    const isSelf = member.userId === currentUserId;
+    this.logger.info({
+      action: isSelf ? 'COMMUNITY_MEMBER_LEFT' : 'COMMUNITY_MEMBER_REMOVED',
+      communityId,
+      userId: currentUserId,
+      targetMemberId: memberId,
+      targetUserId: member.userId,
+    });
+
+    return deleted;
   }
 
   async getCommunityStats(
@@ -1084,6 +1203,11 @@ export class CommunityService {
       },
     });
     if (existing) {
+      this.logger.warn({
+        action: 'COMMUNITY_JOIN_ALREADY_MEMBER',
+        communityId,
+        userId,
+      });
       throw new ConflictException('You are already a member of this community.');
     }
 
@@ -1115,6 +1239,15 @@ export class CommunityService {
       },
     });
 
+    this.logger.info({
+      action: 'COMMUNITY_MEMBER_JOINED',
+      communityId,
+      userId,
+      memberId: member.id,
+      role: 'MEMBER',
+      referralId: referralId || undefined,
+    });
+
     if (referralId) {
       await prisma.referralEntity.update({
         where: { id: referralId },
@@ -1122,6 +1255,13 @@ export class CommunityService {
           registrationsCount: { increment: 1 },
           lastRegistrationAt: new Date(),
         },
+      });
+
+      this.logger.info({
+        action: 'COMMUNITY_REFERRAL_USED',
+        communityId,
+        userId,
+        referralId,
       });
     }
 

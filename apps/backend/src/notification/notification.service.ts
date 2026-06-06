@@ -8,9 +8,12 @@ import { prisma } from '@oppskills/db';
 import { CreateNotificationDto } from '@oppskills/types';
 import { NotificationQueue } from './queue/notification.queue';
 import { NotificationWorker } from './queue/notification.worker';
+import { Logger } from 'src/_utils/logger';
 
 @Injectable()
 export class NotificationService {
+  private readonly logger = new Logger(NotificationService.name);
+
   constructor(
     private readonly notificationQueue: NotificationQueue,
     private readonly notificationWorker: NotificationWorker,
@@ -227,6 +230,18 @@ export class NotificationService {
         expectedFinishAt,
       },
     });
+
+    if (actualCommunityId) {
+      this.logger.info({
+        action: 'COMMUNITY_NOTIFICATION_CREATED',
+        communityId: actualCommunityId,
+        userId,
+        notificationId: notification.id,
+        recipientCount,
+        scheduleType,
+        scheduledAt,
+      });
+    }
 
     // Enqueue the job immediately
     const delay = Math.max(0, scheduledAt.getTime() - Date.now());
@@ -461,8 +476,19 @@ export class NotificationService {
       );
     }
 
-    return prisma.notifications.delete({
+    const deleted = await prisma.notifications.delete({
       where: { id },
     });
+
+    if (notification.communityId) {
+      this.logger.info({
+        action: 'COMMUNITY_NOTIFICATION_DELETED',
+        communityId: notification.communityId,
+        userId,
+        notificationId: notification.id,
+      });
+    }
+
+    return deleted;
   }
 }

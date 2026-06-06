@@ -186,6 +186,27 @@ export default function ManageCommunityClient({
   const [isMeetSchedulerOpen, setIsMeetSchedulerOpen] = useState(false);
   const [isTaskTrackerOpen, setIsTaskTrackerOpen] = useState(false);
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
+  const [existingMemberUserIds, setExistingMemberUserIds] = useState<string[]>([]);
+
+  // Fetch all existing community member user IDs when Add Member modal is open
+  useEffect(() => {
+    if (isAddMemberOpen) {
+      const loadAllMemberIds = async () => {
+        try {
+          const token = await getToken();
+          if (!token) return;
+          const res = await listCommunityMembers(token, communityId, {
+            page: 1,
+            take: 1000,
+          });
+          setExistingMemberUserIds(res.items.map((m) => m.userId));
+        } catch (err) {
+          console.error("Failed to load existing member IDs:", err);
+        }
+      };
+      void loadAllMemberIds();
+    }
+  }, [isAddMemberOpen, getToken, communityId]);
 
   const [selectedMemberForTask, setSelectedMemberForTask] = useState<
     string | null
@@ -521,6 +542,7 @@ export default function ManageCommunityClient({
           onClose={() => setIsAddMemberOpen(false)}
           onAddMember={handleInviteMembers}
           availableRoles={availableRoles}
+          existingMemberUserIds={existingMemberUserIds}
         />
 
         {/* Edit Member Dialog Modal */}
