@@ -8,6 +8,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   Req,
   UnauthorizedException,
   UseGuards,
@@ -29,16 +30,20 @@ import { CommunityListItemDto } from './dto/community-list-item.dto';
 import { AddCommunityMembersDto } from './dto/add-community-members.dto';
 import { UpdateMemberTypeDto } from './dto/update-member-type.dto';
 import { UpdateMemberAccessDto } from './dto/update-member-access.dto';
-import { CommunityStatsResponseDto } from './dto/community-stats-response.dto';
+import { UpdateCommunityDto } from './dto/update-community.dto';
+import {
+  CheckCommunityHandleResponseDto,
+  SuggestCommunityHandlesResponseDto,
+} from './dto/check-community-handle.dto';
 
 @ApiTags('Communities')
-@ApiBearerAuth('clerk-auth')
 @Controller('communities')
-@UseGuards(ClerkAuthGuard)
 export class CommunityController {
-  constructor(private readonly communityService: CommunityService) {}
+  constructor(private readonly communityService: CommunityService) { }
 
   @Get('my')
+  @UseGuards(ClerkAuthGuard)
+  @ApiBearerAuth('clerk-auth')
   @ApiOperation({
     summary: 'List my communities',
     description:
@@ -57,7 +62,37 @@ export class CommunityController {
     return { items };
   }
 
+  @Get('handles/check')
+  @ApiOperation({
+    summary: 'Check if a community handle is available',
+    description:
+      'Returns whether the given handle is free to register. Public — no auth required.',
+  })
+  @ApiResponse({ status: 200, type: CheckCommunityHandleResponseDto })
+  async checkHandleAvailability(
+    @Query('handle') handle: string,
+  ): Promise<CheckCommunityHandleResponseDto> {
+    const available = await this.communityService.isHandleAvailable(handle ?? '');
+    return { available };
+  }
+
+  @Get('handles/suggest')
+  @ApiOperation({
+    summary: 'Suggest available community handles from a display name',
+    description:
+      'Generates handle candidates from the community name and returns those not yet taken.',
+  })
+  @ApiResponse({ status: 200, type: SuggestCommunityHandlesResponseDto })
+  async suggestHandles(
+    @Query('name') name: string,
+  ): Promise<SuggestCommunityHandlesResponseDto> {
+    const suggestions = await this.communityService.suggestHandles(name ?? '');
+    return { suggestions };
+  }
+
   @Get(':id')
+  @UseGuards(ClerkAuthGuard)
+  @ApiBearerAuth('clerk-auth')
   @ApiOperation({
     summary: 'Get community details by ID',
     description:
@@ -83,6 +118,8 @@ export class CommunityController {
   }
 
   @Post()
+  @UseGuards(ClerkAuthGuard)
+  @ApiBearerAuth('clerk-auth')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: 'Create a community',
@@ -115,7 +152,63 @@ export class CommunityController {
     return this.communityService.create(userId, dto);
   }
 
+  @Patch(':id')
+  @UseGuards(ClerkAuthGuard)
+  @ApiBearerAuth('clerk-auth')
+  @ApiOperation({
+    summary: 'Update community profile',
+    description:
+      'Updates community details such as cover, avatar, description. Requires write permission.',
+  })
+  @ApiBody({ type: UpdateCommunityDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Community updated successfully',
+    type: CommunityResponseDto,
+  })
+  async update(
+    @Param('id') id: string,
+    @Body() dto: UpdateCommunityDto,
+    @Req() req: Request,
+  ): Promise<CommunityResponseDto> {
+    const userId = req.user?.id;
+    if (typeof userId !== 'string' || userId.trim().length === 0) {
+      throw new UnauthorizedException('User not found.');
+    }
+    return this.communityService.updateCommunity(userId, id, dto);
+  }
+
+  @Post(':id/follow')
+  @UseGuards(ClerkAuthGuard)
+  @ApiBearerAuth('clerk-auth')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Follow a community (join as member)' })
+  @ApiResponse({ status: 200, description: 'Now following the community' })
+  async followCommunity(@Param('id') id: string, @Req() req: Request) {
+    const userId = req.user?.id;
+    if (typeof userId !== 'string' || userId.trim().length === 0) {
+      throw new UnauthorizedException('User not found.');
+    }
+    return this.communityService.followCommunity(userId, id);
+  }
+
+  @Delete(':id/follow')
+  @UseGuards(ClerkAuthGuard)
+  @ApiBearerAuth('clerk-auth')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Unfollow a community (leave membership)' })
+  @ApiResponse({ status: 200, description: 'No longer following the community' })
+  async unfollowCommunity(@Param('id') id: string, @Req() req: Request) {
+    const userId = req.user?.id;
+    if (typeof userId !== 'string' || userId.trim().length === 0) {
+      throw new UnauthorizedException('User not found.');
+    }
+    return this.communityService.unfollowCommunity(userId, id);
+  }
+
   @Post(':id/members')
+  @UseGuards(ClerkAuthGuard)
+  @ApiBearerAuth('clerk-auth')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: 'Bulk add members to a community',
@@ -158,6 +251,8 @@ export class CommunityController {
   }
 
   @Get(':id/members/types')
+  @UseGuards(ClerkAuthGuard)
+  @ApiBearerAuth('clerk-auth')
   @ApiOperation({
     summary: 'Fetch unique member types (roles) for a community',
     description:
@@ -182,6 +277,8 @@ export class CommunityController {
   }
 
   @Patch(':id/members/:memberId/type')
+  @UseGuards(ClerkAuthGuard)
+  @ApiBearerAuth('clerk-auth')
   @ApiOperation({
     summary: "Update a member's type (role string)",
     description:
@@ -211,6 +308,8 @@ export class CommunityController {
   }
 
   @Patch(':id/members/:memberId/access-control')
+  @UseGuards(ClerkAuthGuard)
+  @ApiBearerAuth('clerk-auth')
   @ApiOperation({
     summary: "Update a member's access control role",
     description:
@@ -261,6 +360,8 @@ export class CommunityController {
   }
 
   @Get(':id/members')
+  @UseGuards(ClerkAuthGuard)
+  @ApiBearerAuth('clerk-auth')
   @ApiOperation({
     summary: 'List community members',
     description: 'Retrieves all members of the community.',
@@ -291,6 +392,8 @@ export class CommunityController {
   }
 
   @Delete(':id/members/:memberId')
+  @UseGuards(ClerkAuthGuard)
+  @ApiBearerAuth('clerk-auth')
   @ApiOperation({
     summary: 'Delete a community member',
     description: 'Removes a member from the community.',

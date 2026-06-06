@@ -7,6 +7,7 @@ export type PresignImageUploadPurpose =
   | "EVENT_BANNER"
   | "COMMUNITY_COVER"
   | "COMMUNITY_AVATAR"
+  | "COMMUNITY_POST_IMAGE"
   | "COMMUNITY_BANNER"
   | "COMMUNITY_LOGO"
   | "CHAT_ATTACHMENT";

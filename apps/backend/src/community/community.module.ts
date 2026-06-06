@@ -6,7 +6,7 @@ import { EmailModule } from '../email/email.module';
 
 @Module({
   imports: [EmailModule],
-  controllers: [CommunityController, CommunityPublicController],
+  controllers: [CommunityPublicController, CommunityController],
   providers: [CommunityService],
   exports: [CommunityService],
 })

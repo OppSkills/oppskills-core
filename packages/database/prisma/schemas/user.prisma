@@ -18,6 +18,11 @@ model UserEntity {
   communityCreatedTasks            CommunityTaskEntity[]                   @relation("CommunityTaskAssignedBy")
   communityAssignedTasks           CommunityTaskEntity[]                   @relation("CommunityTaskAssignedTo")
   communityTaskThreadMessages      CommunityTaskThreadMessageEntity[]
+  communityPostsAuthored           CommunityPostEntity[]                   @relation("CommunityPostAuthor")
+  communityPostLikes               CommunityPostLikeEntity[]               @relation("CommunityPostLikes")
+  communityPostCommentsAuthored    CommunityPostCommentEntity[]            @relation("CommunityPostCommentAuthor")
+  communityPostCommentLikes        CommunityPostCommentLikeEntity[]      @relation("CommunityPostCommentLikes")
+  communityPostReposts             CommunityPostRepostEntity[]             @relation("CommunityPostReposts")
   notifications                    notifications[]                         @relation("UserNotifications")
   events                           EventEntity[]                           @relation("UserEvents")
   eventParticipantApprovals        EventParticipantEntity[]                @relation("EventParticipantApprover")

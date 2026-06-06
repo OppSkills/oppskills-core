@@ -15,6 +15,16 @@ import { AddCommunityMembersDto } from './dto/add-community-members.dto';
 import { CommunityEmailQueue } from '../email/queue/community-email.queue';
 import { CommunityStatsResponseDto } from './dto/community-stats-response.dto';
 import { Logger } from '../_utils/logger';
+import type { PublicCommunityListItemDto } from './dto/public-community-list-item.dto';
+import type { PublicCommunityProfileDto } from './dto/public-community-profile.dto';
+import { UpdateCommunityDto } from './dto/update-community.dto';
+import {
+  buildHandleCandidates,
+  deriveCommunityHandleFromName,
+  isValidCommunityHandle,
+  normalizeCommunityHandle,
+} from './community-handle.util';
+
 
 @Injectable()
 export class CommunityService {
@@ -193,6 +203,207 @@ export class CommunityService {
       }
 
       throw new InternalServerErrorException('Error creating community.');
+    }
+  }
+
+  async listPublicCommunities(input: {
+    page?: number;
+    take?: number;
+    search?: string;
+    industry?: string[];
+    sort?: string;
+    sortOrder?: 'asc' | 'desc';
+  } = {}): Promise<{
+    items: PublicCommunityListItemDto[];
+    total: number;
+    totalPages: number;
+    page: number;
+  }> {
+    const page = Math.max(1, input.page ?? 1);
+    const take = Math.min(50, Math.max(1, input.take ?? 10));
+    const skip = (page - 1) * take;
+
+    const conditions: Prisma.CommunityEntityWhereInput[] = [];
+
+    if (input.search?.trim()) {
+      const q = input.search.trim();
+      conditions.push({
+        OR: [
+          { name: { contains: q, mode: 'insensitive' } },
+          { handle: { contains: q, mode: 'insensitive' } },
+          { description: { contains: q, mode: 'insensitive' } },
+        ],
+      });
+    }
+
+    if (input.industry && input.industry.length > 0) {
+      conditions.push({
+        industry: {
+          in: input.industry as PublicCommunityListItemDto['industry'][],
+        },
+      });
+    }
+
+    const where: Prisma.CommunityEntityWhereInput =
+      conditions.length > 0 ? { AND: conditions } : {};
+
+    const sort = input.sort ?? 'recently_added';
+    const sortOrder = input.sortOrder ?? 'desc';
+    let orderBy: Prisma.CommunityEntityOrderByWithRelationInput = {
+      createdAt: sortOrder,
+    };
+    if (sort === 'name') {
+      orderBy = { name: sortOrder };
+    }
+
+    const [rows, total] = await Promise.all([
+      prisma.communityEntity.findMany({
+        where,
+        orderBy,
+        skip,
+        take,
+        select: {
+          id: true,
+          name: true,
+          handle: true,
+          description: true,
+          industry: true,
+          coverImage: true,
+          avatarImage: true,
+          createdAt: true,
+          _count: {
+            select: {
+              members: true,
+              posts: { where: { status: 'PUBLISHED' } },
+            },
+          },
+        },
+      }),
+      prisma.communityEntity.count({ where }),
+    ]);
+
+    const items: PublicCommunityListItemDto[] = rows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      handle: row.handle,
+      description: row.description,
+      industry: row.industry,
+      coverImage: row.coverImage,
+      avatarImage: row.avatarImage,
+      memberCount: row._count.members,
+      postCount: row._count.posts,
+      createdAt: row.createdAt,
+    }));
+
+    return {
+      items,
+      total,
+      totalPages: Math.max(1, Math.ceil(total / take)),
+      page,
+    };
+  }
+
+  async getPublicProfileByHandle(
+    handle: string,
+    viewerUserId?: string,
+  ): Promise<PublicCommunityProfileDto> {
+    const community = await prisma.communityEntity.findUnique({
+      where: { handle: handle.toLowerCase() },
+      include: {
+        ...(viewerUserId
+          ? {
+              members: {
+                where: { userId: viewerUserId },
+                select: { accessControlRole: true },
+              },
+            }
+          : {}),
+        _count: {
+          select: {
+            members: true,
+            posts: { where: { status: 'PUBLISHED' } },
+          },
+        },
+      },
+    });
+
+    if (!community) {
+      throw new NotFoundException('Community not found.');
+    }
+
+    let myRole: PublicCommunityProfileDto['myRole'] = null;
+    if (viewerUserId) {
+      if (community.ownerId === viewerUserId) {
+        myRole = 'OWNER';
+      } else if (
+        'members' in community &&
+        Array.isArray(community.members) &&
+        community.members.length > 0
+      ) {
+        myRole = community.members[0]
+          .accessControlRole as PublicCommunityProfileDto['myRole'];
+      }
+    }
+
+    return {
+      id: community.id,
+      name: community.name,
+      handle: community.handle,
+      description: community.description,
+      website: community.website,
+      industry: community.industry,
+      coverImage: community.coverImage,
+      avatarImage: community.avatarImage,
+      memberCount: community._count.members,
+      postCount: community._count.posts,
+      createdAt: community.createdAt,
+      myRole,
+    };
+  }
+
+  async updateCommunity(
+    userId: string,
+    communityId: string,
+    dto: UpdateCommunityDto,
+  ): Promise<CommunityResponseDto> {
+    await this.checkCommunityWritePermission(userId, communityId);
+
+    const data: Prisma.CommunityEntityUpdateInput = {};
+
+    if (dto.name !== undefined) {
+      data.name = dto.name.trim();
+    }
+    if (dto.description !== undefined) {
+      data.description = dto.description.trim() || null;
+    }
+    if (dto.website !== undefined) {
+      data.website =
+        typeof dto.website === 'string' && dto.website.trim().length > 0
+          ? dto.website.trim()
+          : null;
+    }
+    if (dto.coverImage !== undefined) {
+      data.coverImage = dto.coverImage.trim() || null;
+    }
+    if (dto.avatarImage !== undefined) {
+      data.avatarImage = dto.avatarImage.trim() || null;
+    }
+
+    try {
+      const community = await prisma.communityEntity.update({
+        where: { id: communityId },
+        data,
+      });
+      return this.toResponseDto(community);
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2002') {
+          throw new ConflictException(
+            'A community with this name already exists for your account',
+          );
+        }
+      }
+      throw error;
     }
   }
 
@@ -1258,5 +1469,118 @@ export class CommunityService {
     }
 
     return { success: true, memberId: member.id };
+  }
+
+  async isHandleAvailable(handle: string): Promise<boolean> {
+    const normalized = normalizeCommunityHandle(handle);
+    if (!isValidCommunityHandle(normalized)) {
+      return false;
+    }
+
+    const existing = await prisma.communityEntity.findUnique({
+      where: { handle: normalized },
+      select: { id: true },
+    });
+    return !existing;
+  }
+
+  async suggestHandles(name: string, limit = 5): Promise<string[]> {
+    const base = deriveCommunityHandleFromName(name);
+    const candidates = buildHandleCandidates(base);
+    if (candidates.length === 0) return [];
+
+    const taken = await prisma.communityEntity.findMany({
+      where: { handle: { in: candidates } },
+      select: { handle: true },
+    });
+    const takenSet = new Set(taken.map((row) => row.handle));
+
+    return candidates.filter((handle) => !takenSet.has(handle)).slice(0, limit);
+  }
+
+  async followCommunity(
+    userId: string,
+    communityId: string,
+  ): Promise<{ following: boolean; memberCount: number }> {
+    const community = await prisma.communityEntity.findUnique({
+      where: { id: communityId },
+      select: { id: true, ownerId: true },
+    });
+    if (!community) {
+      throw new NotFoundException('Community not found.');
+    }
+
+    if (community.ownerId === userId) {
+      const memberCount = await prisma.communityMemberEntity.count({
+        where: { communityId },
+      });
+      return { following: true, memberCount };
+    }
+
+    const existing = await prisma.communityMemberEntity.findUnique({
+      where: { communityId_userId: { communityId, userId } },
+    });
+    if (existing) {
+      const memberCount = await prisma.communityMemberEntity.count({
+        where: { communityId },
+      });
+      return { following: true, memberCount };
+    }
+
+    await prisma.communityMemberEntity.create({
+      data: {
+        communityId,
+        userId,
+        role: 'MEMBER',
+        accessControlRole: 'READ_ONLY',
+      },
+    });
+
+    const memberCount = await prisma.communityMemberEntity.count({
+      where: { communityId },
+    });
+    return { following: true, memberCount };
+  }
+
+  async unfollowCommunity(
+    userId: string,
+    communityId: string,
+  ): Promise<{ following: boolean; memberCount: number }> {
+    const community = await prisma.communityEntity.findUnique({
+      where: { id: communityId },
+      select: { id: true, ownerId: true },
+    });
+    if (!community) {
+      throw new NotFoundException('Community not found.');
+    }
+
+    if (community.ownerId === userId) {
+      throw new BadRequestException('Community owners cannot unfollow their community.');
+    }
+
+    const member = await prisma.communityMemberEntity.findUnique({
+      where: { communityId_userId: { communityId, userId } },
+    });
+    if (!member) {
+      const memberCount = await prisma.communityMemberEntity.count({
+        where: { communityId },
+      });
+      return { following: false, memberCount };
+    }
+
+    if (member.accessControlRole !== 'READ_ONLY') {
+      throw new ForbiddenException(
+        'You cannot unfollow a community where you have a management role.',
+      );
+    }
+
+    await prisma.communityMemberEntity.delete({
+      where: { communityId_userId: { communityId, userId } },
+    });
+
+    const memberCount = await prisma.communityMemberEntity.count({
+      where: { communityId },
+    });
+    return { following: false, memberCount };
   }
 }

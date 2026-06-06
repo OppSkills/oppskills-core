@@ -1,7 +1,18 @@
-import { buildAuthHeaders, createApiClient, isRecord, requireString, optionalString } from "./apiClient";
+import {
+  buildAuthHeaders,
+  createApiClient,
+  isRecord,
+  requireString,
+  optionalString,
+} from "./apiClient";
 import type { CommunityIndustryValue } from "@oppskills/types/enums";
-import type { PaginatedCommunityMembers, CommunityMember } from "@oppskills/types";
-
+import type {
+  PaginatedCommunityMembers,
+  CommunityMember,
+  PublicCommunityListResponse,
+  PublicCommunityProfile,
+  UpdateCommunityDto,
+} from "@oppskills/types";
 
 const API = createApiClient("/communities");
 
@@ -41,7 +52,18 @@ export type MyCommunityListItem = Readonly<{
   createdAt: string;
 }>;
 
+export type CommunityStatsResponse = Readonly<{
+  totalMembers: number;
+  newMembers30Days: number;
+  pageImpressions: number;
+  postImpressions: number;
+  adminCount: number;
+  moderatorCount: number;
+}>;
 
+// ---------------------------------------------------------------------------
+// Community CRUD
+// ---------------------------------------------------------------------------
 
 export async function createCommunity(
   token: string,
@@ -129,6 +151,72 @@ export async function getCommunity(
     createdAt: requireString(raw, "createdAt"),
   };
 }
+
+export async function updateCommunity(
+  token: string,
+  id: string,
+  data: UpdateCommunityDto,
+): Promise<CommunityResponse> {
+  const res = await API.patch(`/${id}`, data, {
+    headers: buildAuthHeaders(token),
+  });
+
+  const raw = res.data as unknown;
+  if (!isRecord(raw)) {
+    throw new Error("Invalid response: expected object.");
+  }
+
+  return {
+    id: requireString(raw, "id"),
+    name: requireString(raw, "name"),
+    handle: requireString(raw, "handle"),
+    description: optionalString(raw, "description"),
+    website: optionalString(raw, "website"),
+    industry: requireString(raw, "industry") as CommunityIndustryValue,
+    coverImage: optionalString(raw, "coverImage"),
+    avatarImage: optionalString(raw, "avatarImage"),
+    ownerId: requireString(raw, "ownerId"),
+    createdAt: requireString(raw, "createdAt"),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Handle utilities
+// ---------------------------------------------------------------------------
+
+export async function checkCommunityHandleAvailability(
+  handle: string,
+): Promise<{ available: boolean }> {
+  const res = await API.get("/handles/check", {
+    params: { handle },
+  });
+  const raw = res.data as unknown;
+  if (!isRecord(raw) || typeof raw.available !== "boolean") {
+    throw new Error('Invalid response: missing "available".');
+  }
+  return { available: raw.available };
+}
+
+export async function suggestCommunityHandles(
+  name: string,
+): Promise<{ suggestions: string[] }> {
+  const res = await API.get("/handles/suggest", {
+    params: { name },
+  });
+  const raw = res.data as unknown;
+  if (!isRecord(raw) || !Array.isArray(raw.suggestions)) {
+    throw new Error('Invalid response: missing "suggestions".');
+  }
+  return {
+    suggestions: raw.suggestions.filter(
+      (item): item is string => typeof item === "string",
+    ),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Members
+// ---------------------------------------------------------------------------
 
 export async function getUniqueMemberTypes(
   token: string,
@@ -226,14 +314,9 @@ export async function deleteCommunityMember(
   return res.data;
 }
 
-export type CommunityStatsResponse = Readonly<{
-  totalMembers: number;
-  newMembers30Days: number;
-  pageImpressions: number;
-  postImpressions: number;
-  adminCount: number;
-  moderatorCount: number;
-}>;
+// ---------------------------------------------------------------------------
+// Stats
+// ---------------------------------------------------------------------------
 
 export async function getCommunityStats(
   token: string,
@@ -262,16 +345,35 @@ export async function getCommunityStats(
   };
 }
 
-export async function getPublicCommunityByHandle(
-  handle: string,
-): Promise<CommunityResponse> {
-  const safeHandle = handle.trim();
-  if (safeHandle.length === 0) {
-    throw new Error("Community handle is required.");
-  }
-  const res = await API.get(`/public/by-handle/${encodeURIComponent(safeHandle)}`);
-  return res.data as CommunityResponse;
+// ---------------------------------------------------------------------------
+// Follow / Unfollow
+// ---------------------------------------------------------------------------
+
+export async function followCommunity(
+  token: string,
+  communityId: string,
+): Promise<{ following: boolean; memberCount: number }> {
+  const res = await API.post(
+    `/${communityId}/follow`,
+    {},
+    { headers: buildAuthHeaders(token) },
+  );
+  return res.data as { following: boolean; memberCount: number };
 }
+
+export async function unfollowCommunity(
+  token: string,
+  communityId: string,
+): Promise<{ following: boolean; memberCount: number }> {
+  const res = await API.delete(`/${communityId}/follow`, {
+    headers: buildAuthHeaders(token),
+  });
+  return res.data as { following: boolean; memberCount: number };
+}
+
+// ---------------------------------------------------------------------------
+// Join
+// ---------------------------------------------------------------------------
 
 export async function joinCommunity(
   token: string,
@@ -284,4 +386,31 @@ export async function joinCommunity(
     { headers: buildAuthHeaders(token) },
   );
   return res.data as { success: boolean; memberId: string };
+}
+
+// ---------------------------------------------------------------------------
+// Public endpoints (no auth required)
+// ---------------------------------------------------------------------------
+
+export async function getPublicCommunities(
+  params: {
+    page?: number;
+    take?: number;
+    q?: string;
+    industry?: string[];
+    sort?: string;
+    sortOrder?: "asc" | "desc";
+  } = {},
+): Promise<PublicCommunityListResponse> {
+  const res = await API.get("/public", { params });
+  return res.data as PublicCommunityListResponse;
+}
+
+export async function getPublicCommunityByHandle(
+  handle: string,
+  token?: string,
+): Promise<PublicCommunityProfile> {
+  const headers = token ? buildAuthHeaders(token) : undefined;
+  const res = await API.get(`/public/${handle}`, { headers });
+  return res.data as PublicCommunityProfile;
 }

@@ -7,19 +7,12 @@ export const initialCommunityDetails: CommunityDetails = {
   followers: 14000,
   following: 0,
   bannerUrl: null, // Starts null, we will support uploads/fallback nicely
-  logoUrl: null, // Starts null, we will support uploads/fallback nicely
+  logoUrl: null,
+  website: null,
   description:
     "We're an AI safety and research company that builds reliable, interpretable, and steerable AI systems.",
   aboutText:
-    "Pizza ipsum dolor meat lovers buffalo. Spinach pork meatball burnt sauce anchovies. Stuffed sauce green peppers style hand ipsum. Lovers tossed broccoli melted cheese fresh Bianca extra lot hand. Pesto roll fresh sauce sauce fresh olives pepperoni ranch. Spinach Aussie Hawaiian pineapple large ranch thin pineapple platter. Pork fresh garlic style crust. Garlic bell personal mayo burnt onion style sautéed style. And fresh pan onions pineapple sauce pie.",
-  aboutBullets: [
     "Pizza ipsum dolor meat lovers buffalo. Spinach pork meatball burnt sauce anchovies.",
-    "Stuffed sauce green peppers style hand ipsum.",
-    "Lovers tossed broccoli melted cheese fresh Bianca extra lot hand.",
-    "Pesto roll fresh sauce sauce fresh olives pepperoni ranch.",
-  ],
-  aboutSecondaryText:
-    "Spinach Aussie Hawaiian pineapple large ranch thin pineapple platter. Pork fresh garlic style crust. Garlic bell personal mayo burnt onion style sautéed style. And fresh pan onions pineapple sauce pie.",
 };
 
 export const mockFollowers: Follower[] = [
@@ -112,32 +105,7 @@ export const mockPosts: Post[] = [
     likes: 500,
     commentsCount: 80,
     reposts: 50,
-    shares: 400,
     isLiked: true,
-    comments: [
-      {
-        id: "c1",
-        authorName: "Antrophic",
-        authorAvatar: "/logos/anthropic.png",
-        followersCount: 20000,
-        timeframe: "2 days ago",
-        content:
-          "Pizza ipsum dolor meat lovers buffalo. Spinach pork meatball burnt sauce anchovies. Stuffed sauce green peppers style hand ipsum. Lovers tossed broccoli melted cheese fresh Bianca extra lot hand. Pesto roll fresh sauce sauce fresh olives pepperoni ranch. Spinach Aussie Hawaiian pin...",
-        likes: 1500,
-        isLiked: true,
-      },
-      {
-        id: "c2",
-        authorName: "Antrophic",
-        authorAvatar: "/logos/anthropic.png",
-        followersCount: 20000,
-        timeframe: "2 days ago",
-        content:
-          "Pizza ipsum dolor meat lovers buffalo. Spinach pork meatball burnt sauce anchovies. Stuffed sauce green peppers style hand ipsum. Lovers tossed broccoli melted cheese fresh Bianca extra lot hand. Pesto roll fresh sauce sauce fresh olives pepperoni ranch. Spinach Aussie Hawaiian pin...",
-        likes: 1500,
-        isLiked: false,
-      },
-    ],
   },
   {
     id: "p2",
@@ -154,8 +122,6 @@ export const mockPosts: Post[] = [
     likes: 300,
     commentsCount: 30,
     reposts: 15,
-    shares: 400,
     isLiked: false,
-    comments: [],
   },
 ];

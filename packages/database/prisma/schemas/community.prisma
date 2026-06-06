@@ -14,7 +14,8 @@ model CommunityEntity {
   meets                 CommunityMeetEntity[]
   members               CommunityMemberEntity[]
   communityTaskEntities CommunityTaskEntity[]
-  notifications         notifications[]         @relation("CommunityNotifications")
+  posts                 CommunityPostEntity[]
+  notifications         notifications[]          @relation("CommunityNotifications")
 
   @@unique([name, ownerId])
   @@index([ownerId])
@@ -196,5 +197,145 @@ enum MeetStatus {
   ENDED
 
   @@map("MeetStatus")
+  @@schema("community")
+}
+
+model CommunityPostEntity {
+  id                 String              @id @default(cuid())
+  communityId        String              @map("community_id")
+  authorId           String              @map("author_id")
+  content            String
+  likeCount          Int                 @default(0) @map("like_count")
+  commentCount       Int                 @default(0) @map("comment_count")
+  repostCount        Int                 @default(0) @map("repost_count")
+  postKind           CommunityPostKind   @default(ORIGINAL) @map("post_kind")
+  repostedFromPostId String?             @map("reposted_from_post_id")
+  status             CommunityPostStatus @default(PUBLISHED)
+  createdAt          DateTime            @default(now()) @map("created_at")
+  updatedAt          DateTime            @updatedAt @map("updated_at")
+
+  community    CommunityEntity              @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  author       UserEntity                   @relation("CommunityPostAuthor", fields: [authorId], references: [id])
+  images       CommunityPostImageEntity[]
+  likes        CommunityPostLikeEntity[]
+  comments     CommunityPostCommentEntity[]
+  repostedFrom CommunityPostEntity?         @relation("PostReposts", fields: [repostedFromPostId], references: [id], onDelete: SetNull)
+  reposts      CommunityPostEntity[]        @relation("PostReposts")
+  repostRecord CommunityPostRepostEntity?   @relation("RepostPostRow")
+  repostsOf    CommunityPostRepostEntity[]  @relation("OriginalPostReposts")
+
+  @@index([communityId, status, postKind, createdAt(sort: Desc), id(sort: Desc)])
+  @@index([authorId, status, createdAt(sort: Desc), id(sort: Desc)])
+  @@map("community_post")
+  @@schema("community")
+}
+
+model CommunityPostImageEntity {
+  id        String @id @default(cuid())
+  postId    String @map("post_id")
+  url       String
+  sortOrder Int    @default(0) @map("sort_order")
+
+  post CommunityPostEntity @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+  @@map("community_post_image")
+  @@schema("community")
+}
+
+model CommunityPostLikeEntity {
+  id        String   @id @default(cuid())
+  postId    String   @map("post_id")
+  userId    String   @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  post CommunityPostEntity @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user UserEntity          @relation("CommunityPostLikes", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+  @@index([userId])
+  @@map("community_post_like")
+  @@schema("community")
+}
+
+enum CommunityPostStatus {
+  PUBLISHED
+  DELETED
+
+  @@map("CommunityPostStatus")
+  @@schema("community")
+}
+
+enum CommunityPostKind {
+  ORIGINAL
+  REPOST
+  QUOTE_REPOST
+
+  @@map("CommunityPostKind")
+  @@schema("community")
+}
+
+enum CommunityPostCommentStatus {
+  PUBLISHED
+  DELETED
+
+  @@map("CommunityPostCommentStatus")
+  @@schema("community")
+}
+
+model CommunityPostCommentEntity {
+  id         String                     @id @default(cuid())
+  postId     String                     @map("post_id")
+  authorId   String                     @map("author_id")
+  parentId   String?                    @map("parent_id")
+  content    String
+  likeCount  Int                        @default(0) @map("like_count")
+  replyCount Int                        @default(0) @map("reply_count")
+  status     CommunityPostCommentStatus @default(PUBLISHED)
+  createdAt  DateTime                   @default(now()) @map("created_at")
+  updatedAt  DateTime                   @updatedAt @map("updated_at")
+
+  post    CommunityPostEntity              @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author  UserEntity                       @relation("CommunityPostCommentAuthor", fields: [authorId], references: [id])
+  parent  CommunityPostCommentEntity?      @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies CommunityPostCommentEntity[]     @relation("CommentReplies")
+  likes   CommunityPostCommentLikeEntity[]
+
+  @@index([postId, parentId, status, createdAt(sort: Desc), id(sort: Desc)])
+  @@index([parentId, status, createdAt(sort: Asc), id(sort: Asc)])
+  @@index([authorId])
+  @@map("community_post_comment")
+  @@schema("community")
+}
+
+model CommunityPostCommentLikeEntity {
+  id        String   @id @default(cuid())
+  commentId String   @map("comment_id")
+  userId    String   @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  comment CommunityPostCommentEntity @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user    UserEntity                 @relation("CommunityPostCommentLikes", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([commentId, userId])
+  @@index([userId])
+  @@map("community_post_comment_like")
+  @@schema("community")
+}
+
+model CommunityPostRepostEntity {
+  id             String   @id @default(cuid())
+  userId         String   @map("user_id")
+  originalPostId String   @map("original_post_id")
+  repostPostId   String   @unique @map("repost_post_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  user         UserEntity          @relation("CommunityPostReposts", fields: [userId], references: [id], onDelete: Cascade)
+  originalPost CommunityPostEntity @relation("OriginalPostReposts", fields: [originalPostId], references: [id], onDelete: Cascade)
+  repostPost   CommunityPostEntity @relation("RepostPostRow", fields: [repostPostId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, originalPostId])
+  @@index([originalPostId])
+  @@map("community_post_repost")
   @@schema("community")
 }

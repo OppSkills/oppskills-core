@@ -1,3 +1,5 @@
+import type { CommunityPostKind, CommunityPostRepostedFromSummary } from "@oppskills/types";
+
 export interface CommunityDetails {
   name: string;
   handle: string;
@@ -6,10 +8,9 @@ export interface CommunityDetails {
   following: number;
   bannerUrl: string | null;
   logoUrl: string | null;
+  website: string | null;
   description: string;
   aboutText: string;
-  aboutBullets: string[];
-  aboutSecondaryText: string;
 }
 
 export interface Follower {
@@ -18,17 +19,6 @@ export interface Follower {
   avatar: string;
   followersCount: number;
   timeframe: string;
-}
-
-export interface NestedComment {
-  id: string;
-  authorName: string;
-  authorAvatar: string;
-  followersCount: number;
-  timeframe: string;
-  content: string;
-  likes: number;
-  isLiked?: boolean;
 }
 
 export interface Post {
@@ -42,8 +32,9 @@ export interface Post {
   likes: number;
   commentsCount: number;
   reposts: number;
-  shares: number;
+  postKind?: CommunityPostKind;
+  repostedFrom?: CommunityPostRepostedFromSummary;
   isLiked?: boolean;
   isReposted?: boolean;
-  comments: NestedComment[];
+  communityHandle?: string;
 }

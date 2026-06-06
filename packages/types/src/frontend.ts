@@ -218,3 +218,6 @@ export type {
 } from "./dtos/backend/community/manage-community.dto";
 
 // Community industry enums are re-exported via ./enums/index (use @oppskills/types/enums for value imports)
+
+// Community limits (no NestJS deps — safe for client bundles via @oppskills/types/constants)
+export * from "./constants";

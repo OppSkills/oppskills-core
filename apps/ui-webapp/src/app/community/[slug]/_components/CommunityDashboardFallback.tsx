@@ -6,10 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 export default function CommunityDashboardFallback() {
   return (
     <div className="w-full max-w-7xl mx-auto px-4 py-8 flex flex-col gap-6 select-none animate-pulse">
-      {/* 2-Column Grid Layout */}
-      <div className="w-full flex flex-col lg:flex-row gap-6 items-start">
-        {/* Left main column: header, about, feed */}
-        <div className="w-full lg:w-[68%] flex flex-col gap-6">
+      <div className="w-full flex flex-col gap-6">
           {/* Header Card Skeleton */}
           <div className="w-full bg-white rounded-3xl border border-neutral-200 overflow-hidden shadow-2xs">
             {/* Banner block */}
@@ -79,23 +76,6 @@ export default function CommunityDashboardFallback() {
               <Skeleton className="w-full h-56 rounded-2xl bg-neutral-200 mt-2" />
             </div>
           </div>
-        </div>
-
-        {/* Right sidebar: Recent Followers Skeleton */}
-        <div className="w-full lg:w-[32%] sticky lg:top-8">
-          <div className="w-full bg-white rounded-3xl border border-neutral-200 p-6 flex flex-col gap-5 shadow-2xs">
-            <Skeleton className="h-6 w-40 rounded-md bg-neutral-200 border-b pb-2" />
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="flex gap-3 items-center p-2 rounded-xl">
-                <Skeleton className="w-11 h-11 rounded-full bg-neutral-200 shrink-0" />
-                <div className="flex flex-col gap-2 flex-1">
-                  <Skeleton className="h-3.5 w-24 rounded-md bg-neutral-200" />
-                  <Skeleton className="h-2.5 w-36 rounded-sm bg-neutral-200" />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
       </div>
     </div>
   );

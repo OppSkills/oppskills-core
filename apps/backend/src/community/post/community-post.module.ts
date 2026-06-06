@@ -1,0 +1,32 @@
+import { Module } from '@nestjs/common';
+import { CommunityPostController } from './community-post.controller';
+import {
+  CommunityPostPublicController,
+  CommunityPostUserFeedController,
+} from './community-post-public.controller';
+import { CommunityPostService } from './community-post.service';
+import { CommunityPostLikeService } from './community-post-like.service';
+import { CommunityPostCommentService } from './community-post-comment.service';
+import { CommunityPostCommentLikeService } from './community-post-comment-like.service';
+import { CommunityPostRepostService } from './community-post-repost.service';
+import { CommunityPostCacheService } from './community-post-cache.service';
+import { CommunityModule } from '../community.module';
+
+@Module({
+  imports: [CommunityModule],
+  controllers: [
+    CommunityPostPublicController,
+    CommunityPostUserFeedController,
+    CommunityPostController,
+  ],
+  providers: [
+    CommunityPostService,
+    CommunityPostLikeService,
+    CommunityPostCommentService,
+    CommunityPostCommentLikeService,
+    CommunityPostRepostService,
+    CommunityPostCacheService,
+  ],
+  exports: [CommunityPostService],
+})
+export class CommunityPostModule {}

@@ -1,0 +1,2 @@
+-- RenameIndex
+ALTER INDEX "community"."community_post_comment_post_id_parent_id_status_created_at_id_i" RENAME TO "community_post_comment_post_id_parent_id_status_created_at__idx";
