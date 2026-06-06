@@ -30,9 +30,9 @@ interface GenericListingPageProps {
   onLoadMore?: () => void;
   hasMore?: boolean;
   isFetchingNextPage?: boolean;
-  filters?: FilterState;
+  filters?: any;
   setFilters?: (
-    filters: FilterState | ((prev: FilterState) => FilterState),
+    filters: any | ((prev: any) => any),
   ) => void;
   title?: string;
   description?: string;
@@ -44,6 +44,9 @@ interface GenericListingPageProps {
     totalPages: number;
     onPageChange: (value: number) => void;
   };
+  filterSidebar?: React.ReactNode;
+  sortOptions?: { label: string; value: string }[];
+  onClearFilters?: () => void;
 }
 
 export function GenericListingPage({
@@ -59,6 +62,9 @@ export function GenericListingPage({
   description,
   showPagination = false,
   pagination,
+  filterSidebar,
+  sortOptions,
+  onClearFilters,
 }: GenericListingPageProps) {
   const [curSort, setCurSort] = useState(filters?.sort || "recently_added");
   const [curSortOrder, setCurSortOrder] = useState<"asc" | "desc">(
@@ -123,10 +129,12 @@ export function GenericListingPage({
               </SheetTrigger>
               <SheetContent side="left" className="p-0">
                 <ScrollArea className="h-full px-4 py-8">
-                  <GenericFilterSidebar
-                    filters={filters}
-                    setFilters={setFilters}
-                  />
+                  {filterSidebar || (
+                    <GenericFilterSidebar
+                      filters={filters}
+                      setFilters={setFilters}
+                    />
+                  )}
                 </ScrollArea>
               </SheetContent>
             </Sheet>
@@ -138,7 +146,9 @@ export function GenericListingPage({
         {filters && setFilters && (
           <aside className="hidden min-w-40 max-w-64 shrink-0 lg:block">
             <div className="sticky top-20 lg:max-h-[calc(100vh-100px)] lg:overflow-y-auto pr-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-              <GenericFilterSidebar filters={filters} setFilters={setFilters} />
+              {filterSidebar || (
+                <GenericFilterSidebar filters={filters} setFilters={setFilters} />
+              )}
             </div>
           </aside>
         )}
@@ -168,16 +178,20 @@ export function GenericListingPage({
                 {filters && setFilters && (
                   <Button
                     variant="link"
-                    onClick={() =>
-                      setFilters({
-                        search: "",
-                        modes: [],
-                        status: [],
-                        eventDates: [],
-                        eligibility: [],
-                        sort: filters.sort,
-                      })
-                    }
+                    onClick={() => {
+                      if (onClearFilters) {
+                        onClearFilters();
+                      } else {
+                        setFilters({
+                          search: "",
+                          modes: [],
+                          status: [],
+                          eventDates: [],
+                          eligibility: [],
+                          sort: filters.sort,
+                        });
+                      }
+                    }}
                     className="mt-2"
                   >
                     Clear all filters
@@ -196,13 +210,14 @@ export function GenericListingPage({
 
                       {/* Desktop Sort List */}
                       <div className="hidden sm:flex gap-3 text-neutral-700 select-none">
-                        {[
-                          "Most Relevant",
-                          "Submission Date",
-                          "Recently Added",
-                          "Price Amount",
-                        ].map((e) => {
-                          const id = e.toLowerCase().replaceAll(" ", "_");
+                        {(sortOptions || [
+                          { label: "Most Relevant", value: "most_relevant" },
+                          { label: "Submission Date", value: "submission_date" },
+                          { label: "Recently Added", value: "recently_added" },
+                          { label: "Price Amount", value: "price_amount" },
+                        ]).map((opt) => {
+                          const id = opt.value;
+                          const label = opt.label;
                           const isActive = curSort === id;
                           return (
                             <div
@@ -210,7 +225,7 @@ export function GenericListingPage({
                               className={`flex items-center gap-1 cursor-pointer select-none transition-colors ${isActive ? "text-primary-600 font-bold" : "text-neutral-700 hover:text-primary-600"}`}
                               onClick={() => handleSortClick(id)}
                             >
-                              <p>{e}</p>
+                              <p>{label}</p>
                               {isActive &&
                                 (curSortOrder === "asc" ? (
                                   <ChevronUp className="h-4 w-4" />
@@ -230,18 +245,16 @@ export function GenericListingPage({
                               <SelectValue placeholder="Sort by" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="most_relevant">
-                                Most Relevant
-                              </SelectItem>
-                              <SelectItem value="submission_date">
-                                Submission Date
-                              </SelectItem>
-                              <SelectItem value="recently_added">
-                                Recently Added
-                              </SelectItem>
-                              <SelectItem value="price_amount">
-                                Price Amount
-                              </SelectItem>
+                              {(sortOptions || [
+                                { label: "Most Relevant", value: "most_relevant" },
+                                { label: "Submission Date", value: "submission_date" },
+                                { label: "Recently Added", value: "recently_added" },
+                                { label: "Price Amount", value: "price_amount" },
+                              ]).map((opt) => (
+                                <SelectItem key={opt.value} value={opt.value}>
+                                  {opt.label}
+                                </SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                         </div>
