@@ -39,6 +39,133 @@ export class CommunityPostLikeService implements OnModuleDestroy {
     return `cp:like-flush:${postId}`;
   }
 
+  /** Staging key used during flush — must not match the active flush scan pattern. */
+  private flushStagingKey(postId: string): string {
+    return `cp:like-flush-staging:${postId}`;
+  }
+
+  private static netDeltaFromOps(ops: string[]): number {
+    let net = 0;
+    for (const op of ops) {
+      if (op.startsWith('+')) net += 1;
+      else if (op.startsWith('-')) net -= 1;
+    }
+    return net;
+  }
+
+  /**
+   * Atomically claim the active flush set via RENAME so concurrent toggles
+   * recreate the active key instead of being deleted mid-flight.
+   */
+  private async claimFlushBatch(postId: string): Promise<string | null> {
+    if (!this.redis) return null;
+
+    const activeKey = this.flushKey(postId);
+    const stagingKey = this.flushStagingKey(postId);
+
+    // Resume a previously staged batch (e.g. crash mid-flush) before claiming new work.
+    if ((await this.redis.exists(stagingKey)) === 1) {
+      return stagingKey;
+    }
+
+    const claimed = await this.redis.eval(
+      `
+      if redis.call('EXISTS', KEYS[1]) == 0 then
+        return 0
+      end
+      if redis.call('SCARD', KEYS[1]) == 0 then
+        return 0
+      end
+      redis.call('RENAME', KEYS[1], KEYS[2])
+      return 1
+      `,
+      2,
+      activeKey,
+      stagingKey,
+    );
+
+    return claimed === 1 ? stagingKey : null;
+  }
+
+  private async flushPostLikes(postId: string): Promise<void> {
+    if (!this.redis) return;
+
+    const activeKey = this.flushKey(postId);
+
+    for (;;) {
+      const stagingKey = await this.claimFlushBatch(postId);
+      if (!stagingKey) break;
+      await this.processLikeFlushBatch(postId, activeKey, stagingKey);
+    }
+  }
+
+  private async processLikeFlushBatch(
+    postId: string,
+    activeKey: string,
+    stagingKey: string,
+  ): Promise<void> {
+    if (!this.redis) return;
+
+    let ops: string[] = [];
+    try {
+      ops = await this.redis.smembers(stagingKey);
+      if (ops.length === 0) {
+        await this.redis.del(stagingKey);
+        return;
+      }
+
+      const netDelta = CommunityPostLikeService.netDeltaFromOps(ops);
+
+      await prisma.$transaction(async (tx) => {
+        for (const op of ops) {
+          const userId = op.slice(1);
+          if (op.startsWith('+')) {
+            await tx.communityPostLikeEntity.upsert({
+              where: { postId_userId: { postId, userId } },
+              create: { postId, userId },
+              update: {},
+            });
+          } else if (op.startsWith('-')) {
+            await tx.communityPostLikeEntity.deleteMany({
+              where: { postId, userId },
+            });
+          }
+        }
+
+        if (netDelta !== 0) {
+          await tx.communityPostEntity.update({
+            where: { id: postId },
+            data: { likeCount: { increment: netDelta } },
+          });
+        }
+      });
+
+      if (netDelta !== 0) {
+        await this.redis.decrby(this.deltaKey(postId), netDelta);
+      }
+      await this.redis.del(stagingKey);
+    } catch (err) {
+      if (
+        err instanceof Prisma.PrismaClientKnownRequestError &&
+        err.code === 'P2025'
+      ) {
+        this.logger.warn(`Post ${postId} not found during like flush`);
+        const netDelta = CommunityPostLikeService.netDeltaFromOps(ops);
+        if (netDelta !== 0) {
+          await this.redis.decrby(this.deltaKey(postId), netDelta);
+        }
+        await this.redis.del(stagingKey);
+        return;
+      }
+
+      this.logger.error(`Failed to flush likes for post ${postId}`, err);
+      for (const op of ops) {
+        await this.redis.sadd(activeKey, op).catch(() => {});
+      }
+      await this.redis.del(stagingKey).catch(() => {});
+    }
+  }
+
   private async hydrateLikeSet(postId: string): Promise<void> {
     if (!this.redis) return;
     const likes = await prisma.communityPostLikeEntity.findMany({
@@ -196,65 +323,21 @@ export class CommunityPostLikeService implements OnModuleDestroy {
   async flushToDb(): Promise<void> {
     if (!this.redis) return;
 
-    const stream = this.redis.scanStream({
-      match: 'cp:like-flush:*',
-      count: 100,
-    });
+    const postIds = new Set<string>();
 
-    for await (const keys of stream) {
-      await Promise.all(
-        keys.map(async (key) => {
-          const postId = key.replace('cp:like-flush:', '');
-          const ops = await this.redis!.smembers(key);
-          if (ops.length === 0) return;
-
-          await this.redis!.del(key);
-
-          try {
-            await prisma.$transaction(async (tx) => {
-              for (const op of ops) {
-                const userId = op.slice(1);
-                if (op.startsWith('+')) {
-                  await tx.communityPostLikeEntity.upsert({
-                    where: {
-                      postId_userId: { postId, userId },
-                    },
-                    create: { postId, userId },
-                    update: {},
-                  });
-                } else if (op.startsWith('-')) {
-                  await tx.communityPostLikeEntity.deleteMany({
-                    where: { postId, userId },
-                  });
-                }
-              }
-
-              const delta = Number(
-                (await this.redis!.get(this.deltaKey(postId))) || 0,
-              );
-              if (delta !== 0) {
-                await tx.communityPostEntity.update({
-                  where: { id: postId },
-                  data: { likeCount: { increment: delta } },
-                });
-                await this.redis!.del(this.deltaKey(postId));
-              }
-            });
-          } catch (err) {
-            if (
-              err instanceof Prisma.PrismaClientKnownRequestError &&
-              err.code === 'P2025'
-            ) {
-              this.logger.warn(`Post ${postId} not found during like flush`);
-            } else {
-              this.logger.error(`Failed to flush likes for post ${postId}`, err);
-              for (const op of ops) {
-                await this.redis!.sadd(key, op).catch(() => {});
-              }
-            }
+    for (const pattern of ['cp:like-flush-staging:*', 'cp:like-flush:*'] as const) {
+      const stream = this.redis.scanStream({ match: pattern, count: 100 });
+      for await (const keys of stream) {
+        for (const key of keys as string[]) {
+          if (pattern === 'cp:like-flush-staging:*') {
+            postIds.add(key.slice('cp:like-flush-staging:'.length));
+          } else if (/^cp:like-flush:[^:]+$/.test(key)) {
+            postIds.add(key.slice('cp:like-flush:'.length));
           }
-        }),
-      );
+        }
+      }
     }
+
+    await Promise.all([...postIds].map((postId) => this.flushPostLikes(postId)));
   }
 }

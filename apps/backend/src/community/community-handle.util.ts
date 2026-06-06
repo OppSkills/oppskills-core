@@ -27,25 +27,48 @@ export function deriveCommunityHandleFromName(name: string): string {
   return normalized.slice(0, COMMUNITY_HANDLE_MAX_LENGTH);
 }
 
+/** Build a handle by appending a suffix, truncating the base so the result fits. */
+function appendHandleSuffix(
+  baseHandle: string,
+  suffix: string,
+): string | null {
+  const maxBaseLen = COMMUNITY_HANDLE_MAX_LENGTH - suffix.length;
+  if (maxBaseLen < COMMUNITY_HANDLE_MIN_LENGTH) return null;
+
+  let root = baseHandle.slice(0, maxBaseLen).replace(/-+$/, '');
+  if (root.length < COMMUNITY_HANDLE_MIN_LENGTH) {
+    root = baseHandle.slice(0, maxBaseLen);
+  }
+  if (root.length < COMMUNITY_HANDLE_MIN_LENGTH) return null;
+
+  const candidate = `${root}${suffix}`;
+  return isValidCommunityHandle(candidate) ? candidate : null;
+}
+
 export function buildHandleCandidates(baseHandle: string): string[] {
   if (!isValidCommunityHandle(baseHandle)) return [];
 
-  const candidates = [
-    baseHandle,
-    `${baseHandle}-community`,
-    `${baseHandle}-official`,
-    `${baseHandle}-hub`,
-    ...Array.from({ length: 8 }, (_, i) => `${baseHandle}-${i + 2}`),
-    ...Array.from({ length: 5 }, (_, i) => `${baseHandle}${i + 1}`),
+  const suffixes = [
+    '-community',
+    '-official',
+    '-hub',
+    ...Array.from({ length: 8 }, (_, i) => `-${i + 2}`),
+    ...Array.from({ length: 5 }, (_, i) => `${i + 1}`),
   ];
 
   const seen = new Set<string>();
   const result: string[] = [];
-  for (const candidate of candidates) {
-    const trimmed = candidate.slice(0, COMMUNITY_HANDLE_MAX_LENGTH);
-    if (!isValidCommunityHandle(trimmed) || seen.has(trimmed)) continue;
-    seen.add(trimmed);
-    result.push(trimmed);
+
+  const add = (candidate: string | null) => {
+    if (!candidate || seen.has(candidate)) return;
+    seen.add(candidate);
+    result.push(candidate);
+  };
+
+  add(baseHandle);
+  for (const suffix of suffixes) {
+    add(appendHandleSuffix(baseHandle, suffix));
   }
+
   return result;
 }

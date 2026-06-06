@@ -14,6 +14,7 @@ import {
 } from './dto/create-community-post.dto';
 import type {
   CommunityPostDetailResponseDto,
+  CommunityPostFeedItemDto,
   CommunityPostFeedResponseDto,
 } from './dto/community-post-response.dto';
 
@@ -229,10 +230,17 @@ export class CommunityPostService {
     postId: string,
     viewerUserId?: string,
   ): Promise<CommunityPostDetailResponseDto> {
-    const cached = await this.cacheService.getPost<CommunityPostDetailResponseDto>(
-      postId,
-    );
-    if (cached && !viewerUserId) {
+    const normalizedHandle = handle.toLowerCase();
+    const cached =
+      await this.cacheService.getPost<CommunityPostDetailResponseDto>(postId);
+
+    if (cached) {
+      if (cached.community.handle !== normalizedHandle) {
+        throw new NotFoundException('Post not found.');
+      }
+      if (viewerUserId) {
+        return this.attachViewerFlags(cached, viewerUserId);
+      }
       return cached;
     }
 
@@ -241,7 +249,7 @@ export class CommunityPostService {
         id: postId,
         status: 'PUBLISHED',
         postKind: 'ORIGINAL',
-        community: { handle: handle.toLowerCase() },
+        community: { handle: normalizedHandle },
       },
       include: postInclude,
     });
@@ -249,13 +257,13 @@ export class CommunityPostService {
       throw new NotFoundException('Post not found.');
     }
 
-    const item = await this.hydrateFeedItem(post, viewerUserId);
+    const baseItem = await this.hydrateFeedItem(post);
+    await this.cacheService.setPost(postId, baseItem);
 
-    if (!viewerUserId) {
-      await this.cacheService.setPost(postId, item);
+    if (viewerUserId) {
+      return this.attachViewerFlags(baseItem, viewerUserId);
     }
-
-    return item;
+    return baseItem;
   }
 
   async listPublicFeed(
@@ -278,7 +286,13 @@ export class CommunityPostService {
       cacheCursor,
       take,
     );
-    if (cached && !viewerUserId) {
+    if (cached) {
+      if (viewerUserId) {
+        return {
+          ...cached,
+          items: await this.attachViewerFlagsToItems(cached.items, viewerUserId),
+        };
+      }
       return cached;
     }
 
@@ -291,7 +305,7 @@ export class CommunityPostService {
     const pagePosts = hasMore ? posts.slice(0, take) : posts;
 
     const items = await Promise.all(
-      pagePosts.map((post) => this.hydrateFeedItem(post, viewerUserId)),
+      pagePosts.map((post) => this.hydrateFeedItem(post)),
     );
 
     const lastPost = pagePosts[pagePosts.length - 1];
@@ -306,13 +320,18 @@ export class CommunityPostService {
       hasMore,
     };
 
-    if (!viewerUserId) {
-      await this.cacheService.setFeedPage(
-        community.id,
-        cacheCursor,
-        take,
-        response,
-      );
+    await this.cacheService.setFeedPage(
+      community.id,
+      cacheCursor,
+      take,
+      response,
+    );
+
+    if (viewerUserId) {
+      return {
+        ...response,
+        items: await this.attachViewerFlagsToItems(response.items, viewerUserId),
+      };
     }
 
     return response;
@@ -432,6 +451,42 @@ export class CommunityPostService {
     });
   }
 
+  private async attachViewerFlagsToItems<T extends CommunityPostFeedItemDto>(
+    items: T[],
+    viewerUserId: string,
+  ): Promise<T[]> {
+    if (items.length === 0) {
+      return items;
+    }
+
+    const postIds = items.map((item) => item.id);
+    const likedMap = await this.likeService.batchIsLiked(postIds, viewerUserId);
+
+    const originalPostIds = items
+      .filter((item) => item.postKind === 'ORIGINAL')
+      .map((item) => item.id);
+    const repostedMap =
+      originalPostIds.length > 0
+        ? await this.repostService.batchIsReposted(originalPostIds, viewerUserId)
+        : {};
+
+    return items.map((item) => ({
+      ...item,
+      isLikedByMe: likedMap[item.id] ?? false,
+      ...(item.postKind === 'ORIGINAL'
+        ? { isRepostedByMe: repostedMap[item.id] ?? false }
+        : {}),
+    }));
+  }
+
+  private async attachViewerFlags(
+    item: CommunityPostDetailResponseDto,
+    viewerUserId: string,
+  ): Promise<CommunityPostDetailResponseDto> {
+    const [withFlags] = await this.attachViewerFlagsToItems([item], viewerUserId);
+    return withFlags;
+  }
+
   private async hydrateFeedItem(
     post: PostWithRelations,
     viewerUserId?: string,
@@ -441,28 +496,14 @@ export class CommunityPostService {
       post.likeCount,
     );
 
-    let isLikedByMe: boolean | undefined;
-    let isRepostedByMe: boolean | undefined;
-
     if (viewerUserId) {
-      const likedMap = await this.likeService.batchIsLiked([post.id], viewerUserId);
-      isLikedByMe = likedMap[post.id] ?? false;
-
-      if (post.postKind === 'ORIGINAL') {
-        const repostedMap = await this.repostService.batchIsReposted(
-          [post.id],
-          viewerUserId,
-        );
-        isRepostedByMe = repostedMap[post.id] ?? false;
-      }
+      return this.attachViewerFlags(
+        this.toFeedItem(post, undefined, likeCount, undefined),
+        viewerUserId,
+      );
     }
 
-    return this.toFeedItem(
-      post,
-      isLikedByMe,
-      likeCount,
-      isRepostedByMe,
-    );
+    return this.toFeedItem(post, undefined, likeCount, undefined);
   }
 
   private toFeedItem(
