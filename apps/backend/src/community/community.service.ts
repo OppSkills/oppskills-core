@@ -34,6 +34,9 @@ export class CommunityService {
             members: {
               some: {
                 userId,
+                accessControlRole: {
+                  in: ['ADMIN', 'MODERATOR', 'READ_ONLY'],
+                },
               },
             },
           },
@@ -95,9 +98,15 @@ export class CommunityService {
     }
 
     const isOwner = community.ownerId === userId;
-    const isMember = community.members.length > 0;
+    const myMemberRecord = community.members[0];
+    const isDashboardEligible =
+      isOwner ||
+      (myMemberRecord &&
+        ['ADMIN', 'MODERATOR', 'READ_ONLY'].includes(
+          myMemberRecord.accessControlRole,
+        ));
 
-    if (!isOwner && !isMember) {
+    if (!isDashboardEligible) {
       throw new ForbiddenException(
         'You do not have permission to view this community.',
       );
@@ -231,9 +240,15 @@ export class CommunityService {
     }
 
     const isOwner = community.ownerId === userId;
-    const isMember = community.members.length > 0;
+    const myMemberRecord = community.members[0];
+    const hasDashboardAccess =
+      isOwner ||
+      (myMemberRecord &&
+        ['ADMIN', 'MODERATOR', 'READ_ONLY'].includes(
+          myMemberRecord.accessControlRole,
+        ));
 
-    if (!isOwner && !isMember) {
+    if (!hasDashboardAccess) {
       this.logger.warn({
         action: 'COMMUNITY_PERMISSION_DENIED',
         permissionType: 'MANAGE',
@@ -262,9 +277,15 @@ export class CommunityService {
     }
 
     const isOwner = community.ownerId === userId;
-    const isMember = community.members.length > 0;
+    const myMemberRecord = community.members[0];
+    const isReadEligible =
+      isOwner ||
+      (myMemberRecord &&
+        ['ADMIN', 'MODERATOR', 'READ_ONLY'].includes(
+          myMemberRecord.accessControlRole,
+        ));
 
-    if (!isOwner && !isMember) {
+    if (!isReadEligible) {
       this.logger.warn({
         action: 'COMMUNITY_PERMISSION_DENIED',
         permissionType: 'READ',
@@ -693,9 +714,15 @@ export class CommunityService {
     }
 
     const isOwner = community.ownerId === userId;
-    const isMember = community.members.length > 0;
+    const myMemberRecord = community.members[0];
+    const isDashboardEligible =
+      isOwner ||
+      (myMemberRecord &&
+        ['ADMIN', 'MODERATOR', 'READ_ONLY'].includes(
+          myMemberRecord.accessControlRole,
+        ));
 
-    if (!isOwner && !isMember) {
+    if (!isDashboardEligible) {
       throw new ForbiddenException(
         'You do not have permission to view this community.',
       );
@@ -786,9 +813,13 @@ export class CommunityService {
     const isAdmin = requesterMember?.accessControlRole === 'ADMIN';
 
     if (!isOwner && !isAdmin) {
-      if (dto.accessControlRole && dto.accessControlRole !== 'READ_ONLY') {
+      if (
+        dto.accessControlRole &&
+        dto.accessControlRole !== 'READ_ONLY' &&
+        dto.accessControlRole !== 'MEMBER'
+      ) {
         throw new ForbiddenException(
-          'Moderators can only add members with READ_ONLY access.',
+          'Moderators can only add members with READ_ONLY or MEMBER access.',
         );
       }
     }

@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { useParams } from "next/navigation";
+import React, { useState, useEffect } from "react";
+import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { useAuth } from "@clerk/nextjs";
+import { getCommunity, getMyMemberRecord } from "@/lib/api/communityApi";
 import {
   Target,
   Trophy,
@@ -19,6 +21,7 @@ import {
   CheckCircle2,
   Clock,
   Sparkles,
+  Loader2,
 } from "lucide-react";
 
 interface CommunityGoal {
@@ -85,10 +88,13 @@ const initialGoals: CommunityGoal[] = [
 
 export default function CommunityGoalsPage() {
   const params = useParams();
+  const router = useRouter();
+  const { getToken, isLoaded, userId: loggedInUserId } = useAuth();
   const rawId = params?.id;
   const id = Array.isArray(rawId) ? rawId[0] : rawId || "";
 
   const [goals, setGoals] = useState<CommunityGoal[]>(initialGoals);
+  const [isValidating, setIsValidating] = useState(true);
 
   // Form State
   const [title, setTitle] = useState("");
@@ -99,6 +105,60 @@ export default function CommunityGoalsPage() {
   const [targetValue, setTargetValue] = useState("");
   const [unit, setUnit] = useState("");
   const [deadline, setDeadline] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    async function checkAccess() {
+      if (!isLoaded) return;
+      try {
+        const token = await getToken();
+        if (!token) {
+          router.push("/dashboard/community");
+          return;
+        }
+
+        const [community, myMemberRecord] = await Promise.all([
+          getCommunity(token, id),
+          getMyMemberRecord(token, id).catch(() => null),
+        ]);
+
+        if (!cancelled) {
+          const isOwner = loggedInUserId === community.ownerId;
+          const isOwnerOrMember =
+            isOwner ||
+            (myMemberRecord &&
+              ["ADMIN", "MODERATOR", "READ_ONLY"].includes(
+                myMemberRecord.accessControlRole,
+              ));
+
+          if (!isOwnerOrMember) {
+            toast.error("You do not have permission to view this community.");
+            router.push("/dashboard/community");
+            return;
+          }
+          setIsValidating(false);
+        }
+      } catch (error) {
+        console.error("Failed to validate community access:", error);
+        if (!cancelled) {
+          toast.error("You do not have permission to manage this community or it does not exist.");
+          router.push("/dashboard/community");
+        }
+      }
+    }
+    void checkAccess();
+    return () => {
+      cancelled = true;
+    };
+  }, [isLoaded, getToken, id, loggedInUserId, router]);
+
+  if (isValidating) {
+    return (
+      <div className="flex justify-center items-center min-h-screen bg-[#FAFAFA] w-full">
+        <Loader2 className="h-10 w-10 animate-spin text-primary-600" />
+      </div>
+    );
+  }
 
   const handleCreateGoal = (e: React.FormEvent) => {
     e.preventDefault();

@@ -440,16 +440,13 @@ export class NotificationService {
       throw new NotFoundException('Notification not found');
     }
 
-    // Direct owner can always see their notifications
-    if (notification.userId !== userId) {
-      await this.assertEventOrHackathonAccess(
-        userId,
-        notification.eventId || undefined,
-        notification.hackathonId || undefined,
-        notification.communityId || undefined,
-        'view',
-      );
-    }
+    await this.assertEventOrHackathonAccess(
+      userId,
+      notification.eventId || undefined,
+      notification.hackathonId || undefined,
+      notification.communityId || undefined,
+      'view',
+    );
 
     return notification;
   }
@@ -466,15 +463,13 @@ export class NotificationService {
       throw new NotFoundException('Notification not found');
     }
 
-    if (notification.userId !== userId) {
-      await this.assertEventOrHackathonAccess(
-        userId,
-        notification.eventId || undefined,
-        notification.hackathonId || undefined,
-        notification.communityId || undefined,
-        'edit',
-      );
-    }
+    await this.assertEventOrHackathonAccess(
+      userId,
+      notification.eventId || undefined,
+      notification.hackathonId || undefined,
+      notification.communityId || undefined,
+      'edit',
+    );
 
     const deleted = await prisma.notifications.delete({
       where: { id },

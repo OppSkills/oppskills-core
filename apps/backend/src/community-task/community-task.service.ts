@@ -60,7 +60,9 @@ export class CommunityTaskService {
       case 'READ_ONLY':
         return 1;
       default:
-        return 1;
+        throw new ForbiddenException(
+          'You do not have permission to manage tasks in this community.',
+        );
     }
   }
 
@@ -313,6 +315,9 @@ export class CommunityTaskService {
       throw new NotFoundException('Task not found.');
     }
 
+    // Verify membership and dashboard role
+    await this.getUserHierarchyLevel(currentUserId, task.communityId);
+
     // Verify user is assignee or assigner
     if (currentUserId !== task.toUserId && currentUserId !== task.byUserId) {
       this.logger.warn({
@@ -381,6 +386,9 @@ export class CommunityTaskService {
     if (!task) {
       throw new NotFoundException('Task not found.');
     }
+
+    // Verify membership and dashboard role
+    await this.getUserHierarchyLevel(currentUserId, task.communityId);
 
     const isAssigner = currentUserId === task.byUserId;
     const isAssignee = currentUserId === task.toUserId;
