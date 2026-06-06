@@ -1,31 +1,53 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense, useMemo, useCallback } from "react";
 import { usePublicCommunitiesPaged } from "@/hooks/useCommunities";
 import { GenericListingPage } from "@/components/common/GenericListingPage";
 import { ListingItem } from "@/components/common/ListingCard";
-import type { FilterState } from "@/components/common/GenericFilterSidebar";
+import { CommunityFilterSidebar } from "@/components/common/CommunityFilterSidebar";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
+import { Loader2 } from "lucide-react";
 
-export default function CommunitiesPage() {
-  const [curPage, setCurPage] = useState(1);
+const communitySorts = [
+  { label: "Recently Added", value: "recently_added" },
+  { label: "Name", value: "name" },
+];
+
+function CommunitiesPageContent() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  // Read parameters from URL (Single source of truth)
+  const search = searchParams.get("q") || "";
+  
+  const rawIndustry = searchParams.get("industry") || "";
+  const industry = useMemo(() => {
+    return rawIndustry.split(",").filter(Boolean);
+  }, [rawIndustry]);
+
+  const sort = searchParams.get("sort") || "recently_added";
+
+  const rawSortOrder = searchParams.get("sortOrder");
+  const sortOrder = useMemo(() => {
+    return rawSortOrder === "asc" || rawSortOrder === "desc" ? rawSortOrder : "desc";
+  }, [rawSortOrder]);
+
+  const rawPage = searchParams.get("page");
+  const curPage = useMemo(() => {
+    if (!rawPage) return 1;
+    const parsed = parseInt(rawPage, 10);
+    return isNaN(parsed) || parsed < 1 ? 1 : parsed;
+  }, [rawPage]);
+
   const [perPage, setPerPage] = useState(10);
-
-  const [filters, setFilters] = useState<FilterState>({
-    search: "",
-    modes: [],
-    status: [],
-    eventDates: [],
-    eligibility: [],
-    sort: "recently_added",
-    sortOrder: "desc",
-  });
 
   const { data, isLoading, error } = usePublicCommunitiesPaged(
     {
-      search: filters.search,
-      industry: filters.eligibility,
-      sort: filters.sort ?? "recently_added",
-      sortOrder: filters.sortOrder ?? "desc",
+      search,
+      industry,
+      sort,
+      sortOrder,
       page: curPage,
       perPage,
     },
@@ -35,20 +57,114 @@ export default function CommunitiesPage() {
   const communities = data?.items ?? [];
   const totalPages = data?.totalPages ?? 1;
 
-  const items: ListingItem[] = communities.map((c) => ({
-    id: c.id,
-    title: c.name,
-    slug: c.handle,
-    bannerUrl: c.coverImage ?? undefined,
-    avatarUrl: c.avatarImage ?? undefined,
-    status: c.industry,
-    location: `${c.memberCount} members`,
-    registrationCount: c.memberCount,
-    opportunityCount: c.postCount,
-    tags: [c.industry],
-    routePrefix: "community",
-    eventType: "Community",
-  }));
+  const items: ListingItem[] = useMemo(() => {
+    return communities.map((c) => ({
+      id: c.id,
+      title: c.name,
+      slug: c.handle,
+      bannerUrl: c.coverImage ?? undefined,
+      avatarUrl: c.avatarImage ?? undefined,
+      status: c.industry,
+      location: `${c.memberCount} members`,
+      registrationCount: c.memberCount,
+      opportunityCount: c.postCount,
+      tags: [c.industry],
+      routePrefix: "community",
+      eventType: "Community",
+    }));
+  }, [communities]);
+
+  const updateUrl = useCallback((updates: {
+    search?: string;
+    industry?: string[];
+    sort?: string;
+    sortOrder?: "asc" | "desc";
+    page?: number;
+  }) => {
+    const params = new URLSearchParams(searchParams.toString());
+
+    if (updates.search !== undefined) {
+      if (updates.search) params.set("q", updates.search);
+      else params.delete("q");
+    }
+    if (updates.industry !== undefined) {
+      if (updates.industry.length > 0) params.set("industry", updates.industry.join(","));
+      else params.delete("industry");
+    }
+    if (updates.sort !== undefined) {
+      if (updates.sort && updates.sort !== "recently_added") params.set("sort", updates.sort);
+      else params.delete("sort");
+    }
+    if (updates.sortOrder !== undefined) {
+      if (updates.sortOrder && updates.sortOrder !== "desc") params.set("sortOrder", updates.sortOrder);
+      else params.delete("sortOrder");
+    }
+    if (updates.page !== undefined) {
+      if (updates.page > 1) params.set("page", updates.page.toString());
+      else params.delete("page");
+    } else {
+      // Reset page to 1 whenever filters change
+      if (updates.search !== undefined || updates.industry !== undefined) {
+        params.delete("page");
+      }
+    }
+
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  }, [router, pathname, searchParams]);
+
+  const handleClearFilters = useCallback(() => {
+    router.replace(pathname, { scroll: false });
+  }, [router, pathname]);
+
+  const handlePageSizeChange = useCallback((val: number) => {
+    setPerPage(val);
+    updateUrl({ page: 1 });
+  }, [updateUrl]);
+
+  const handlePageChange = useCallback((page: number) => {
+    updateUrl({ page });
+  }, [updateUrl]);
+
+  const handleSetFilters = useCallback((f: any) => {
+    // Map sort actions back to URL updates
+    if (typeof f === "function") {
+      const prev = { sort, sortOrder };
+      const next = f(prev);
+      updateUrl({ sort: next.sort, sortOrder: next.sortOrder, page: 1 });
+    } else {
+      updateUrl({ sort: f.sort, sortOrder: f.sortOrder, page: 1 });
+    }
+  }, [sort, sortOrder, updateUrl]);
+
+  const handleFilterChange = useCallback((newVals: { search: string; industry: string[] }) => {
+    updateUrl({ search: newVals.search, industry: newVals.industry, page: 1 });
+  }, [updateUrl]);
+
+  const paginationConfig = useMemo(() => ({
+    setPerPage: handlePageSizeChange,
+    perPage,
+    curPage,
+    totalPages,
+    onPageChange: handlePageChange,
+  }), [handlePageSizeChange, perPage, curPage, totalPages, handlePageChange]);
+
+  const filtersConfig = useMemo(() => ({
+    search,
+    modes: [],
+    status: [],
+    eventDates: [],
+    eligibility: [],
+    sort,
+    sortOrder,
+  }), [search, sort, sortOrder]);
+
+  const filterSidebarElement = useMemo(() => (
+    <CommunityFilterSidebar
+      values={{ search, industry }}
+      onChange={handleFilterChange}
+      onClear={handleClearFilters}
+    />
+  ), [search, industry, handleFilterChange, handleClearFilters]);
 
   return (
     <GenericListingPage
@@ -56,23 +172,28 @@ export default function CommunitiesPage() {
       isLoading={isLoading}
       error={error}
       showPagination={true}
-      pagination={{
-        setPerPage: (val) => {
-          setPerPage(val);
-          setCurPage(1);
-        },
-        perPage,
-        curPage,
-        totalPages,
-        onPageChange: (page) => setCurPage(page),
-      }}
-      filters={filters}
-      setFilters={(f) => {
-        setFilters(f);
-        setCurPage(1);
-      }}
+      pagination={paginationConfig}
+      filters={filtersConfig}
+      setFilters={handleSetFilters}
+      onClearFilters={handleClearFilters}
+      filterSidebar={filterSidebarElement}
+      sortOptions={communitySorts}
       title="Communities"
       description="Discover vibrant communities to connect, collaborate, and grow."
     />
+  );
+}
+
+export default function CommunitiesPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex h-screen items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary-600" />
+        </div>
+      }
+    >
+      <CommunitiesPageContent />
+    </Suspense>
   );
 }

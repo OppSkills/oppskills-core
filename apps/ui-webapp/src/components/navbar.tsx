@@ -142,7 +142,7 @@ const Navbar = () => {
           <div className="hidden xl:flex items-center justify-center relative search-input-container">
             <form
               onSubmit={handleSearch}
-              className="relative w-full max-w-[300px]"
+              className="relative w-full max-w-75"
             >
               <Input
                 type="text"
@@ -234,7 +234,7 @@ const Navbar = () => {
       {isOpen && (
         <div
           className={cn(
-            "lg:hidden pt-4 pb-6 space-y-4 animate-in slide-in-from-top-5 fixed inset-x-0 top-[72px] bottom-0 bg-neutral-100 z-40 overflow-y-auto px-4",
+            "lg:hidden pt-4 pb-6 space-y-4 animate-in slide-in-from-top-5 fixed inset-x-0 top-18 bottom-0 bg-neutral-100 z-40 overflow-y-auto px-4",
             isSearchingMobile && "bg-white",
           )}
         >
@@ -293,23 +293,23 @@ const Navbar = () => {
                 );
               })}
 
+              <SignedIn>
+                <Link
+                  href={chatNavLink.href}
+                  className={cn(
+                    "px-4 py-4 text-xl font-semibold rounded-2xl transition-colors",
+                    isNavLinkActive(chatNavLink.href, pathname)
+                      ? "bg-primary-50 text-primary-700"
+                      : "text-neutral-700 hover:bg-neutral-200",
+                  )}
+                  onClick={() => setIsOpen(false)}
+                >
+                  {chatNavLink.name}
+                </Link>
+              </SignedIn>
+
               <div className="mt-6 pt-6 border-t border-neutral-200 space-y-4">
                 <SignedIn>
-                  <Link
-                    href={chatNavLink.href}
-                    onClick={() => setIsOpen(false)}
-                    className={cn(
-                      "flex items-center gap-4 px-4 py-4 rounded-2xl transition-colors",
-                      isNavLinkActive(chatNavLink.href, pathname)
-                        ? "bg-primary-50 text-primary-700"
-                        : "text-neutral-700 hover:bg-neutral-200",
-                    )}
-                  >
-                    <MessageSquare className="w-6 h-6 shrink-0" />
-                    <span className="text-xl font-semibold">
-                      {chatNavLink.name}
-                    </span>
-                  </Link>
                   <div className="space-y-4">
                     <p className="text-sm font-bold text-neutral-400 uppercase tracking-widest px-4">
                       Organize
