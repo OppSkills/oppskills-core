@@ -48,6 +48,8 @@ export default function EditMemberModal({
         friendlyAccess = "Admin Access";
       } else if (member.accessControlRole === "MODERATOR") {
         friendlyAccess = "Moderator";
+      } else if (member.accessControlRole === "MEMBER") {
+        friendlyAccess = "Member";
       }
       setAccessControl(friendlyAccess);
 
@@ -184,7 +186,7 @@ export default function EditMemberModal({
               <SelectValue placeholder="Select access control" />
             </SelectTrigger>
             <SelectContent className="rounded-2xl shadow-md border-neutral-200">
-              {["Admin Access", "Moderator", "Read Only"].map((level) => (
+              {["Admin Access", "Moderator", "Read Only", "Member"].map((level) => (
                 <SelectItem
                   key={level}
                   value={level}

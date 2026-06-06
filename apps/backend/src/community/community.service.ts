@@ -893,17 +893,13 @@ export class CommunityService {
 
     const isOwner = community.ownerId === userId;
     const myMemberRecord = community.members[0];
-    const isDashboardEligible =
-      isOwner ||
-      (myMemberRecord &&
-        ['ADMIN', 'MODERATOR', 'READ_ONLY'].includes(
-          myMemberRecord.accessControlRole,
-        ));
 
-    if (!isDashboardEligible) {
-      throw new ForbiddenException(
-        'You do not have permission to view this community.',
-      );
+    // Only require that the caller is the owner or has *any* membership record.
+    // Dashboard eligibility (ADMIN / MODERATOR / READ_ONLY only) is enforced
+    // at the controller layer, not here, so that other services (e.g.
+    // CommunityTaskService) can retrieve member records for regular MEMBERs.
+    if (!isOwner && !myMemberRecord) {
+      throw new NotFoundException('Member record not found.');
     }
 
     let member = community.members[0];
@@ -1432,14 +1428,28 @@ export class CommunityService {
       }
     }
 
-    const member = await prisma.communityMemberEntity.create({
-      data: {
-        communityId,
-        userId,
-        role: 'MEMBER',
-        accessControlRole: 'MEMBER',
-        referralId,
-      },
+    const member = await prisma.$transaction(async (tx) => {
+      const createdMember = await tx.communityMemberEntity.create({
+        data: {
+          communityId,
+          userId,
+          role: 'MEMBER',
+          accessControlRole: 'MEMBER',
+          referralId,
+        },
+      });
+
+      if (referralId) {
+        await tx.referralEntity.update({
+          where: { id: referralId },
+          data: {
+            registrationsCount: { increment: 1 },
+            lastRegistrationAt: new Date(),
+          },
+        });
+      }
+
+      return createdMember;
     });
 
     this.logger.info({
@@ -1452,14 +1462,6 @@ export class CommunityService {
     });
 
     if (referralId) {
-      await prisma.referralEntity.update({
-        where: { id: referralId },
-        data: {
-          registrationsCount: { increment: 1 },
-          lastRegistrationAt: new Date(),
-        },
-      });
-
       this.logger.info({
         action: 'COMMUNITY_REFERRAL_USED',
         communityId,

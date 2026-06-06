@@ -8,11 +8,11 @@ import {
   Param,
   Patch,
   Post,
-  Query,
   Req,
   UnauthorizedException,
   UseGuards,
   Query,
+  ForbiddenException,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -35,6 +35,7 @@ import {
   CheckCommunityHandleResponseDto,
   SuggestCommunityHandlesResponseDto,
 } from './dto/check-community-handle.dto';
+import { CommunityStatsResponseDto } from './dto/community-stats-response.dto';
 
 @ApiTags('Communities')
 @Controller('communities')
@@ -347,6 +348,7 @@ export class CommunityController {
   })
   @ApiResponse({ status: 200, description: 'Member record' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden – regular members cannot access the dashboard' })
   @ApiResponse({ status: 404, description: 'Not Found' })
   async getMyMemberRecord(
     @Param('id') communityId: string,
@@ -356,7 +358,17 @@ export class CommunityController {
     if (typeof userId !== 'string' || userId.trim().length === 0) {
       throw new UnauthorizedException('User not found.');
     }
-    return this.communityService.getMemberRecord(userId, communityId);
+    const record = await this.communityService.getMemberRecord(userId, communityId);
+    // Dashboard eligibility: only ADMIN, MODERATOR, READ_ONLY (and the owner)
+    // may access the manage dashboard. Regular MEMBERs are community
+    // participants only and must not gain dashboard access.
+    const eligibleRoles = ['ADMIN', 'MODERATOR', 'READ_ONLY'];
+    if (!eligibleRoles.includes(record.accessControlRole as string)) {
+      throw new ForbiddenException(
+        'You do not have permission to view this community dashboard.',
+      );
+    }
+    return record;
   }
 
   @Get(':id/members')
@@ -382,9 +394,11 @@ export class CommunityController {
     if (typeof userId !== 'string' || userId.trim().length === 0) {
       throw new UnauthorizedException('User not found.');
     }
+    const parsedPage = page ? Math.max(1, parseInt(page, 10) || 1) : undefined;
+    const parsedTake = take ? Math.max(1, parseInt(take, 10) || 20) : undefined;
     return this.communityService.listMembers(userId, communityId, {
-      page: page ? Number(page) : undefined,
-      take: take ? Number(take) : undefined,
+      page: parsedPage,
+      take: parsedTake,
       search,
       role,
       sortDirection,

@@ -90,7 +90,7 @@ export async function fetchReferralTargetShareOg(
     }
 
     if (entityType === "COMMUNITY") {
-      const community = (await getPublicCommunityByHandle(slug)) as Record<
+      const community = (await getPublicCommunityByHandle(slug)) as unknown as Record<
         string,
         unknown
       > | null;

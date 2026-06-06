@@ -291,6 +291,8 @@ export default function ManageCommunityClient({
         accessControlRole = "ADMIN";
       } else if (accessControl === "Moderator") {
         accessControlRole = "MODERATOR";
+      } else if (accessControl === "Member") {
+        accessControlRole = "MEMBER";
       }
 
       await addCommunityMembers(token, communityId, {
@@ -377,6 +379,8 @@ export default function ManageCommunityClient({
         accessControlRole = "ADMIN";
       } else if (newAccess === "Moderator" || newAccess === "MODERATOR") {
         accessControlRole = "MODERATOR";
+      } else if (newAccess === "Member" || newAccess === "MEMBER") {
+        accessControlRole = "MEMBER";
       }
 
       await updateMemberAccess(token, communityId, memberId, accessControlRole);
@@ -410,6 +414,8 @@ export default function ManageCommunityClient({
         accessControlRole = "ADMIN";
       } else if (newAccess === "Moderator" || newAccess === "MODERATOR") {
         accessControlRole = "MODERATOR";
+      } else if (newAccess === "Member" || newAccess === "MEMBER") {
+        accessControlRole = "MEMBER";
       }
 
       const targetMember = members.find((m) => m.id === memberId);

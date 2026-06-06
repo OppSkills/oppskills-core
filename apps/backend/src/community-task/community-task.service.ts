@@ -35,13 +35,10 @@ export class CommunityTaskService {
     communityId: string,
   ): Promise<number> {
     const member = await this.communityService.getMemberRecord(userId, communityId);
-    const rank = this.communityService.getRoleRank(member.accessControlRole);
-    if (rank === 0) {
-      throw new ForbiddenException(
-        'You do not have permission to manage tasks in this community.',
-      );
-    }
-    return rank;
+    // Returns 0 for regular MEMBERs — callers must decide whether rank 0 is
+    // acceptable for their operation. Only throws if the user has no membership
+    // record at all (getMemberRecord throws NotFoundException in that case).
+    return this.communityService.getRoleRank(member.accessControlRole);
   }
 
   private formatUserName(user: {
@@ -61,17 +58,25 @@ export class CommunityTaskService {
     communityId: string,
     dto: CreateTaskDto,
   ): Promise<TaskResponseDto> {
-    // 1. Get hierarchy level of assigner and assignee
+    // 1. Get hierarchy level of assigner — must be a management role (rank > 0)
     const assignerLevel = await this.getUserHierarchyLevel(
       currentUserId,
       communityId,
     );
+    if (assignerLevel === 0) {
+      throw new ForbiddenException(
+        'You do not have permission to create tasks in this community.',
+      );
+    }
+
+    // 2. Get hierarchy level of assignee — regular MEMBERs (rank 0) are allowed
     const assigneeLevel = await this.getUserHierarchyLevel(
       dto.toUserId,
       communityId,
     );
 
-    // 2. Validate hierarchy rule: Assigners can only assign to equal/lower levels
+    // 3. Validate hierarchy rule: Assigners can only assign to equal/lower levels
+    //    (MEMBER rank 0 is always <= any assigner rank, so members can be assigned)
     if (assignerLevel < assigneeLevel) {
       this.logger.warn({
         action: 'COMMUNITY_TASK_HIERARCHY_VIOLATION',

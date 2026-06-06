@@ -6,7 +6,6 @@ import {
   Query,
   Req,
 } from '@nestjs/common';
-import { CommunityStatsResponseDto } from './dto/community-stats-response.dto';
 import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import type { Request } from 'express';
 import { OptionalAuthService } from '../common/optional-auth.service';
@@ -62,27 +61,5 @@ export class CommunityPublicController {
       handle,
       viewerUserId,
     );
-  }
-
-  @Get(':id/stats')
-  @ApiOperation({
-    summary: 'Get community dashboard statistics',
-    description:
-      'Returns the statistics (members, page/post impressions, admin/moderator counts) for a community dashboard.',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Community statistics retrieved successfully',
-    type: CommunityStatsResponseDto,
-  })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden' })
-  @ApiResponse({ status: 404, description: 'Not Found' })
-  async getCommunityStats(
-    @Param('id') id: string,
-    @Req() req: Request,
-  ): Promise<CommunityStatsResponseDto> {
-    const userId = await this.optionalAuth.resolveUserId(req);
-    return this.communityService.getCommunityStats(userId ?? '', id);
   }
 }
