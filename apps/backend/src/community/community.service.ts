@@ -819,7 +819,7 @@ export class CommunityService {
         dto.accessControlRole !== 'MEMBER'
       ) {
         throw new ForbiddenException(
-          'Moderators can only add members with READ_ONLY or MEMBER access.',
+          'Moderators can only add members with READ_ONLY access.',
         );
       }
     }
