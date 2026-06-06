@@ -9,6 +9,7 @@ import React, {
   useMemo,
 } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { BoneyardSkeleton } from "@/components/boneyard/boneyard-skeleton";
 import {
   Search,
   Plus,
@@ -167,6 +168,48 @@ function formatSidebarTimestamp(isoString: string): string {
 
 function escapeRegExp(str: string): string {
   return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function ChatSidebarFallback() {
+  return (
+    <div className="flex-1 overflow-y-auto divide-y divide-neutral-200 p-4 space-y-4">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <div key={i} className="flex items-center gap-3 py-2 animate-pulse">
+          <div className="w-12 h-12 rounded-full bg-neutral-200 shrink-0" />
+          <div className="flex-1 space-y-2 min-w-0">
+            <div className="h-4 bg-neutral-200 rounded-md w-1/3" />
+            <div className="h-3 bg-neutral-200 rounded-md w-2/3" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ChatTimelineFallback() {
+  return (
+    <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 bg-neutral-100">
+      {Array.from({ length: 5 }).map((_, i) => {
+        const isYou = i % 2 === 0;
+        return (
+          <div
+            key={i}
+            className={`flex ${isYou ? "justify-end" : "justify-start"} w-full animate-pulse`}
+          >
+            <div
+              className={`flex items-end gap-2 max-w-[70%] ${isYou ? "flex-row-reverse" : "flex-row"
+                }`}
+            >
+              <div
+                className={`h-16 w-48 md:w-64 rounded-2xl bg-neutral-200 ${isYou ? "rounded-br-none" : "rounded-bl-none"
+                  }`}
+              />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 interface HighlightedTextProps {
@@ -495,11 +538,11 @@ export default function ChatsPage() {
       ? sidebarMedia
       : activeChat
         ? activeChat.messages
-            .filter((m) => m.imageUrl && !m.id.startsWith("optimistic-"))
-            .map((m) => ({
-              messageId: m.id,
-              fileName: messageDownloadName(m),
-            }))
+          .filter((m) => m.imageUrl && !m.id.startsWith("optimistic-"))
+          .map((m) => ({
+            messageId: m.id,
+            fileName: messageDownloadName(m),
+          }))
         : [];
 
   useEffect(() => {
@@ -898,10 +941,9 @@ export default function ChatsPage() {
               onClick={() => setActiveTab(tab)}
               className={`
                 flex-1 text-center py-3 text-xs font-semibold tracking-wide transition-all border-b-2 relative uppercase
-                ${
-                  activeTab === tab
-                    ? "text-primary-600 border-primary-500"
-                    : "text-neutral-500 border-transparent hover:text-neutral-700"
+                ${activeTab === tab
+                  ? "text-primary-600 border-primary-500"
+                  : "text-neutral-500 border-transparent hover:text-neutral-700"
                 }
               `}
             >
@@ -915,92 +957,98 @@ export default function ChatsPage() {
 
         {/* Chats List */}
         <div className="flex-1 overflow-y-auto divide-y divide-neutral-200 scrollbar">
-          {filteredChats.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-48 p-5 text-center">
-              <MessageSquare className="w-10 h-10 text-neutral-400 mb-2" />
-              <p className="text-sm font-medium text-neutral-600">
-                No chats found
-              </p>
-              <p className="text-xs text-neutral-400 mt-1">
-                Try resetting filters or search terms
-              </p>
-            </div>
-          ) : (
-            filteredChats.map((chat) => {
-              const lastMsg = chat.messages[chat.messages.length - 1];
-              const lastPreview = chat.lastMessagePreview;
-              const isSelected = chat.id === selectedChatId;
-              const peerOnline = isDmPeerOnline(chat, currentUserId);
-              return (
-                <div
-                  key={chat.id}
-                  onClick={() => router.push(`/dashboard/chats/${chat.id}`)}
-                  className={`
-                    flex items-center gap-3 p-4 cursor-pointer transition-colors hover:bg-primary-100/40
-                    border-l-4 pl-3
-                    ${isSelected ? "bg-primary-100/70 border-l-primary-500" : "border-l-transparent"}
-                  `}
-                >
-                  {/* Avatar */}
-                  <div className="relative shrink-0">
-                    <img
-                      src={chat.imageUrl}
-                      alt={chat.name}
-                      className="w-12 h-12 rounded-full object-cover border border-neutral-200"
-                    />
-                    {!chat.isGroup && peerOnline && (
-                      <span
-                        className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-UI-Success border-2 border-white"
-                        aria-label="Online"
+          <BoneyardSkeleton
+            loading={loading}
+            name="chat-sidebar-list"
+            fallback={<ChatSidebarFallback />}
+          >
+            {filteredChats.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-48 p-5 text-center">
+                <MessageSquare className="w-10 h-10 text-neutral-400 mb-2" />
+                <p className="text-sm font-medium text-neutral-600">
+                  No chats found
+                </p>
+                <p className="text-xs text-neutral-400 mt-1">
+                  Try resetting filters or search terms
+                </p>
+              </div>
+            ) : (
+              filteredChats.map((chat) => {
+                const lastMsg = chat.messages[chat.messages.length - 1];
+                const lastPreview = chat.lastMessagePreview;
+                const isSelected = chat.id === selectedChatId;
+                const peerOnline = isDmPeerOnline(chat, currentUserId);
+                return (
+                  <div
+                    key={chat.id}
+                    onClick={() => router.push(`/dashboard/chats/${chat.id}`)}
+                    className={`
+                      flex items-center gap-3 p-4 cursor-pointer transition-colors hover:bg-primary-100/40
+                      border-l-4 pl-3
+                      ${isSelected ? "bg-primary-100/70 border-l-primary-500" : "border-l-transparent"}
+                    `}
+                  >
+                    {/* Avatar */}
+                    <div className="relative shrink-0">
+                      <img
+                        src={chat.imageUrl}
+                        alt={chat.name}
+                        className="w-12 h-12 rounded-full object-cover border border-neutral-200"
                       />
-                    )}
-                  </div>
-
-                  {/* Name and message details */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-baseline mb-1">
-                      <h4 className="text-sm font-semibold text-neutral-900 truncate font-aeonicPro">
-                        {chat.name}
-                      </h4>
-                      <span className="text-[10px] font-medium text-neutral-500 shrink-0 ml-1">
-                        {getLastMessageTimestamp(chat)}
-                      </span>
+                      {!chat.isGroup && peerOnline && (
+                        <span
+                          className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-UI-Success border-2 border-white"
+                          aria-label="Online"
+                        />
+                      )}
                     </div>
 
-                    {/* Last message content */}
-                    <div className="text-xs font-normal text-neutral-600 line-clamp-1 break-all">
-                      {getLastMessageText(chat)}
-                    </div>
-
-                    {/* Attachment preview inside list item */}
-                    {(lastMsg?.attachment ||
-                      (lastPreview &&
-                        (lastPreview.type === "DOCUMENT" ||
-                          lastPreview.type === "IMAGE" ||
-                          lastPreview.type === "VIDEO"))) && (
-                      <div className="mt-1 flex items-center gap-1.5 py-0.5 px-2 rounded-full bg-neutral-100 border border-neutral-300 text-[10px] w-fit font-medium text-neutral-700">
-                        <FileText className="w-3.5 h-3.5 text-primary-500" />
-                        <span className="truncate max-w-[130px]">
-                          {lastMsg?.attachment?.name ??
-                            lastPreview?.body ??
-                            "Attachment"}
+                    {/* Name and message details */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-baseline mb-1">
+                        <h4 className="text-sm font-semibold text-neutral-900 truncate font-aeonicPro">
+                          {chat.name}
+                        </h4>
+                        <span className="text-[10px] font-medium text-neutral-500 shrink-0 ml-1">
+                          {getLastMessageTimestamp(chat)}
                         </span>
                       </div>
+
+                      {/* Last message content */}
+                      <div className="text-xs font-normal text-neutral-600 line-clamp-1 break-all">
+                        {getLastMessageText(chat)}
+                      </div>
+
+                      {/* Attachment preview inside list item */}
+                      {(lastMsg?.attachment ||
+                        (lastPreview &&
+                          (lastPreview.type === "DOCUMENT" ||
+                            lastPreview.type === "IMAGE" ||
+                            lastPreview.type === "VIDEO"))) && (
+                          <div className="mt-1 flex items-center gap-1.5 py-0.5 px-2 rounded-full bg-neutral-100 border border-neutral-300 text-[10px] w-fit font-medium text-neutral-700">
+                            <FileText className="w-3.5 h-3.5 text-primary-500" />
+                            <span className="truncate max-w-[130px]">
+                              {lastMsg?.attachment?.name ??
+                                lastPreview?.body ??
+                                "Attachment"}
+                            </span>
+                          </div>
+                        )}
+                    </div>
+
+                    {/* Unread badge & state */}
+                    {chat.unreadCount > 0 && (
+                      <div className="flex flex-col items-center justify-center shrink-0">
+                        <div className="w-5 h-5 rounded-full bg-UI-Success text-white text-[10px] font-bold flex items-center justify-center shadow-sm">
+                          {chat.unreadCount}
+                        </div>
+                      </div>
                     )}
                   </div>
-
-                  {/* Unread badge & state */}
-                  {chat.unreadCount > 0 && (
-                    <div className="flex flex-col items-center justify-center shrink-0">
-                      <div className="w-5 h-5 rounded-full bg-UI-Success text-white text-[10px] font-bold flex items-center justify-center shadow-sm">
-                        {chat.unreadCount}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })
-          )}
+                );
+              })
+            )}
+          </BoneyardSkeleton>
 
           {searchQuery.trim().length > 0 && searchUsers.length > 0 && (
             <div className="px-4 pb-3 border-t border-neutral-200">
@@ -1081,12 +1129,11 @@ export default function ChatsPage() {
                     {activeChat.name}
                   </h3>
                   <p
-                    className={`text-[10px] md:text-xs truncate ${
-                      !activeChat.isGroup &&
-                      isDmPeerOnline(activeChat, currentUserId)
+                    className={`text-[10px] md:text-xs truncate ${!activeChat.isGroup &&
+                        isDmPeerOnline(activeChat, currentUserId)
                         ? "text-emerald-600"
                         : "text-neutral-500"
-                    }`}
+                      }`}
                   >
                     {chatPresenceSubtitle}
                   </p>
@@ -1363,390 +1410,412 @@ export default function ChatsPage() {
                 <div
                   ref={scrollContainerRef}
                   onScroll={handleScroll}
-                  className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 scrollbar bg-neutral-100"
+                  className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 scrollbar bg-neutral-100 relative"
                 >
-                  {(() => {
-                    const sortedMessages = [...activeChat.messages].sort(
-                      (a, b) => {
-                        return (
-                          new Date(a.timestamp).getTime() -
-                          new Date(b.timestamp).getTime()
+                  {/* Background illustration – shown at 20% opacity */}
+                  <img
+                    src="/illustrations/chats/active_chat_bg.png"
+                    alt=""
+                    aria-hidden="true"
+                    className="absolute inset-0 w-full h-full object-cover opacity-20 pointer-events-none select-none"
+                  />
+                  <BoneyardSkeleton
+                    loading={messagesLoading}
+                    name="chat-message-timeline"
+                    fallback={<ChatTimelineFallback />}
+                  >
+                    {activeChat.messages.length > 0 ? (
+                      (() => {
+                        const sortedMessages = [...activeChat.messages].sort(
+                          (a, b) => {
+                            return (
+                              new Date(a.timestamp).getTime() -
+                              new Date(b.timestamp).getTime()
+                            );
+                          },
                         );
-                      },
-                    );
 
-                    const filteredMessages = sortedMessages.filter(
-                      (message) => {
-                        if (showDateFilter) {
-                          const msgTime = new Date(message.timestamp).getTime();
-                          if (startDateFilter) {
-                            const start = new Date(startDateFilter);
-                            start.setHours(0, 0, 0, 0);
-                            if (msgTime < start.getTime()) return false;
+                        const filteredMessages = sortedMessages.filter(
+                          (message) => {
+                            if (showDateFilter) {
+                              const msgTime = new Date(message.timestamp).getTime();
+                              if (startDateFilter) {
+                                const start = new Date(startDateFilter);
+                                start.setHours(0, 0, 0, 0);
+                                if (msgTime < start.getTime()) return false;
+                              }
+                              if (endDateFilter) {
+                                const end = new Date(endDateFilter);
+                                end.setHours(23, 59, 59, 999);
+                                if (msgTime > end.getTime()) return false;
+                              }
+                            }
+
+                            return true;
+                          },
+                        );
+
+                        let lastMessageDateStr = "";
+
+                        return filteredMessages.map((message, index) => {
+                          const isSystem = message.type === "SYSTEM";
+
+                          // Check for date separator
+                          const messageDate = new Date(message.timestamp);
+                          let separatorElement = null;
+
+                          if (!isNaN(messageDate.getTime())) {
+                            const dateKey = `${messageDate.getFullYear()}-${messageDate.getMonth()}-${messageDate.getDate()}`;
+                            if (dateKey !== lastMessageDateStr) {
+                              lastMessageDateStr = dateKey;
+                              const dateText = formatDateSeparator(
+                                message.timestamp,
+                              );
+                              separatorElement = (
+                                <div
+                                  key={`sep-${message.id}`}
+                                  data-date-separator={dateText}
+                                  className="flex items-center justify-center my-6 select-none"
+                                >
+                                  <div className="flex items-center w-full max-w-lg justify-center text-neutral-500 text-xs font-medium tracking-wide">
+                                    <span className="bg-white border border-neutral-200 text-neutral-700 px-4 py-1.5 rounded-full shadow-xs backdrop-blur-xs font-semibold shrink-0">
+                                      {dateText}
+                                    </span>
+                                  </div>
+                                </div>
+                              );
+                            }
                           }
-                          if (endDateFilter) {
-                            const end = new Date(endDateFilter);
-                            end.setHours(23, 59, 59, 999);
-                            if (msgTime > end.getTime()) return false;
-                          }
-                        }
 
-                        return true;
-                      },
-                    );
-
-                    let lastMessageDateStr = "";
-
-                    return filteredMessages.map((message, index) => {
-                      const isSystem = message.type === "SYSTEM";
-
-                      // Check for date separator
-                      const messageDate = new Date(message.timestamp);
-                      let separatorElement = null;
-
-                      if (!isNaN(messageDate.getTime())) {
-                        const dateKey = `${messageDate.getFullYear()}-${messageDate.getMonth()}-${messageDate.getDate()}`;
-                        if (dateKey !== lastMessageDateStr) {
-                          lastMessageDateStr = dateKey;
-                          const dateText = formatDateSeparator(
-                            message.timestamp,
-                          );
-                          separatorElement = (
+                          const messageElement = isSystem ? (
                             <div
-                              key={`sep-${message.id}`}
-                              data-date-separator={dateText}
-                              className="flex items-center justify-center my-6 select-none"
+                              key={message.id}
+                              data-message-date={message.timestamp}
+                              className="flex justify-center my-3"
                             >
-                              <div className="flex items-center w-full max-w-lg justify-center text-neutral-500 text-xs font-medium tracking-wide">
-                                <span className="bg-white border border-neutral-200 text-neutral-700 px-4 py-1.5 rounded-full shadow-xs backdrop-blur-xs font-semibold shrink-0">
-                                  {dateText}
-                                </span>
+                              <div className="bg-neutral-200 text-neutral-600 text-[10px] md:text-xs font-semibold py-1 px-3.5 rounded-full shadow-sm">
+                                {message.text}
                               </div>
                             </div>
-                          );
-                        }
-                      }
+                          ) : message.isYou ? (
+                            <div
+                              key={message.stableKey ?? message.id}
+                              id={`msg-${message.id}`}
+                              data-message-date={message.timestamp}
+                              className="flex justify-end items-end gap-2 transition-all duration-300 w-full"
+                            >
+                              <div className="relative group flex items-end gap-2 max-w-[75%] md:max-w-[60%]">
+                                {/* Hover reply action icon: immediately to the left of the bubble */}
+                                <div className="absolute right-full mr-2.5 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 z-20">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setReplyingToMessage(message);
+                                      focusInput();
+                                    }}
+                                    title="Reply"
+                                    className="p-1.5 rounded-full bg-white hover:bg-neutral-100 text-neutral-500 hover:text-primary-600 shadow-md border border-neutral-200 transition-all active:scale-90"
+                                  >
+                                    <CornerUpLeft className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
 
-                      const messageElement = isSystem ? (
-                        <div
-                          key={message.id}
-                          data-message-date={message.timestamp}
-                          className="flex justify-center my-3"
-                        >
-                          <div className="bg-neutral-200 text-neutral-600 text-[10px] md:text-xs font-semibold py-1 px-3.5 rounded-full shadow-sm">
-                            {message.text}
-                          </div>
-                        </div>
-                      ) : message.isYou ? (
-                        <div
-                          key={message.stableKey ?? message.id}
-                          id={`msg-${message.id}`}
-                          data-message-date={message.timestamp}
-                          className="flex justify-end items-end gap-2 transition-all duration-300 w-full"
-                        >
-                          <div className="relative group flex items-end gap-2 max-w-[75%] md:max-w-[60%]">
-                            {/* Hover reply action icon: immediately to the left of the bubble */}
-                            <div className="absolute right-full mr-2.5 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 z-20">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setReplyingToMessage(message);
-                                  focusInput();
-                                }}
-                                title="Reply"
-                                className="p-1.5 rounded-full bg-white hover:bg-neutral-100 text-neutral-500 hover:text-primary-600 shadow-md border border-neutral-200 transition-all active:scale-90"
-                              >
-                                <CornerUpLeft className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-
-                            <div className="w-full flex flex-col">
-                              {/* Bubble content */}
-                              <div
-                                className={`
-                                    p-3 md:p-4 rounded-2xl shadow-sm text-sm font-normal relative leading-relaxed transition-all duration-300 min-w-[80px]
-                                    bg-primary-600 text-white rounded-br-none
-                                    ${
-                                      highlightedMessageId === message.id ||
-                                      (isSearchingMessages &&
-                                        matchingMessageIds[
+                                <div className="w-full flex flex-col">
+                                  {/* Bubble content */}
+                                  <div
+                                    className={`
+                                        p-3 md:p-4 rounded-2xl shadow-sm text-sm font-normal relative leading-relaxed transition-all duration-300 min-w-[80px]
+                                        bg-primary-600 text-white rounded-br-none
+                                        ${highlightedMessageId === message.id ||
+                                        (isSearchingMessages &&
+                                          matchingMessageIds[
                                           currentMatchIndex
-                                        ] === message.id)
+                                          ] === message.id)
                                         ? "ring-4 ring-yellow-400 ring-offset-2 scale-[1.02]"
                                         : ""
-                                    }
-                                  `}
-                              >
-                                {/* Reply reference preview inside the bubble */}
-                                {message.replyTo && (
-                                  <div
-                                    onClick={() =>
-                                      message.replyTo &&
-                                      scrollToMessage(message.replyTo.messageId)
-                                    }
-                                    className="mb-2.5 p-2 rounded-lg border-l-4 text-xs cursor-pointer text-left transition-all hover:opacity-90 select-none bg-primary-700/80 border-primary-300 text-white/90"
-                                  >
-                                    <p className="font-bold text-[10px] uppercase tracking-wider mb-0.5 text-primary-200">
-                                      {message.replyTo.senderName}
-                                    </p>
-                                    <p className="truncate opacity-80">
-                                      {message.replyTo.text}
-                                    </p>
-                                  </div>
-                                )}
-
-                                {message.imageUrl && (
-                                  <ChatMessageImage
-                                    message={message}
-                                    conversationId={selectedChatId}
-                                    onOpen={() => openImageInModal(message.id)}
-                                    onDownload={() =>
-                                      handleDownloadMessage(message)
-                                    }
-                                  />
-                                )}
-
-                                {message.attachment && !message.imageUrl && (
-                                  <div className="mb-2 p-3 rounded-lg flex items-center gap-3 border bg-primary-700 border-primary-500 text-white">
-                                    <FileText className="w-7 h-7 shrink-0 text-white fill-neutral-500/10" />
-                                    <div className="min-w-0 flex-1">
-                                      <p className="text-xs font-semibold truncate leading-tight">
-                                        {message.attachment.name}
-                                      </p>
-                                      <p className="text-[9px] mt-0.5 text-primary-200">
-                                        {message.attachment.size ||
-                                          "Unknown size"}
-                                      </p>
-                                    </div>
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        handleDownloadMessage(message)
                                       }
-                                      className="p-1.5 rounded-full hover:bg-black/10 transition-colors shrink-0"
-                                      title="Download"
-                                    >
-                                      <Download className="w-4 h-4" />
-                                    </button>
-                                  </div>
-                                )}
-
-                                {message.attachment &&
-                                  message.imageUrl &&
-                                  message.attachment.type === "video" && (
-                                    <div className="mb-2 p-3 rounded-lg flex items-center gap-3 border bg-primary-700 border-primary-500 text-white">
-                                      <FileText className="w-7 h-7 shrink-0 text-white" />
-                                      <div className="min-w-0 flex-1">
-                                        <p className="text-xs font-semibold truncate leading-tight">
-                                          {message.attachment.name}
+                                      `}
+                                  >
+                                    {/* Reply reference preview inside the bubble */}
+                                    {message.replyTo && (
+                                      <div
+                                        onClick={() =>
+                                          message.replyTo &&
+                                          scrollToMessage(message.replyTo.messageId)
+                                        }
+                                        className="mb-2.5 p-2 rounded-lg border-l-4 text-xs cursor-pointer text-left transition-all hover:opacity-90 select-none bg-primary-700/80 border-primary-300 text-white/90"
+                                      >
+                                        <p className="font-bold text-[10px] uppercase tracking-wider mb-0.5 text-primary-200">
+                                          {message.replyTo.senderName}
                                         </p>
-                                        <p className="text-[9px] mt-0.5 text-primary-200">
-                                          {message.attachment.size || "Video"}
+                                        <p className="truncate opacity-80">
+                                          {message.replyTo.text}
                                         </p>
                                       </div>
-                                      <button
-                                        type="button"
-                                        onClick={() =>
+                                    )}
+
+                                    {message.imageUrl && (
+                                      <ChatMessageImage
+                                        message={message}
+                                        conversationId={selectedChatId}
+                                        onOpen={() => openImageInModal(message.id)}
+                                        onDownload={() =>
                                           handleDownloadMessage(message)
                                         }
-                                        className="p-1.5 rounded-full hover:bg-black/10 transition-colors shrink-0"
-                                        title="Download video"
-                                      >
-                                        <Download className="w-4 h-4" />
-                                      </button>
+                                      />
+                                    )}
+
+                                    {message.attachment && !message.imageUrl && (
+                                      <div className="mb-2 p-3 rounded-lg flex items-center gap-3 border bg-primary-700 border-primary-500 text-white">
+                                        <FileText className="w-7 h-7 shrink-0 text-white fill-neutral-500/10" />
+                                        <div className="min-w-0 flex-1">
+                                          <p className="text-xs font-semibold truncate leading-tight">
+                                            {message.attachment.name}
+                                          </p>
+                                          <p className="text-[9px] mt-0.5 text-primary-200">
+                                            {message.attachment.size ||
+                                              "Unknown size"}
+                                          </p>
+                                        </div>
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            handleDownloadMessage(message)
+                                          }
+                                          className="p-1.5 rounded-full hover:bg-black/10 transition-colors shrink-0"
+                                          title="Download"
+                                        >
+                                          <Download className="w-4 h-4" />
+                                        </button>
+                                      </div>
+                                    )}
+
+                                    {message.attachment &&
+                                      message.imageUrl &&
+                                      message.attachment.type === "video" && (
+                                        <div className="mb-2 p-3 rounded-lg flex items-center gap-3 border bg-primary-700 border-primary-500 text-white">
+                                          <FileText className="w-7 h-7 shrink-0 text-white" />
+                                          <div className="min-w-0 flex-1">
+                                            <p className="text-xs font-semibold truncate leading-tight">
+                                              {message.attachment.name}
+                                            </p>
+                                            <p className="text-[9px] mt-0.5 text-primary-200">
+                                              {message.attachment.size || "Video"}
+                                            </p>
+                                          </div>
+                                          <button
+                                            type="button"
+                                            onClick={() =>
+                                              handleDownloadMessage(message)
+                                            }
+                                            className="p-1.5 rounded-full hover:bg-black/10 transition-colors shrink-0"
+                                            title="Download video"
+                                          >
+                                            <Download className="w-4 h-4" />
+                                          </button>
+                                        </div>
+                                      )}
+
+                                    {message.text.trim() ? (
+                                      <p className="wrap-break-word">
+                                        <HighlightedText
+                                          text={message.text}
+                                          highlight={
+                                            isSearchingMessages
+                                              ? messageSearchQuery
+                                              : ""
+                                          }
+                                        />
+                                      </p>
+                                    ) : null}
+
+                                    <div className="flex items-center justify-end gap-1 mt-1 text-[9px] opacity-70">
+                                      <span>
+                                        {formatTime12h(message.timestamp)}
+                                      </span>
+                                      <OutgoingMessageStatus message={message} />
                                     </div>
-                                  )}
-
-                                {message.text.trim() ? (
-                                  <p className="wrap-break-word">
-                                    <HighlightedText
-                                      text={message.text}
-                                      highlight={
-                                        isSearchingMessages
-                                          ? messageSearchQuery
-                                          : ""
-                                      }
-                                    />
-                                  </p>
-                                ) : null}
-
-                                <div className="flex items-center justify-end gap-1 mt-1 text-[9px] opacity-70">
-                                  <span>
-                                    {formatTime12h(message.timestamp)}
-                                  </span>
-                                  <OutgoingMessageStatus message={message} />
+                                  </div>
                                 </div>
                               </div>
                             </div>
-                          </div>
-                        </div>
-                      ) : (
-                        <div
-                          key={message.id}
-                          id={`msg-${message.id}`}
-                          data-message-date={message.timestamp}
-                          className="flex justify-start items-end gap-2 transition-all duration-300 w-full"
-                        >
-                          {/* Participant Avatar for group chat left-aligned messages */}
-                          {!message.isYou && activeChat.isGroup && (
-                            <div className="w-7 h-7 rounded-full bg-primary-300 text-[10px] font-bold text-white flex items-center justify-center shrink-0 uppercase shadow-sm mb-0.5">
-                              {message.senderName.substring(0, 2)}
-                            </div>
-                          )}
-
-                          <div className="relative group flex items-end gap-2 max-w-[75%] md:max-w-[60%]">
-                            <div className="w-full flex flex-col">
-                              {/* Sender Name in Group Chat */}
+                          ) : (
+                            <div
+                              key={message.id}
+                              id={`msg-${message.id}`}
+                              data-message-date={message.timestamp}
+                              className="flex justify-start items-end gap-2 transition-all duration-300 w-full"
+                            >
+                              {/* Participant Avatar for group chat left-aligned messages */}
                               {!message.isYou && activeChat.isGroup && (
-                                <span className="text-[10px] font-bold text-neutral-500 ml-2.5 mb-0.5">
-                                  {message.senderName}
-                                </span>
+                                <div className="w-7 h-7 rounded-full bg-primary-300 text-[10px] font-bold text-white flex items-center justify-center shrink-0 uppercase shadow-sm mb-0.5">
+                                  {message.senderName.substring(0, 2)}
+                                </div>
                               )}
 
-                              {/* Bubble content */}
-                              <div
-                                className={`
-                                    p-3 md:p-4 rounded-2xl shadow-sm text-sm font-normal relative leading-relaxed transition-all duration-300 min-w-[80px]
-                                    bg-white text-neutral-900 rounded-bl-none border border-neutral-200
-                                    ${
-                                      highlightedMessageId === message.id ||
-                                      (isSearchingMessages &&
-                                        matchingMessageIds[
-                                          currentMatchIndex
-                                        ] === message.id)
-                                        ? "ring-4 ring-yellow-400 ring-offset-2 scale-[1.02]"
-                                        : ""
-                                    }
-                                  `}
-                              >
-                                {/* Reply reference preview inside the bubble */}
-                                {message.replyTo && (
-                                  <div
-                                    onClick={() =>
-                                      message.replyTo &&
-                                      scrollToMessage(message.replyTo.messageId)
-                                    }
-                                    className="mb-2.5 p-2 rounded-lg border-l-4 text-xs cursor-pointer text-left transition-all hover:opacity-90 select-none bg-neutral-100 border-primary-500 text-neutral-700"
-                                  >
-                                    <p className="font-bold text-[10px] uppercase tracking-wider mb-0.5 text-primary-600">
-                                      {message.replyTo.senderName}
-                                    </p>
-                                    <p className="truncate opacity-80">
-                                      {message.replyTo.text}
-                                    </p>
-                                  </div>
-                                )}
-
-                                {message.imageUrl && (
-                                  <ChatMessageImage
-                                    message={message}
-                                    conversationId={selectedChatId}
-                                    onOpen={() => openImageInModal(message.id)}
-                                    onDownload={() =>
-                                      handleDownloadMessage(message)
-                                    }
-                                  />
-                                )}
-
-                                {message.attachment && !message.imageUrl && (
-                                  <div className="mb-2 p-3 rounded-lg flex items-center gap-3 border bg-neutral-100 border-neutral-300 text-neutral-800">
-                                    <FileText className="w-7 h-7 shrink-0 text-primary-600" />
-                                    <div className="min-w-0 flex-1">
-                                      <p className="text-xs font-semibold truncate leading-tight">
-                                        {message.attachment.name}
-                                      </p>
-                                      <p className="text-[9px] mt-0.5 text-neutral-500">
-                                        {message.attachment.size ||
-                                          "Unknown size"}
-                                      </p>
-                                    </div>
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        handleDownloadMessage(message)
-                                      }
-                                      className="p-1.5 rounded-full hover:bg-black/10 transition-colors shrink-0"
-                                      title="Download"
-                                    >
-                                      <Download className="w-4 h-4" />
-                                    </button>
-                                  </div>
-                                )}
-
-                                {message.attachment &&
-                                  message.imageUrl &&
-                                  message.attachment.type !== "image" && (
-                                    <div className="mb-2 p-3 rounded-lg flex items-center gap-3 border bg-neutral-100 border-neutral-300 text-neutral-800">
-                                      <FileText className="w-7 h-7 shrink-0 text-primary-600" />
-                                      <div className="min-w-0 flex-1">
-                                        <p className="text-xs font-semibold truncate leading-tight">
-                                          {message.attachment.name}
-                                        </p>
-                                        <p className="text-[9px] mt-0.5 text-neutral-500">
-                                          {message.attachment.size ||
-                                            "Unknown size"}
-                                        </p>
-                                      </div>
-                                      <button
-                                        type="button"
-                                        onClick={() =>
-                                          handleDownloadMessage(message)
-                                        }
-                                        className="p-1.5 rounded-full hover:bg-black/10 transition-colors shrink-0"
-                                        title="Download"
-                                      >
-                                        <Download className="w-4 h-4" />
-                                      </button>
-                                    </div>
+                              <div className="relative group flex items-end gap-2 max-w-[75%] md:max-w-[60%]">
+                                <div className="w-full flex flex-col">
+                                  {/* Sender Name in Group Chat */}
+                                  {!message.isYou && activeChat.isGroup && (
+                                    <span className="text-[10px] font-bold text-neutral-500 ml-2.5 mb-0.5">
+                                      {message.senderName}
+                                    </span>
                                   )}
 
-                                {message.text.trim() ? (
-                                  <p className="wrap-break-word">
-                                    <HighlightedText
-                                      text={message.text}
-                                      highlight={
-                                        isSearchingMessages
-                                          ? messageSearchQuery
-                                          : ""
+                                  {/* Bubble content */}
+                                  <div
+                                    className={`
+                                        p-3 md:p-4 rounded-2xl shadow-sm text-sm font-normal relative leading-relaxed transition-all duration-300 min-w-[80px]
+                                        bg-white text-neutral-900 rounded-bl-none border border-neutral-200
+                                        ${highlightedMessageId === message.id ||
+                                        (isSearchingMessages &&
+                                          matchingMessageIds[
+                                          currentMatchIndex
+                                          ] === message.id)
+                                        ? "ring-4 ring-yellow-400 ring-offset-2 scale-[1.02]"
+                                        : ""
                                       }
-                                    />
-                                  </p>
-                                ) : null}
+                                      `}
+                                  >
+                                    {/* Reply reference preview inside the bubble */}
+                                    {message.replyTo && (
+                                      <div
+                                        onClick={() =>
+                                          message.replyTo &&
+                                          scrollToMessage(message.replyTo.messageId)
+                                        }
+                                        className="mb-2.5 p-2 rounded-lg border-l-4 text-xs cursor-pointer text-left transition-all hover:opacity-90 select-none bg-neutral-100 border-primary-500 text-neutral-700"
+                                      >
+                                        <p className="font-bold text-[10px] uppercase tracking-wider mb-0.5 text-primary-600">
+                                          {message.replyTo.senderName}
+                                        </p>
+                                        <p className="truncate opacity-80">
+                                          {message.replyTo.text}
+                                        </p>
+                                      </div>
+                                    )}
 
-                                <div className="flex items-center justify-end gap-1 mt-1 text-[9px] opacity-70">
-                                  <span>
-                                    {formatTime12h(message.timestamp)}
-                                  </span>
+                                    {message.imageUrl && (
+                                      <ChatMessageImage
+                                        message={message}
+                                        conversationId={selectedChatId}
+                                        onOpen={() => openImageInModal(message.id)}
+                                        onDownload={() =>
+                                          handleDownloadMessage(message)
+                                        }
+                                      />
+                                    )}
+
+                                    {message.attachment && !message.imageUrl && (
+                                      <div className="mb-2 p-3 rounded-lg flex items-center gap-3 border bg-neutral-100 border-neutral-300 text-neutral-800">
+                                        <FileText className="w-7 h-7 shrink-0 text-primary-600" />
+                                        <div className="min-w-0 flex-1">
+                                          <p className="text-xs font-semibold truncate leading-tight">
+                                            {message.attachment.name}
+                                          </p>
+                                          <p className="text-[9px] mt-0.5 text-neutral-500">
+                                            {message.attachment.size ||
+                                              "Unknown size"}
+                                          </p>
+                                        </div>
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            handleDownloadMessage(message)
+                                          }
+                                          className="p-1.5 rounded-full hover:bg-black/10 transition-colors shrink-0"
+                                          title="Download"
+                                        >
+                                          <Download className="w-4 h-4" />
+                                        </button>
+                                      </div>
+                                    )}
+
+                                    {message.attachment &&
+                                      message.imageUrl &&
+                                      message.attachment.type !== "image" && (
+                                        <div className="mb-2 p-3 rounded-lg flex items-center gap-3 border bg-neutral-100 border-neutral-300 text-neutral-800">
+                                          <FileText className="w-7 h-7 shrink-0 text-primary-600" />
+                                          <div className="min-w-0 flex-1">
+                                            <p className="text-xs font-semibold truncate leading-tight">
+                                              {message.attachment.name}
+                                            </p>
+                                            <p className="text-[9px] mt-0.5 text-neutral-500">
+                                              {message.attachment.size ||
+                                                "Unknown size"}
+                                            </p>
+                                          </div>
+                                          <button
+                                            type="button"
+                                            onClick={() =>
+                                              handleDownloadMessage(message)
+                                            }
+                                            className="p-1.5 rounded-full hover:bg-black/10 transition-colors shrink-0"
+                                            title="Download"
+                                          >
+                                            <Download className="w-4 h-4" />
+                                          </button>
+                                        </div>
+                                      )}
+
+                                    {message.text.trim() ? (
+                                      <p className="wrap-break-word">
+                                        <HighlightedText
+                                          text={message.text}
+                                          highlight={
+                                            isSearchingMessages
+                                              ? messageSearchQuery
+                                              : ""
+                                          }
+                                        />
+                                      </p>
+                                    ) : null}
+
+                                    <div className="flex items-center justify-end gap-1 mt-1 text-[9px] opacity-70">
+                                      <span>
+                                        {formatTime12h(message.timestamp)}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Hover reply action icon: immediately to the right of the bubble */}
+                                <div className="absolute left-full ml-2.5 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 z-20">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setReplyingToMessage(message);
+                                      focusInput();
+                                    }}
+                                    title="Reply"
+                                    className="p-1.5 rounded-full bg-white hover:bg-neutral-100 text-neutral-500 hover:text-primary-600 shadow-md border border-neutral-200 transition-all active:scale-90"
+                                  >
+                                    <CornerUpLeft className="w-3.5 h-3.5" />
+                                  </button>
                                 </div>
                               </div>
                             </div>
+                          );
 
-                            {/* Hover reply action icon: immediately to the right of the bubble */}
-                            <div className="absolute left-full ml-2.5 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 z-20">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setReplyingToMessage(message);
-                                  focusInput();
-                                }}
-                                title="Reply"
-                                className="p-1.5 rounded-full bg-white hover:bg-neutral-100 text-neutral-500 hover:text-primary-600 shadow-md border border-neutral-200 transition-all active:scale-90"
-                              >
-                                <CornerUpLeft className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      );
-
-                      return (
-                        <React.Fragment key={message.stableKey ?? message.id}>
-                          {separatorElement}
-                          {messageElement}
-                        </React.Fragment>
-                      );
-                    });
-                  })()}
+                          return (
+                            <React.Fragment key={message.stableKey ?? message.id}>
+                              {separatorElement}
+                              {messageElement}
+                            </React.Fragment>
+                          );
+                        });
+                      })()
+                    ) : (
+                      <div className="flex flex-col items-center justify-center h-full text-neutral-400 gap-4">
+                        <img
+                          src="/images/no-messages.svg"
+                          alt="No messages"
+                          className="w-48 h-48 opacity-50"
+                        />
+                        <p className="text-sm font-medium">No messages yet</p>
+                      </div>
+                    )}
+                  </BoneyardSkeleton>
                   <div ref={messagesEndRef} />
                 </div>
 
@@ -1835,10 +1904,9 @@ export default function ChatsPage() {
                       disabled={!inputMessage.trim()}
                       className={`
                         p-3 rounded-full text-white transition-all shrink-0 shadow-md hover:shadow-lg
-                        ${
-                          inputMessage.trim()
-                            ? "bg-primary-600 hover:bg-primary-700 cursor-pointer scale-100 active:scale-95"
-                            : "bg-neutral-300 cursor-not-allowed opacity-80"
+                        ${inputMessage.trim()
+                          ? "bg-primary-600 hover:bg-primary-700 cursor-pointer scale-100 active:scale-95"
+                          : "bg-neutral-300 cursor-not-allowed opacity-80"
                         }
                       `}
                     >
@@ -1953,10 +2021,9 @@ export default function ChatsPage() {
                           onClick={() => setActiveRightSidebarTab(tab)}
                           className={`
                             flex-1 text-center py-3 text-xs font-semibold tracking-wide transition-all border-b-2 relative uppercase cursor-pointer
-                            ${
-                              activeRightSidebarTab === tab
-                                ? "text-primary-600 border-primary-500 font-bold"
-                                : "text-neutral-500 border-transparent hover:text-neutral-700 font-medium"
+                            ${activeRightSidebarTab === tab
+                              ? "text-primary-600 border-primary-500 font-bold"
+                              : "text-neutral-500 border-transparent hover:text-neutral-700 font-medium"
                             }
                           `}
                         >
@@ -1968,7 +2035,7 @@ export default function ChatsPage() {
                     {/* Scrollable list content */}
                     <div className="flex-1 overflow-y-auto p-4 scrollbar bg-white">
                       {activeRightSidebarTab === "Members" &&
-                      activeChat.isGroup ? (
+                        activeChat.isGroup ? (
                         <div className="space-y-2">
                           <h4 className="text-[10px] font-bold text-neutral-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                             <Users className="w-3.5 h-3.5" />
@@ -2133,33 +2200,13 @@ export default function ChatsPage() {
           </>
         ) : (
           /* Placeholder View (Default Screen) */
-          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-neutral-100">
-            <div className="relative mb-6">
-              <div className="w-24 h-24 rounded-full bg-primary-100 flex items-center justify-center text-primary-600">
-                <MessageSquare className="w-10 h-10" />
-              </div>
-              <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-yellow-300 text-neutral-800 flex items-center justify-center shadow-md">
-                <Sparkles className="w-3.5 h-3.5 fill-current" />
-              </div>
-            </div>
-
-            <h2 className="text-xl md:text-2xl font-extrabold text-neutral-900 mb-2 font-aeonicPro tracking-tight">
-              Your OppSkills Workspace Chat
-            </h2>
-            <p className="text-sm text-neutral-600 max-w-sm leading-relaxed mb-6">
-              Select an active conversation or user from the sidebar directory
-              to view messages, attachments, and coordinate on college events.
-            </p>
-            <div className="flex flex-wrap items-center justify-center gap-3 text-xs font-semibold text-neutral-600">
-              <span className="py-1.5 px-3 rounded-full bg-white border border-neutral-200 shadow-sm">
-                💬 Event Coordination
-              </span>
-              <span className="py-1.5 px-3 rounded-full bg-white border border-neutral-200 shadow-sm">
-                👥 Group Channels
-              </span>
-              <span className="py-1.5 px-3 rounded-full bg-white border border-neutral-200 shadow-sm">
-                📂 File Sharing
-              </span>
+          <div className="flex-1 flex items-center justify-center p-4 md:p-8 text-center bg-neutral-100 h-full overflow-hidden select-none">
+            <div className="relative max-w-lg w-full aspect-[4/3] flex items-center justify-center">
+              <img
+                src="/illustrations/chats/chat_illustration_placeholder.png"
+                alt="Workspace Chat Illustration"
+                className="max-h-[70vh] w-auto max-w-full object-contain pointer-events-none"
+              />
             </div>
           </div>
         )}
@@ -2265,11 +2312,10 @@ export default function ChatsPage() {
                                 <div
                                   className={`
                               w-5 h-5 rounded-full border flex items-center justify-center transition-colors shrink-0
-                              ${
-                                isSelected
-                                  ? "bg-primary-600 border-primary-600 text-white"
-                                  : "border-neutral-400 bg-white"
-                              }
+                              ${isSelected
+                                      ? "bg-primary-600 border-primary-600 text-white"
+                                      : "border-neutral-400 bg-white"
+                                    }
                             `}
                                 >
                                   {isSelected && (
@@ -2300,10 +2346,9 @@ export default function ChatsPage() {
                     }
                     className={`
                       py-2.5 px-5 text-xs font-bold text-white rounded-full transition-all uppercase tracking-wider font-aeonicPro shadow-md
-                      ${
-                        newGroupName.trim() && selectedMembers.length > 0
-                          ? "bg-primary-600 hover:bg-primary-700 cursor-pointer"
-                          : "bg-neutral-300 cursor-not-allowed"
+                      ${newGroupName.trim() && selectedMembers.length > 0
+                        ? "bg-primary-600 hover:bg-primary-700 cursor-pointer"
+                        : "bg-neutral-300 cursor-not-allowed"
                       }
                     `}
                   >
