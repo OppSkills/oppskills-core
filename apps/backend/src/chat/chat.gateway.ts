@@ -303,7 +303,7 @@ export class ChatGateway
         );
         if (preview) {
           this.server.to(this.userRoom(p.userId)).emit('conversation_updated', {
-            conversation: preview as ChatConversationListItemDto,
+            conversation: preview,
           });
         }
       }),
@@ -334,7 +334,7 @@ export class ChatGateway
         );
         if (preview) {
           this.server.to(this.userRoom(p.userId)).emit('conversation_updated', {
-            conversation: preview as ChatConversationListItemDto,
+            conversation: preview,
           });
         }
       }),

@@ -43,6 +43,11 @@ export class CreateNotificationDto {
   @IsOptional()
   hackathonSlug?: string;
 
+  @ApiPropertyOptional({ description: "Target Community ID" })
+  @IsString()
+  @IsOptional()
+  communityId?: string;
+
   @ApiProperty({ description: "The content message for the notification" })
   @IsString()
   @IsNotEmpty()

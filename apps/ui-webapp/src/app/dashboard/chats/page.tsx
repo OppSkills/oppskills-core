@@ -184,12 +184,15 @@ function HighlightedText({ text, highlight }: HighlightedTextProps) {
     <>
       {parts.map((part, i) =>
         regex.test(part) ? (
-          <mark key={i} className="bg-yellow-300 text-neutral-900 rounded-xs px-0.5 font-bold">
+          <mark
+            key={i}
+            className="bg-yellow-300 text-neutral-900 rounded-xs px-0.5 font-bold"
+          >
             {part}
           </mark>
         ) : (
           part
-        )
+        ),
       )}
     </>
   );
@@ -227,6 +230,8 @@ export default function ChatsPage() {
     leaveGroup,
     deleteGroup,
   } = useChatsPage(selectedChatId);
+
+  const activeChat = chats.find((c) => c.id === selectedChatId);
 
   const groupAvatarInputRef = useRef<HTMLInputElement>(null);
   const attachmentAnchorRef = useRef<HTMLDivElement>(null);
@@ -368,14 +373,14 @@ export default function ChatsPage() {
     setShowChatMenu(false);
   }, [selectedChatId]);
 
-  const activeChat = chats.find((c) => c.id === selectedChatId);
-
   // Compute matching message IDs
   const matchingMessageIds = useMemo(() => {
-    if (!isSearchingMessages || !messageSearchQuery.trim() || !activeChat) return [];
+    if (!isSearchingMessages || !messageSearchQuery.trim() || !activeChat)
+      return [];
     const query = messageSearchQuery.toLowerCase();
     const sorted = [...activeChat.messages].sort(
-      (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+      (a, b) =>
+        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
     );
 
     return sorted
@@ -1225,12 +1230,16 @@ export default function ChatsPage() {
                                   if (e.shiftKey) {
                                     // Shift+Enter: go up (older match)
                                     setCurrentMatchIndex((prev) =>
-                                      prev > 0 ? prev - 1 : matchingMessageIds.length - 1
+                                      prev > 0
+                                        ? prev - 1
+                                        : matchingMessageIds.length - 1,
                                     );
                                   } else {
                                     // Enter: go down (newer match)
                                     setCurrentMatchIndex((prev) =>
-                                      prev < matchingMessageIds.length - 1 ? prev + 1 : 0
+                                      prev < matchingMessageIds.length - 1
+                                        ? prev + 1
+                                        : 0,
                                     );
                                   }
                                 }
@@ -1240,7 +1249,7 @@ export default function ChatsPage() {
                             className="w-full pl-9 pr-24 py-1.5 border border-neutral-300 focus:border-primary-500 outline-none rounded-xl text-xs font-semibold shadow-2xs bg-white text-neutral-900"
                           />
                           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 w-3.5 h-3.5" />
-                          
+
                           {/* Search details and clear button */}
                           <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5 text-[10px] font-bold text-neutral-500 bg-white pl-1 select-none">
                             {messageSearchQuery.trim() && (
@@ -1263,34 +1272,39 @@ export default function ChatsPage() {
                         </div>
 
                         {/* Navigation arrows (Up for older, Down for newer) */}
-                        {messageSearchQuery.trim() && matchingMessageIds.length > 0 && (
-                          <div className="flex items-center gap-1 ml-1.5 shrink-0">
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setCurrentMatchIndex((prev) =>
-                                  prev > 0 ? prev - 1 : matchingMessageIds.length - 1
-                                )
-                              }
-                              title="Previous match (Shift+Enter / Up)"
-                              className="p-1.5 border border-neutral-300 bg-white hover:bg-neutral-50 rounded-xl text-neutral-600 transition-colors shadow-2xs cursor-pointer"
-                            >
-                              <ChevronUp className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setCurrentMatchIndex((prev) =>
-                                  prev < matchingMessageIds.length - 1 ? prev + 1 : 0
-                                )
-                              }
-                              title="Next match (Enter / Down)"
-                              className="p-1.5 border border-neutral-300 bg-white hover:bg-neutral-50 rounded-xl text-neutral-600 transition-colors shadow-2xs cursor-pointer"
-                            >
-                              <ChevronDown className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        )}
+                        {messageSearchQuery.trim() &&
+                          matchingMessageIds.length > 0 && (
+                            <div className="flex items-center gap-1 ml-1.5 shrink-0">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setCurrentMatchIndex((prev) =>
+                                    prev > 0
+                                      ? prev - 1
+                                      : matchingMessageIds.length - 1,
+                                  )
+                                }
+                                title="Previous match (Shift+Enter / Up)"
+                                className="p-1.5 border border-neutral-300 bg-white hover:bg-neutral-50 rounded-xl text-neutral-600 transition-colors shadow-2xs cursor-pointer"
+                              >
+                                <ChevronUp className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setCurrentMatchIndex((prev) =>
+                                    prev < matchingMessageIds.length - 1
+                                      ? prev + 1
+                                      : 0,
+                                  )
+                                }
+                                title="Next match (Enter / Down)"
+                                className="p-1.5 border border-neutral-300 bg-white hover:bg-neutral-50 rounded-xl text-neutral-600 transition-colors shadow-2xs cursor-pointer"
+                              >
+                                <ChevronDown className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          )}
                       </div>
                     )}
 
@@ -1453,7 +1467,11 @@ export default function ChatsPage() {
                                     p-3 md:p-4 rounded-2xl shadow-sm text-sm font-normal relative leading-relaxed transition-all duration-300 min-w-[80px]
                                     bg-primary-600 text-white rounded-br-none
                                     ${
-                                      (highlightedMessageId === message.id || (isSearchingMessages && matchingMessageIds[currentMatchIndex] === message.id))
+                                      highlightedMessageId === message.id ||
+                                      (isSearchingMessages &&
+                                        matchingMessageIds[
+                                          currentMatchIndex
+                                        ] === message.id)
                                         ? "ring-4 ring-yellow-400 ring-offset-2 scale-[1.02]"
                                         : ""
                                     }
@@ -1543,7 +1561,11 @@ export default function ChatsPage() {
                                   <p className="wrap-break-word">
                                     <HighlightedText
                                       text={message.text}
-                                      highlight={isSearchingMessages ? messageSearchQuery : ""}
+                                      highlight={
+                                        isSearchingMessages
+                                          ? messageSearchQuery
+                                          : ""
+                                      }
                                     />
                                   </p>
                                 ) : null}
@@ -1587,7 +1609,11 @@ export default function ChatsPage() {
                                     p-3 md:p-4 rounded-2xl shadow-sm text-sm font-normal relative leading-relaxed transition-all duration-300 min-w-[80px]
                                     bg-white text-neutral-900 rounded-bl-none border border-neutral-200
                                     ${
-                                      (highlightedMessageId === message.id || (isSearchingMessages && matchingMessageIds[currentMatchIndex] === message.id))
+                                      highlightedMessageId === message.id ||
+                                      (isSearchingMessages &&
+                                        matchingMessageIds[
+                                          currentMatchIndex
+                                        ] === message.id)
                                         ? "ring-4 ring-yellow-400 ring-offset-2 scale-[1.02]"
                                         : ""
                                     }
@@ -1678,7 +1704,11 @@ export default function ChatsPage() {
                                   <p className="wrap-break-word">
                                     <HighlightedText
                                       text={message.text}
-                                      highlight={isSearchingMessages ? messageSearchQuery : ""}
+                                      highlight={
+                                        isSearchingMessages
+                                          ? messageSearchQuery
+                                          : ""
+                                      }
                                     />
                                   </p>
                                 ) : null}

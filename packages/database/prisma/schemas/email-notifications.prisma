@@ -3,6 +3,7 @@ model notifications {
   userId                String             @map("user_id")
   eventId               String?            @map("event_id")
   hackathonId           String?            @map("hackathon_id")
+  communityId           String?            @map("community_id")
   content               String
   scheduleType          ScheduleType       @default(IMMEDIATELY) @map("schedule_type")
   scheduledAt           DateTime?          @map("scheduled_at")
@@ -24,11 +25,13 @@ model notifications {
   logs                  NotificationLogs[]
   event                 EventEntity?       @relation(fields: [eventId], references: [id], onDelete: Cascade)
   hackathon             HackathonEntity?   @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+  community             CommunityEntity?   @relation("CommunityNotifications", fields: [communityId], references: [id], onDelete: Cascade)
   user                  UserEntity         @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([eventId])
   @@index([hackathonId])
+  @@index([communityId])
   @@index([status])
   @@index([scheduledAt])
   @@map("notifications")

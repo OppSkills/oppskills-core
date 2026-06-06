@@ -18,6 +18,7 @@ import { sendBulkEmail } from "@/lib/api/sendEmail";
 import {
   getNotificationsForEvent,
   getNotificationsForHackathon,
+  getNotificationsForCommunity,
   NotificationRecord,
 } from "@/lib/api/notificationApi";
 import {
@@ -46,104 +47,8 @@ export interface SendNotificationProps {
   slug?: string | null;
   name?: string;
   endDate?: Date | null;
+  isReadOnly?: boolean;
 }
-
-const initialCommunityNotificationsMock: NotificationRecord[] = [
-  {
-    id: "n1",
-    userId: "u_admin",
-    content:
-      "<p>Pizza, networking, and expert knowledge-sharing starts at 6 PM. See you at the auditorium!</p>",
-    scheduleType: "IMMEDIATELY",
-    status: "COMPLETED",
-    totalRecipients: 12300,
-    processedCount: 12300,
-    successCount: 12285,
-    failedCount: 15,
-    createdAt: "2026-05-25T16:00:00.000Z",
-    completedAt: "2026-05-25T16:05:00.000Z",
-    logs: [
-      {
-        id: "l1",
-        level: "INFO",
-        message: "Broadcast initiated successfully.",
-        createdAt: "2026-05-25T16:00:00.000Z",
-      },
-      {
-        id: "l2",
-        level: "INFO",
-        message: "Resolved 12,300 active subscriber emails.",
-        createdAt: "2026-05-25T16:01:00.000Z",
-      },
-      {
-        id: "l3",
-        level: "ERROR",
-        message: "Mailing queue completed. 15 bounces detected.",
-        createdAt: "2026-05-25T16:05:00.000Z",
-        meta: JSON.stringify({
-          failedCount: 15,
-          successCount: 12285,
-          processedCount: 12300,
-        }),
-      },
-    ],
-  },
-  {
-    id: "n2",
-    userId: "u_admin",
-    content:
-      "<p>Team sync to review student chapter applications. Please review the shared documents beforehand.</p>",
-    scheduleType: "IMMEDIATELY",
-    status: "COMPLETED",
-    totalRecipients: 18,
-    processedCount: 18,
-    successCount: 18,
-    failedCount: 0,
-    createdAt: "2026-05-22T10:30:00.000Z",
-    completedAt: "2026-05-22T10:31:00.000Z",
-    logs: [
-      {
-        id: "l4",
-        level: "INFO",
-        message: "Broadcast initiated successfully.",
-        createdAt: "2026-05-22T10:30:00.000Z",
-      },
-      {
-        id: "l5",
-        level: "INFO",
-        message: "Delivered to core administration segment.",
-        createdAt: "2026-05-22T10:31:00.000Z",
-      },
-    ],
-  },
-  {
-    id: "n3",
-    userId: "u_admin",
-    content:
-      "<p>Please ensure all pending community outreach checklists are uploaded by Friday EOD.</p>",
-    scheduleType: "CUSTOM",
-    scheduledAt: "2026-05-28T14:00:00.000Z",
-    status: "QUEUED",
-    totalRecipients: 42,
-    processedCount: 0,
-    successCount: 0,
-    failedCount: 0,
-    createdAt: "2026-05-24T14:00:00.000Z",
-    logs: [
-      {
-        id: "l6",
-        level: "INFO",
-        message: "Broadcast scheduled in system cron scheduler.",
-        createdAt: "2026-05-24T14:00:00.000Z",
-        meta: JSON.stringify({
-          delay: 345600000,
-          expectedFinishAt: "2026-05-28T14:00:00.000Z",
-          totalRecipients: 42,
-        }),
-      },
-    ],
-  },
-];
 
 export function SendNotification({
   type,
@@ -151,6 +56,7 @@ export function SendNotification({
   slug,
   name,
   endDate,
+  isReadOnly = false,
 }: SendNotificationProps) {
   const { getToken } = useAuth();
 
@@ -173,82 +79,14 @@ export function SendNotification({
     if (!slugOrId) return;
     try {
       setFetchingHistory(true);
-      if (type === "community") {
-        if (typeof window === "undefined") {
-          setNotifications(initialCommunityNotificationsMock);
-          return;
-        }
-        const key = `oppskills_community_notifications_${slugOrId}`;
-        const stored = localStorage.getItem(key);
-        let list: NotificationRecord[] = stored
-          ? JSON.parse(stored)
-          : initialCommunityNotificationsMock;
-
-        let modified = false;
-        list = list.map((n) => {
-          if (
-            n.status === "QUEUED" &&
-            n.scheduledAt &&
-            new Date(n.scheduledAt) <= new Date()
-          ) {
-            modified = true;
-            return {
-              ...n,
-              status: "PROCESSING",
-              logs: [
-                ...(n.logs || []),
-                {
-                  id: `l_${Date.now()}_proc`,
-                  level: "INFO",
-                  message: "Simulated queue worker picked up broadcast task.",
-                  createdAt: new Date().toISOString(),
-                },
-              ],
-            };
-          } else if (n.status === "PROCESSING") {
-            modified = true;
-            const newProcessed = Math.min(
-              n.totalRecipients,
-              n.processedCount + Math.ceil(n.totalRecipients / 3),
-            );
-            const newSuccess = newProcessed;
-            const isFinished = newProcessed >= n.totalRecipients;
-
-            return {
-              ...n,
-              processedCount: newProcessed,
-              successCount: newSuccess,
-              status: isFinished ? "COMPLETED" : "PROCESSING",
-              completedAt: isFinished ? new Date().toISOString() : undefined,
-              logs: [
-                ...(n.logs || []),
-                {
-                  id: `l_${Date.now()}_step_${newProcessed}`,
-                  level: "INFO",
-                  message: isFinished
-                    ? "Simulated broadcast campaign successfully finished."
-                    : `Simulated sending to recipients... progress: ${newProcessed}/${n.totalRecipients}`,
-                  createdAt: new Date().toISOString(),
-                },
-              ],
-            };
-          }
-          return n;
-        });
-
-        if (modified) {
-          localStorage.setItem(key, JSON.stringify(list));
-        }
-
-        setNotifications(list);
-        return;
-      }
       const token = await getToken();
       let data: NotificationRecord[] = [];
       if (type === "event") {
         data = await getNotificationsForEvent(token, slugOrId);
-      } else {
+      } else if (type === "hackathon") {
         data = await getNotificationsForHackathon(token, slugOrId);
+      } else if (type === "community") {
+        data = await getNotificationsForCommunity(token, slugOrId);
       }
       setNotifications(data);
     } catch (error) {
@@ -298,6 +136,10 @@ export function SendNotification({
   }, [minDateTime]);
 
   const handleSend = async () => {
+    if (isReadOnly) {
+      toast.error("You do not have permission to send notifications.");
+      return;
+    }
     if (!message || message === "<p></p>") {
       toast.error("Please enter a message body");
       return;
@@ -317,64 +159,13 @@ export function SendNotification({
 
     try {
       setLoading(true);
-      if (type === "community") {
-        const key = `oppskills_community_notifications_${slugOrId}`;
-        const stored = localStorage.getItem(key);
-        const currentList: NotificationRecord[] = stored
-          ? JSON.parse(stored)
-          : initialCommunityNotificationsMock;
-
-        const totalRecipients = 12300;
-
-        const newNotif: NotificationRecord = {
-          id: `n_${Date.now()}`,
-          userId: "u_admin",
-          content: message,
-          scheduleType: whenToSend === "Custom Time" ? "CUSTOM" : "IMMEDIATELY",
-          scheduledAt:
-            whenToSend === "Custom Time"
-              ? new Date(customDateTime).toISOString()
-              : undefined,
-          status: whenToSend === "Custom Time" ? "QUEUED" : "PROCESSING",
-          totalRecipients,
-          processedCount: 0,
-          successCount: 0,
-          failedCount: 0,
-          createdAt: new Date().toISOString(),
-          logs: [
-            {
-              id: `l_${Date.now()}_init`,
-              level: "INFO",
-              message:
-                whenToSend === "Custom Time"
-                  ? `Simulated broadcast scheduled for ${new Date(customDateTime).toLocaleString()}`
-                  : "Simulated broadcast initialized immediately.",
-              createdAt: new Date().toISOString(),
-            },
-          ],
-        };
-
-        const updatedList = [newNotif, ...currentList];
-        localStorage.setItem(key, JSON.stringify(updatedList));
-
-        setLastScheduledTime(
-          whenToSend === "Custom Time"
-            ? new Date(customDateTime).toISOString()
-            : new Date().toISOString(),
-        );
-        setMessage("");
-        setWhenToSend("Immediately");
-        toast.success("Broadcast initiated successfully!");
-        fetchHistory();
-        return;
-      }
-
       const token = await getToken();
       const response = await sendBulkEmail(token, {
         eventId: type === "event" ? id || undefined : undefined,
         eventSlug: type === "event" ? slug || undefined : undefined,
         hackathonId: type === "hackathon" ? id || undefined : undefined,
         hackathonSlug: type === "hackathon" ? slug || undefined : undefined,
+        communityId: type === "community" ? id || undefined : undefined,
         htmlBody: message,
         scheduledAt: whenToSend === "Custom Time" ? customDateTime : undefined,
       });
@@ -635,6 +426,15 @@ export function SendNotification({
               </div>
             </div>
 
+            {isReadOnly && (
+              <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-2xl p-4 flex items-center gap-3 animate-in fade-in duration-300">
+                <Info className="w-5 h-5 text-yellow-600 shrink-0" />
+                <p className="text-sm">
+                  You have read-only access to this community. You can view the notification history but cannot send new notifications.
+                </p>
+              </div>
+            )}
+
             {/* FLEXIBLE TWO COLUMN SCHEDULE AREA */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-2">
               <div className="flex flex-col gap-1.5">
@@ -644,6 +444,7 @@ export function SendNotification({
                 <Select
                   value={whenToSend}
                   onValueChange={(val) => setWhenToSend(val)}
+                  disabled={isReadOnly}
                 >
                   <SelectTrigger className="rounded-full">
                     <SelectValue placeholder="Immediately" />
@@ -682,7 +483,8 @@ export function SendNotification({
                     onChange={(e) => setCustomDateTime(e.target.value)}
                     min={minDateTime}
                     max={maxDateTime}
-                    className="w-full bg-transparent border border-neutral-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 text-neutral-700 font-medium"
+                    disabled={isReadOnly}
+                    className="w-full bg-transparent border border-neutral-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 text-neutral-700 font-medium disabled:opacity-50"
                   />
                   <div className="flex items-center gap-1.5 text-[11px] text-green-600 mt-1 font-medium">
                     <Clock className="h-3.5 w-3.5" />
@@ -697,7 +499,7 @@ export function SendNotification({
               <label className="text-xs text-neutral-400 font-medium tracking-wide">
                 Main Body
               </label>
-              <div className="border-none rounded-3xl overflow-hidden bg-white">
+              <div className={cn("border-none rounded-3xl overflow-hidden bg-white", isReadOnly && "pointer-events-none opacity-60 select-none")}>
                 <RichTextEditor
                   placeholder="Type your message here..."
                   value={message}
@@ -711,7 +513,7 @@ export function SendNotification({
             <div className="mt-4">
               <Button
                 onClick={handleSend}
-                disabled={loading || (!id && !slug)}
+                disabled={loading || (!id && !slug) || isReadOnly}
                 className="w-full bg-primary-700 hover:bg-primary-800 text-neutral-100 font-medium"
               >
                 {loading ? (

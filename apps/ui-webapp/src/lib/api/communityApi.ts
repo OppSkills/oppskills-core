@@ -1,6 +1,14 @@
-import { buildAuthHeaders, createApiClient } from "./apiClient";
+import {
+  buildAuthHeaders,
+  createApiClient,
+  isRecord,
+  requireString,
+  optionalString,
+} from "./apiClient";
 import type { CommunityIndustryValue } from "@oppskills/types/enums";
 import type {
+  PaginatedCommunityMembers,
+  CommunityMember,
   PublicCommunityListResponse,
   PublicCommunityProfile,
   UpdateCommunityDto,
@@ -44,29 +52,18 @@ export type MyCommunityListItem = Readonly<{
   createdAt: string;
 }>;
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
+export type CommunityStatsResponse = Readonly<{
+  totalMembers: number;
+  newMembers30Days: number;
+  pageImpressions: number;
+  postImpressions: number;
+  adminCount: number;
+  moderatorCount: number;
+}>;
 
-function requireString(obj: Record<string, unknown>, key: string): string {
-  const value = obj[key];
-  if (typeof value !== "string" || value.trim().length === 0) {
-    throw new Error(`Invalid response: missing "${key}"`);
-  }
-  return value;
-}
-
-function optionalString(
-  obj: Record<string, unknown>,
-  key: string,
-): string | null {
-  const value = obj[key];
-  if (value === null || value === undefined) return null;
-  if (typeof value !== "string") {
-    throw new Error(`Invalid response: invalid "${key}"`);
-  }
-  return value;
-}
+// ---------------------------------------------------------------------------
+// Community CRUD
+// ---------------------------------------------------------------------------
 
 export async function createCommunity(
   token: string,
@@ -128,6 +125,65 @@ export async function getMyCommunities(
   });
 }
 
+export async function getCommunity(
+  token: string,
+  id: string,
+): Promise<CommunityResponse> {
+  const res = await API.get(`/${id}`, {
+    headers: buildAuthHeaders(token),
+  });
+
+  const raw = res.data as unknown;
+  if (!isRecord(raw)) {
+    throw new Error("Invalid response: expected object.");
+  }
+
+  return {
+    id: requireString(raw, "id"),
+    name: requireString(raw, "name"),
+    handle: requireString(raw, "handle"),
+    description: optionalString(raw, "description"),
+    website: optionalString(raw, "website"),
+    industry: requireString(raw, "industry") as CommunityIndustryValue,
+    coverImage: optionalString(raw, "coverImage"),
+    avatarImage: optionalString(raw, "avatarImage"),
+    ownerId: requireString(raw, "ownerId"),
+    createdAt: requireString(raw, "createdAt"),
+  };
+}
+
+export async function updateCommunity(
+  token: string,
+  id: string,
+  data: UpdateCommunityDto,
+): Promise<CommunityResponse> {
+  const res = await API.patch(`/${id}`, data, {
+    headers: buildAuthHeaders(token),
+  });
+
+  const raw = res.data as unknown;
+  if (!isRecord(raw)) {
+    throw new Error("Invalid response: expected object.");
+  }
+
+  return {
+    id: requireString(raw, "id"),
+    name: requireString(raw, "name"),
+    handle: requireString(raw, "handle"),
+    description: optionalString(raw, "description"),
+    website: optionalString(raw, "website"),
+    industry: requireString(raw, "industry") as CommunityIndustryValue,
+    coverImage: optionalString(raw, "coverImage"),
+    avatarImage: optionalString(raw, "avatarImage"),
+    ownerId: requireString(raw, "ownerId"),
+    createdAt: requireString(raw, "createdAt"),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Handle utilities
+// ---------------------------------------------------------------------------
+
 export async function checkCommunityHandleAvailability(
   handle: string,
 ): Promise<{ available: boolean }> {
@@ -158,32 +214,9 @@ export async function suggestCommunityHandles(
   };
 }
 
-export async function getCommunity(
-  token: string,
-  id: string,
-): Promise<CommunityResponse> {
-  const res = await API.get(`/${id}`, {
-    headers: buildAuthHeaders(token),
-  });
-
-  const raw = res.data as unknown;
-  if (!isRecord(raw)) {
-    throw new Error("Invalid response: expected object.");
-  }
-
-  return {
-    id: requireString(raw, "id"),
-    name: requireString(raw, "name"),
-    handle: requireString(raw, "handle"),
-    description: optionalString(raw, "description"),
-    website: optionalString(raw, "website"),
-    industry: requireString(raw, "industry") as CommunityIndustryValue,
-    coverImage: optionalString(raw, "coverImage"),
-    avatarImage: optionalString(raw, "avatarImage"),
-    ownerId: requireString(raw, "ownerId"),
-    createdAt: requireString(raw, "createdAt"),
-  };
-}
+// ---------------------------------------------------------------------------
+// Members
+// ---------------------------------------------------------------------------
 
 export async function getUniqueMemberTypes(
   token: string,
@@ -242,14 +275,32 @@ export async function updateMemberAccess(
   return res.data;
 }
 
+export async function getMyMemberRecord(
+  token: string,
+  communityId: string,
+): Promise<CommunityMember> {
+  const res = await API.get(`/${communityId}/members/me`, {
+    headers: buildAuthHeaders(token),
+  });
+  return res.data as CommunityMember;
+}
+
 export async function listCommunityMembers(
   token: string,
   communityId: string,
-): Promise<any[]> {
+  params?: {
+    page?: number;
+    take?: number;
+    search?: string;
+    role?: string;
+    sortDirection?: string | null;
+  },
+): Promise<PaginatedCommunityMembers> {
   const res = await API.get(`/${communityId}/members`, {
     headers: buildAuthHeaders(token),
+    params,
   });
-  return res.data as any[];
+  return res.data as PaginatedCommunityMembers;
 }
 
 export async function deleteCommunityMember(
@@ -262,6 +313,41 @@ export async function deleteCommunityMember(
   });
   return res.data;
 }
+
+// ---------------------------------------------------------------------------
+// Stats
+// ---------------------------------------------------------------------------
+
+export async function getCommunityStats(
+  token: string,
+  communityId: string,
+): Promise<CommunityStatsResponse> {
+  const res = await API.get(`/${communityId}/stats`, {
+    headers: buildAuthHeaders(token),
+  });
+
+  const raw = res.data as unknown;
+  if (!isRecord(raw)) {
+    throw new Error("Invalid response: expected object.");
+  }
+
+  return {
+    totalMembers: typeof raw.totalMembers === "number" ? raw.totalMembers : 0,
+    newMembers30Days:
+      typeof raw.newMembers30Days === "number" ? raw.newMembers30Days : 0,
+    pageImpressions:
+      typeof raw.pageImpressions === "number" ? raw.pageImpressions : 0,
+    postImpressions:
+      typeof raw.postImpressions === "number" ? raw.postImpressions : 0,
+    adminCount: typeof raw.adminCount === "number" ? raw.adminCount : 0,
+    moderatorCount:
+      typeof raw.moderatorCount === "number" ? raw.moderatorCount : 0,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Follow / Unfollow
+// ---------------------------------------------------------------------------
 
 export async function followCommunity(
   token: string,
@@ -285,6 +371,27 @@ export async function unfollowCommunity(
   return res.data as { following: boolean; memberCount: number };
 }
 
+// ---------------------------------------------------------------------------
+// Join
+// ---------------------------------------------------------------------------
+
+export async function joinCommunity(
+  token: string,
+  communityId: string,
+  referralCode?: string,
+): Promise<{ success: boolean; memberId: string }> {
+  const res = await API.post(
+    `/${communityId}/join`,
+    { referralCode },
+    { headers: buildAuthHeaders(token) },
+  );
+  return res.data as { success: boolean; memberId: string };
+}
+
+// ---------------------------------------------------------------------------
+// Public endpoints (no auth required)
+// ---------------------------------------------------------------------------
+
 export async function getPublicCommunities(
   params: {
     page?: number;
@@ -306,32 +413,4 @@ export async function getPublicCommunityByHandle(
   const headers = token ? buildAuthHeaders(token) : undefined;
   const res = await API.get(`/public/${handle}`, { headers });
   return res.data as PublicCommunityProfile;
-}
-
-export async function updateCommunity(
-  token: string,
-  id: string,
-  data: UpdateCommunityDto,
-): Promise<CommunityResponse> {
-  const res = await API.patch(`/${id}`, data, {
-    headers: buildAuthHeaders(token),
-  });
-
-  const raw = res.data as unknown;
-  if (!isRecord(raw)) {
-    throw new Error("Invalid response: expected object.");
-  }
-
-  return {
-    id: requireString(raw, "id"),
-    name: requireString(raw, "name"),
-    handle: requireString(raw, "handle"),
-    description: optionalString(raw, "description"),
-    website: optionalString(raw, "website"),
-    industry: requireString(raw, "industry") as CommunityIndustryValue,
-    coverImage: optionalString(raw, "coverImage"),
-    avatarImage: optionalString(raw, "avatarImage"),
-    ownerId: requireString(raw, "ownerId"),
-    createdAt: requireString(raw, "createdAt"),
-  };
 }

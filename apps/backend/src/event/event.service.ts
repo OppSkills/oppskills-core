@@ -1818,7 +1818,7 @@ export class EventService {
         submissionId = submission.id;
 
         const answerData = providedAnswers.map((a) => ({
-          submissionId: submission!.id,
+          submissionId: submission.id,
           fieldId: a.fieldId,
           valueText:
             typeof a.value === 'string' ? a.value : JSON.stringify(a.value),

@@ -64,9 +64,7 @@ jest.mock('@oppskills/db', () => ({
   },
 }));
 
-const { prisma } = jest.requireMock('@oppskills/db') as {
-  prisma: Record<string, Record<string, jest.Mock>>;
-};
+const { prisma } = jest.requireMock('@oppskills/db');
 
 describe('ChatService', () => {
   let service: ChatService;

@@ -13,6 +13,7 @@ const THIRTY_DAYS = 60 * 60 * 24 * 30;
 function destination(entityType: string, slug: string) {
   if (entityType === "HACKATHON") return `/hackathons/${slug}`;
   if (entityType === "EVENT") return `/events/${slug}`;
+  if (entityType === "COMMUNITY") return `/community/${slug}`;
   return `/festivals/${slug}`;
 }
 

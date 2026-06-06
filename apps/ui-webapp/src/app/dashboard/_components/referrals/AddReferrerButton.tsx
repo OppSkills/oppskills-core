@@ -9,12 +9,15 @@ import type { ReferralEntityType } from "@/lib/api/referralApi";
 export const AddReferrerButton: React.FC<{
   entityType: ReferralEntityType;
   entityId: string;
-}> = memo(({ entityType, entityId }) => {
+  isReadOnly?: boolean;
+}> = memo(({ entityType, entityId, isReadOnly = false }) => {
   if (process.env.NODE_ENV === "development") {
     console.count("[render] AddReferrerButton");
   }
 
   const [isOpen, setIsOpen] = useState(false);
+
+  if (isReadOnly) return null;
 
   return (
     <>

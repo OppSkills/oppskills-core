@@ -260,6 +260,7 @@ export default function MemberDetailsSheet({
                     <option value="ADMIN">Admin Access</option>
                     <option value="MODERATOR">Moderator</option>
                     <option value="READ_ONLY">Read Only</option>
+                    <option value="MEMBER">Member</option>
                   </select>
                 </div>
               </div>

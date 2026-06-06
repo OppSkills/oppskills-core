@@ -19,7 +19,7 @@ export class CommunityPublicController {
   constructor(
     private readonly communityService: CommunityService,
     private readonly optionalAuth: OptionalAuthService,
-  ) {}
+  ) { }
 
   @Get()
   @ApiOperation({ summary: 'List public communities' })

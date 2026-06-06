@@ -14,10 +14,17 @@ import {
   TaskThreadMessageResponseDto,
 } from './dto/task-response.dto';
 import { TaskStatus } from '@prisma/client';
+import { Logger } from '../_utils/logger';
+import { CommunityService } from '../community/community.service';
 
 @Injectable()
 export class CommunityTaskService {
-  constructor(private readonly emailService: EmailService) {}
+  private readonly logger = new Logger(CommunityTaskService.name);
+
+  constructor(
+    private readonly emailService: EmailService,
+    private readonly communityService: CommunityService,
+  ) {}
 
   /**
    * Helper to map user role in community to a numeric hierarchy level:
@@ -27,38 +34,11 @@ export class CommunityTaskService {
     userId: string,
     communityId: string,
   ): Promise<number> {
-    const community = await prisma.communityEntity.findUnique({
-      where: { id: communityId },
-      select: { ownerId: true },
-    });
-
-    if (!community) {
-      throw new NotFoundException('Community not found.');
-    }
-
-    if (community.ownerId === userId) {
-      return 3; // OWNER is ADMIN level (highest)
-    }
-
-    const member = await prisma.communityMemberEntity.findFirst({
-      where: { communityId, userId },
-      select: { accessControlRole: true },
-    });
-
-    if (!member) {
-      throw new ForbiddenException('You are not a member of this community.');
-    }
-
-    switch (member.accessControlRole) {
-      case 'ADMIN':
-        return 3;
-      case 'MODERATOR':
-        return 2;
-      case 'READ_ONLY':
-        return 1;
-      default:
-        return 1;
-    }
+    const member = await this.communityService.getMemberRecord(userId, communityId);
+    // Returns 0 for regular MEMBERs — callers must decide whether rank 0 is
+    // acceptable for their operation. Only throws if the user has no membership
+    // record at all (getMemberRecord throws NotFoundException in that case).
+    return this.communityService.getRoleRank(member.accessControlRole);
   }
 
   private formatUserName(user: {
@@ -78,18 +58,34 @@ export class CommunityTaskService {
     communityId: string,
     dto: CreateTaskDto,
   ): Promise<TaskResponseDto> {
-    // 1. Get hierarchy level of assigner and assignee
+    // 1. Get hierarchy level of assigner — must be a management role (rank > 0)
     const assignerLevel = await this.getUserHierarchyLevel(
       currentUserId,
       communityId,
     );
+    if (assignerLevel === 0) {
+      throw new ForbiddenException(
+        'You do not have permission to create tasks in this community.',
+      );
+    }
+
+    // 2. Get hierarchy level of assignee — regular MEMBERs (rank 0) are allowed
     const assigneeLevel = await this.getUserHierarchyLevel(
       dto.toUserId,
       communityId,
     );
 
-    // 2. Validate hierarchy rule: Assigners can only assign to equal/lower levels
+    // 3. Validate hierarchy rule: Assigners can only assign to equal/lower levels
+    //    (MEMBER rank 0 is always <= any assigner rank, so members can be assigned)
     if (assignerLevel < assigneeLevel) {
+      this.logger.warn({
+        action: 'COMMUNITY_TASK_HIERARCHY_VIOLATION',
+        communityId,
+        userId: currentUserId,
+        assigneeUserId: dto.toUserId,
+        assignerLevel,
+        assigneeLevel,
+      });
       throw new ForbiddenException(
         'You do not have permission to assign tasks to users with a higher access role in the hierarchy.',
       );
@@ -119,6 +115,17 @@ export class CommunityTaskService {
         assignedBy: true,
         community: true,
       },
+    });
+
+    this.logger.info({
+      action: 'COMMUNITY_TASK_CREATED',
+      communityId,
+      userId: currentUserId,
+      taskId: task.id,
+      assignedToUserId: task.toUserId,
+      priority: task.priority,
+      tags: task.tags,
+      optForMail: task.optForMail,
     });
 
     // 4. Send email notification if optForMail is true
@@ -284,15 +291,23 @@ export class CommunityTaskService {
   ): Promise<TaskThreadMessageResponseDto> {
     const task = await prisma.communityTaskEntity.findUnique({
       where: { id: taskId },
-      select: { toUserId: true, byUserId: true, status: true },
+      select: { toUserId: true, byUserId: true, status: true, communityId: true },
     });
 
     if (!task) {
       throw new NotFoundException('Task not found.');
     }
 
+    // Verify membership and dashboard role
+    await this.getUserHierarchyLevel(currentUserId, task.communityId);
+
     // Verify user is assignee or assigner
     if (currentUserId !== task.toUserId && currentUserId !== task.byUserId) {
+      this.logger.warn({
+        action: 'COMMUNITY_TASK_COMMENT_PERMISSION_DENIED',
+        userId: currentUserId,
+        taskId,
+      });
       throw new ForbiddenException(
         'Only the assignee or assigner can comment on this task thread.',
       );
@@ -311,6 +326,16 @@ export class CommunityTaskService {
       include: {
         user: true,
       },
+    });
+
+    this.logger.info({
+      action: 'COMMUNITY_TASK_COMMENT_CREATED',
+      communityId: task.communityId,
+      userId: currentUserId,
+      taskId,
+      commentId: message.id,
+      commentType: dto.type,
+      hasAttachment: !!dto.fileName,
     });
 
     return {
@@ -345,11 +370,19 @@ export class CommunityTaskService {
       throw new NotFoundException('Task not found.');
     }
 
+    // Verify membership and dashboard role
+    await this.getUserHierarchyLevel(currentUserId, task.communityId);
+
     const isAssigner = currentUserId === task.byUserId;
     const isAssignee = currentUserId === task.toUserId;
 
     // Verify user belongs to assignee or assigner
     if (!isAssigner && !isAssignee) {
+      this.logger.warn({
+        action: 'COMMUNITY_TASK_UPDATE_PERMISSION_DENIED',
+        taskId,
+        userId: currentUserId,
+      });
       throw new ForbiddenException(
         'You do not have permission to modify this task.',
       );
@@ -394,7 +427,18 @@ export class CommunityTaskService {
       include: {
         assignedTo: true,
         assignedBy: true,
+        community: true,
       },
+    });
+
+    this.logger.info({
+      action: 'COMMUNITY_TASK_STATUS_UPDATED',
+      communityId: updatedTask.communityId,
+      userId: currentUserId,
+      taskId,
+      oldStatus: task.status,
+      newStatus: dto.status,
+      optForMail: updatedTask.optForMail,
     });
 
     let alertContent = '';
@@ -417,6 +461,40 @@ export class CommunityTaskService {
           userId: currentUserId,
           type: 'ALERT',
           content: alertContent,
+        },
+      });
+    }
+
+    if (
+      updatedTask.optForMail &&
+      updatedTask.assignedTo.email &&
+      task.status !== dto.status &&
+      (dto.status === TaskStatus.COMPLETED ||
+        dto.status === TaskStatus.CANCELLED)
+    ) {
+      const assignerName = this.formatUserName(updatedTask.assignedBy);
+      const assigneeName = this.formatUserName(updatedTask.assignedTo);
+      const formattedDate = updatedTask.dueDate
+        ? updatedTask.dueDate.toLocaleDateString('en-GB', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+          })
+        : undefined;
+
+      await this.emailService.send({
+        type: 'community-task-status-updated',
+        to: updatedTask.assignedTo.email,
+        props: {
+          assigneeName,
+          assignerName,
+          communityName: updatedTask.community.name,
+          taskTitle: updatedTask.title,
+          taskDescription: updatedTask.description || undefined,
+          statusText:
+            dto.status === TaskStatus.COMPLETED ? 'approved' : 'rejected',
+          dueDate: formattedDate,
+          baseUrl: process.env.FRONTEND_URL || 'https://www.oppskills.com',
         },
       });
     }
@@ -473,6 +551,14 @@ export class CommunityTaskService {
 
     await prisma.communityTaskThreadMessageEntity.delete({
       where: { id: commentId },
+    });
+
+    this.logger.info({
+      action: 'COMMUNITY_TASK_COMMENT_DELETED',
+      communityId: comment.task.communityId,
+      userId: currentUserId,
+      taskId,
+      commentId,
     });
   }
 }

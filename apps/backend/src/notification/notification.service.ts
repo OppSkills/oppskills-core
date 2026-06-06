@@ -8,9 +8,12 @@ import { prisma } from '@oppskills/db';
 import { CreateNotificationDto } from '@oppskills/types';
 import { NotificationQueue } from './queue/notification.queue';
 import { NotificationWorker } from './queue/notification.worker';
+import { Logger } from 'src/_utils/logger';
 
 @Injectable()
 export class NotificationService {
+  private readonly logger = new Logger(NotificationService.name);
+
   constructor(
     private readonly notificationQueue: NotificationQueue,
     private readonly notificationWorker: NotificationWorker,
@@ -24,19 +27,22 @@ export class NotificationService {
     userId: string,
     eventSlugOrId?: string,
     hackathonSlugOrId?: string,
+    communityId?: string,
+    mode: 'view' | 'edit' = 'view',
   ): Promise<{
     id: string;
-    type: 'event' | 'hackathon';
+    type: 'event' | 'hackathon' | 'community';
     recipientCount: number;
   }> {
-    if (eventSlugOrId && hackathonSlugOrId) {
+    const provided = [eventSlugOrId, hackathonSlugOrId, communityId].filter(Boolean);
+    if (provided.length > 1) {
       throw new BadRequestException(
-        'Both event and hackathon identifiers cannot be provided together.',
+        'Only one identifier (event, hackathon, or community) can be provided.',
       );
     }
-    if (!eventSlugOrId && !hackathonSlugOrId) {
+    if (provided.length === 0) {
       throw new BadRequestException(
-        'Either an event or hackathon identifier must be provided.',
+        'Either an event, hackathon, or community identifier must be provided.',
       );
     }
 
@@ -94,6 +100,43 @@ export class NotificationService {
       return { id: hackathon.id, type: 'hackathon', recipientCount: count };
     }
 
+    if (communityId) {
+      const community = await prisma.communityEntity.findFirst({
+        where: {
+          id: communityId,
+        },
+        select: { id: true, ownerId: true },
+      });
+      if (!community) throw new NotFoundException('Community not found');
+
+      if (community.ownerId !== userId) {
+        const hasMemberRole = await prisma.communityMemberEntity.findFirst({
+          where: { communityId: community.id, userId },
+          select: { accessControlRole: true },
+        });
+        if (!hasMemberRole) {
+          throw new ForbiddenException(
+            'You do not have permission to view or manage notifications for this community.',
+          );
+        }
+
+        const allowedRoles = mode === 'edit'
+          ? ['ADMIN', 'MODERATOR']
+          : ['ADMIN', 'MODERATOR', 'READ_ONLY'];
+
+        if (!allowedRoles.includes(hasMemberRole.accessControlRole)) {
+          throw new ForbiddenException(
+            'You do not have permission to view or manage notifications for this community.',
+          );
+        }
+      }
+
+      const count = await prisma.communityMemberEntity.count({
+        where: { communityId: community.id },
+      });
+      return { id: community.id, type: 'community', recipientCount: count };
+    }
+
     return { id: '', type: 'event', recipientCount: 0 };
   }
 
@@ -106,10 +149,13 @@ export class NotificationService {
         userId,
         dto.eventId || dto.eventSlug,
         dto.hackathonId || dto.hackathonSlug,
+        dto.communityId,
+        'edit',
       );
 
     const actualEventId = type === 'event' ? id : undefined;
     const actualHackathonId = type === 'hackathon' ? id : undefined;
+    const actualCommunityId = type === 'community' ? id : undefined;
 
     const scheduleType = dto.scheduleType || 'IMMEDIATELY';
     const status = dto.status || 'QUEUED';
@@ -175,6 +221,7 @@ export class NotificationService {
         userId,
         eventId: actualEventId || null,
         hackathonId: actualHackathonId || null,
+        communityId: actualCommunityId || null,
         content: dto.content,
         scheduleType,
         scheduledAt,
@@ -183,6 +230,18 @@ export class NotificationService {
         expectedFinishAt,
       },
     });
+
+    if (actualCommunityId) {
+      this.logger.info({
+        action: 'COMMUNITY_NOTIFICATION_CREATED',
+        communityId: actualCommunityId,
+        userId,
+        notificationId: notification.id,
+        recipientCount,
+        scheduleType,
+        scheduledAt,
+      });
+    }
 
     // Enqueue the job immediately
     const delay = Math.max(0, scheduledAt.getTime() - Date.now());
@@ -210,6 +269,8 @@ export class NotificationService {
       userId,
       eventSlugOrId,
       undefined,
+      undefined,
+      'view',
     );
 
     return prisma.notifications.findMany({
@@ -256,6 +317,8 @@ export class NotificationService {
       userId,
       undefined,
       hackathonSlugOrId,
+      undefined,
+      'view',
     );
 
     return prisma.notifications.findMany({
@@ -292,6 +355,52 @@ export class NotificationService {
   }
 
   /**
+   * Lists all notifications scheduled for a specific community.
+   */
+  async listNotificationsForCommunity(communityId: string, userId: string) {
+    const { id } = await this.assertEventOrHackathonAccess(
+      userId,
+      undefined,
+      undefined,
+      communityId,
+      'view',
+    );
+
+    return prisma.notifications.findMany({
+      where: { communityId: id },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        userId: true,
+        eventId: true,
+        hackathonId: true,
+        communityId: true,
+        content: true,
+        scheduleType: true,
+        scheduledAt: true,
+        status: true,
+        totalRecipients: true,
+        processedCount: true,
+        successCount: true,
+        failedCount: true,
+        expectedFinishAt: true,
+        completedAt: true,
+        createdAt: true,
+        logs: {
+          select: {
+            id: true,
+            level: true,
+            message: true,
+            meta: true,
+            createdAt: true,
+          },
+          orderBy: { createdAt: 'asc' },
+        },
+      },
+    });
+  }
+
+  /**
    * Fetches a notification by ID.
    */
   async getNotificationById(id: string, userId: string) {
@@ -302,6 +411,7 @@ export class NotificationService {
         userId: true,
         eventId: true,
         hackathonId: true,
+        communityId: true,
         content: true,
         scheduleType: true,
         scheduledAt: true,
@@ -330,14 +440,13 @@ export class NotificationService {
       throw new NotFoundException('Notification not found');
     }
 
-    // Direct owner can always see their notifications
-    if (notification.userId !== userId) {
-      await this.assertEventOrHackathonAccess(
-        userId,
-        notification.eventId || undefined,
-        notification.hackathonId || undefined,
-      );
-    }
+    await this.assertEventOrHackathonAccess(
+      userId,
+      notification.eventId || undefined,
+      notification.hackathonId || undefined,
+      notification.communityId || undefined,
+      'view',
+    );
 
     return notification;
   }
@@ -354,16 +463,27 @@ export class NotificationService {
       throw new NotFoundException('Notification not found');
     }
 
-    if (notification.userId !== userId) {
-      await this.assertEventOrHackathonAccess(
-        userId,
-        notification.eventId || undefined,
-        notification.hackathonId || undefined,
-      );
-    }
+    await this.assertEventOrHackathonAccess(
+      userId,
+      notification.eventId || undefined,
+      notification.hackathonId || undefined,
+      notification.communityId || undefined,
+      'edit',
+    );
 
-    return prisma.notifications.delete({
+    const deleted = await prisma.notifications.delete({
       where: { id },
     });
+
+    if (notification.communityId) {
+      this.logger.info({
+        action: 'COMMUNITY_NOTIFICATION_DELETED',
+        communityId: notification.communityId,
+        userId,
+        notificationId: notification.id,
+      });
+    }
+
+    return deleted;
   }
 }

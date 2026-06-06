@@ -15,6 +15,7 @@ export interface NotificationRecord {
   userId: string;
   eventId?: string;
   hackathonId?: string;
+  communityId?: string;
   content: string;
   scheduleType: "IMMEDIATELY" | "CUSTOM";
   scheduledAt?: string;
@@ -51,6 +52,16 @@ export async function getNotificationsForHackathon(
   hackathonSlugOrId: string,
 ): Promise<NotificationRecord[]> {
   const res = await API.get(`/hackathon/${hackathonSlugOrId}`, {
+    headers: buildAuthHeaders(token),
+  });
+  return res.data;
+}
+
+export async function getNotificationsForCommunity(
+  token: string | null,
+  communityId: string,
+): Promise<NotificationRecord[]> {
+  const res = await API.get(`/community/${communityId}`, {
     headers: buildAuthHeaders(token),
   });
   return res.data;

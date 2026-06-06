@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import ManageHeader from "./ManageHeader";
 import CommunityStats from "./CommunityStats";
 import MembersDirectory from "./MembersDirectory";
 import MeetScheduler from "./MeetScheduler";
 import TaskTracker from "./TaskTracker";
 import AddMemberModal from "./AddMemberModal";
+import EditMemberModal from "./EditMemberModal";
 import MemberDetailsSheet from "./MemberDetailsSheet";
 import { toast } from "sonner";
 import { useAuth } from "@clerk/nextjs";
@@ -19,6 +20,9 @@ import {
   deleteCommunityMember,
   updateMemberType,
   updateMemberAccess,
+  getCommunityStats,
+  getMyMemberRecord,
+  type CommunityStatsResponse,
 } from "@/lib/api/communityApi";
 import {
   listCommunityMeets,
@@ -54,6 +58,64 @@ export default function ManageCommunityClient({
   const [communityOwnerId, setCommunityOwnerId] = useState<string>("");
   const [meets, setMeets] = useState<Meet[]>(initialMeets);
 
+  const [stats, setStats] = useState<CommunityStatsResponse | null>(null);
+  const [isLoadingStats, setIsLoadingStats] = useState<boolean>(true);
+  const [statsError, setStatsError] = useState<boolean>(false);
+
+  // Pagination & Search States
+  const [page, setPage] = useState(1);
+  const [take] = useState(20);
+  const [search, setSearch] = useState("");
+  const [role, setRole] = useState("All Members");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc" | null>(null);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalMembers, setTotalMembers] = useState(0);
+  const [isLoadingMembers, setIsLoadingMembers] = useState(false);
+  const [currentUserMember, setCurrentUserMember] = useState<Member | null>(null);
+
+  // Edit Member Modal States
+  const [isEditMemberOpen, setIsEditMemberOpen] = useState(false);
+  const [selectedMemberForEdit, setSelectedMemberForEdit] = useState<Member | null>(null);
+
+  // Shared Dynamic State Pools
+  const [members, setMembers] = useState<Member[]>(initialMembers);
+  const [customMemberTypes, setCustomMemberTypes] = useState<string[]>([]);
+  const [availableRoles, setAvailableRoles] = useState<string[]>(defaultRoles);
+  const [tasks, setTasks] = useState<any[]>([]);
+
+  const fetchMembers = useCallback(async (
+    p: number,
+    s: string,
+    r: string,
+    sort: "asc" | "desc" | null
+  ) => {
+    if (!isLoaded) return;
+    try {
+      const token = await getToken();
+      if (!token) return;
+      setIsLoadingMembers(true);
+      const res = await listCommunityMembers(token, communityId, {
+        page: p,
+        take,
+        search: s || undefined,
+        role: r === "All Members" ? undefined : r,
+        sortDirection: sort || undefined,
+      });
+      setMembers(res.items);
+      setTotalMembers(res.total);
+      setTotalPages(res.totalPages);
+    } catch (err) {
+      console.error("Failed to load community members:", err);
+      toast.error("Failed to load community members");
+    } finally {
+      setIsLoadingMembers(false);
+    }
+  }, [isLoaded, getToken, communityId, take]);
+
+  useEffect(() => {
+    void fetchMembers(page, search, role, sortDirection);
+  }, [page, search, role, sortDirection, fetchMembers]);
+
   useEffect(() => {
     let cancelled = false;
     async function loadDetails() {
@@ -61,19 +123,29 @@ export default function ManageCommunityClient({
       try {
         const token = await getToken();
         if (!token) return;
-        const [details, meetItems, types, memberList, taskList] =
+
+        setIsLoadingStats(true);
+        setStatsError(false);
+
+        const statsPromise = getCommunityStats(token, communityId).catch(
+          (err) => {
+            console.error("Failed to load community stats:", err);
+            setStatsError(true);
+            return null;
+          },
+        );
+
+        const [details, meetItems, types, taskList, statsData, myMemberRecord] =
           await Promise.all([
             getCommunity(token, communityId),
             listCommunityMeets(token, communityId),
             getUniqueMemberTypes(token, communityId),
-            listCommunityMembers(token, communityId),
             listTasks(token, communityId),
+            statsPromise,
+            getMyMemberRecord(token, communityId).catch(() => null),
           ]);
         if (!cancelled) {
           const isOwner = loggedInUserId === details.ownerId;
-          const myMemberRecord = memberList.find(
-            (m) => m.userId === loggedInUserId,
-          );
           const isOwnerOrMember =
             isOwner ||
             (myMemberRecord &&
@@ -91,9 +163,11 @@ export default function ManageCommunityClient({
           setCommunityOwnerId(details.ownerId);
           setMeets(meetItems.map(toCommunityMeetUi));
           setCustomMemberTypes(types);
-          setMembers(memberList);
           setAvailableRoles(types.length > 0 ? types : defaultRoles);
           setTasks(taskList);
+          setStats(statsData);
+          setCurrentUserMember(myMemberRecord);
+          setIsLoadingStats(false);
         }
       } catch (error) {
         console.error("Failed to load community details:", error);
@@ -112,18 +186,33 @@ export default function ManageCommunityClient({
   const [isMeetSchedulerOpen, setIsMeetSchedulerOpen] = useState(false);
   const [isTaskTrackerOpen, setIsTaskTrackerOpen] = useState(false);
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
+  const [existingMemberUserIds, setExistingMemberUserIds] = useState<string[]>([]);
+
+  // Fetch all existing community member user IDs when Add Member modal is open
+  useEffect(() => {
+    if (isAddMemberOpen) {
+      const loadAllMemberIds = async () => {
+        try {
+          const token = await getToken();
+          if (!token) return;
+          const res = await listCommunityMembers(token, communityId, {
+            page: 1,
+            take: 1000,
+          });
+          setExistingMemberUserIds(res.items.map((m) => m.userId));
+        } catch (err) {
+          console.error("Failed to load existing member IDs:", err);
+        }
+      };
+      void loadAllMemberIds();
+    }
+  }, [isAddMemberOpen, getToken, communityId]);
 
   const [selectedMemberForTask, setSelectedMemberForTask] = useState<
     string | null
   >(null);
   const [selectedMemberForDetails, setSelectedMemberForDetails] =
     useState<Member | null>(null);
-
-  // Shared Dynamic State Pools
-  const [members, setMembers] = useState<Member[]>(initialMembers);
-  const [customMemberTypes, setCustomMemberTypes] = useState<string[]>([]);
-  const [availableRoles, setAvailableRoles] = useState<string[]>(defaultRoles);
-  const [tasks, setTasks] = useState<any[]>([]);
 
   const mappedTasksForSheet = useMemo(() => {
     return tasks.map((t) => ({
@@ -148,21 +237,35 @@ export default function ManageCommunityClient({
     }));
   }, [tasks]);
 
-  const handleAssignTask = (memberName: string) => {
+  const handleAssignTask = useCallback((memberName: string) => {
     setSelectedMemberForTask(memberName);
     setIsTaskTrackerOpen(true);
-  };
+  }, []);
 
-  const handleCloseTaskTracker = () => {
+  const handleCloseTaskTracker = useCallback(() => {
     setIsTaskTrackerOpen(false);
     setSelectedMemberForTask(null);
-  };
+  }, []);
 
-  const currentUserMember = members.find((m) => m.userId === loggedInUserId);
+  const handleEditMember = useCallback((m: Member) => {
+    setSelectedMemberForEdit(m);
+    setIsEditMemberOpen(true);
+  }, []);
+
   const isOwner = loggedInUserId === communityOwnerId;
   const isAdmin = currentUserMember?.accessControlRole === "ADMIN";
   const isModerator = currentUserMember?.accessControlRole === "MODERATOR";
   const isEligibleToModify = isOwner || isAdmin || isModerator;
+
+  const handleSearchChange = useCallback((val: string) => {
+    setSearch(val);
+    setPage(1);
+  }, []);
+
+  const handleRoleChange = useCallback((val: string) => {
+    setRole(val);
+    setPage(1);
+  }, []);
 
   // State Mutators
   const handleInviteMembers = async (
@@ -188,6 +291,8 @@ export default function ManageCommunityClient({
         accessControlRole = "ADMIN";
       } else if (accessControl === "Moderator") {
         accessControlRole = "MODERATOR";
+      } else if (accessControl === "Member") {
+        accessControlRole = "MEMBER";
       }
 
       await addCommunityMembers(token, communityId, {
@@ -196,8 +301,8 @@ export default function ManageCommunityClient({
         accessControlRole,
       });
 
-      const memberList = await listCommunityMembers(token, communityId);
-      setMembers(memberList);
+      setPage(1);
+      void fetchMembers(1, search, role, sortDirection);
 
       const updatedTypes = await getUniqueMemberTypes(token, communityId);
       setCustomMemberTypes(updatedTypes);
@@ -217,13 +322,13 @@ export default function ManageCommunityClient({
     }
   };
 
-  const handleDeleteMember = async (id: string, name: string) => {
+  const handleDeleteMember = useCallback(async (id: string, name: string) => {
     try {
       const token = await getToken();
       if (!token) return;
       await deleteCommunityMember(token, communityId, id);
 
-      setMembers((prev) => prev.filter((m) => m.id !== id));
+      void fetchMembers(page, search, role, sortDirection);
 
       const updatedTypes = await getUniqueMemberTypes(token, communityId);
       setCustomMemberTypes(updatedTypes);
@@ -234,7 +339,7 @@ export default function ManageCommunityClient({
       console.error("Failed to delete member:", err);
       toast.error(err.message || "Failed to remove member");
     }
-  };
+  }, [getToken, communityId, fetchMembers, page, search, role, sortDirection]);
 
   const handleUpdateMemberType = async (memberId: string, newRole: string) => {
     try {
@@ -274,6 +379,8 @@ export default function ManageCommunityClient({
         accessControlRole = "ADMIN";
       } else if (newAccess === "Moderator" || newAccess === "MODERATOR") {
         accessControlRole = "MODERATOR";
+      } else if (newAccess === "Member" || newAccess === "MEMBER") {
+        accessControlRole = "MEMBER";
       }
 
       await updateMemberAccess(token, communityId, memberId, accessControlRole);
@@ -290,6 +397,62 @@ export default function ManageCommunityClient({
     } catch (err: any) {
       console.error("Failed to update member access:", err);
       toast.error(err.message || "Failed to update member access");
+    }
+  };
+
+  const handleUpdateMember = async (
+    memberId: string,
+    newRole: string,
+    newAccess: string,
+  ) => {
+    try {
+      const token = await getToken();
+      if (!token) return;
+
+      let accessControlRole = "READ_ONLY";
+      if (newAccess === "Admin Access" || newAccess === "ADMIN") {
+        accessControlRole = "ADMIN";
+      } else if (newAccess === "Moderator" || newAccess === "MODERATOR") {
+        accessControlRole = "MODERATOR";
+      } else if (newAccess === "Member" || newAccess === "MEMBER") {
+        accessControlRole = "MEMBER";
+      }
+
+      const targetMember = members.find((m) => m.id === memberId);
+      if (!targetMember) return;
+
+      const isRoleChanged = targetMember.role !== newRole;
+      const isAccessChanged =
+        targetMember.accessControlRole !== accessControlRole;
+
+      if (isRoleChanged) {
+        await updateMemberType(token, communityId, memberId, newRole);
+      }
+      if (isAccessChanged) {
+        await updateMemberAccess(token, communityId, memberId, accessControlRole);
+      }
+
+      if (isRoleChanged || isAccessChanged) {
+        void fetchMembers(page, search, role, sortDirection);
+
+        const updatedTypes = await getUniqueMemberTypes(token, communityId);
+        setCustomMemberTypes(updatedTypes);
+        setAvailableRoles(
+          updatedTypes.length > 0 ? updatedTypes : defaultRoles,
+        );
+
+        setSelectedMemberForDetails((prev) =>
+          prev && prev.id === memberId
+            ? { ...prev, role: newRole, accessControlRole }
+            : prev,
+        );
+
+        toast.success("Member updated successfully");
+      }
+    } catch (err: any) {
+      console.error("Failed to update member:", err);
+      toast.error(err.message || "Failed to update member");
+      throw err;
     }
   };
 
@@ -315,17 +478,6 @@ export default function ManageCommunityClient({
     }
   };
 
-  // Dynamic calculations relative to core stats
-  const totalCommunitySize = Math.max(
-    members.length,
-    12300 + (members.length - 7),
-  );
-  const coreTeamCount = members.filter(
-    (m) =>
-      ["Community Admin", "Media Lead", "Content Writer"].includes(m.role) ||
-      m.accessControlRole === "ADMIN",
-  ).length;
-
   return (
     <div className="flex justify-center w-full min-h-screen bg-[#FAFAFA] pb-12">
       <div className="w-full p-4 lg:p-6 flex flex-col gap-8 animate-in fade-in duration-500">
@@ -342,8 +494,9 @@ export default function ManageCommunityClient({
           <CommunityStats
             onManageMeets={() => setIsMeetSchedulerOpen(true)}
             onManageTasks={() => setIsTaskTrackerOpen(true)}
-            totalSize={totalCommunitySize}
-            coreTeamCount={coreTeamCount}
+            stats={stats}
+            isLoading={isLoadingStats}
+            isError={statsError}
           />
         </div>
 
@@ -355,9 +508,21 @@ export default function ManageCommunityClient({
             customTabs={customMemberTypes}
             members={members}
             onDeleteMember={handleDeleteMember}
+            onEditMember={handleEditMember}
             isEligibleToModify={isEligibleToModify}
             communityOwnerId={communityOwnerId}
-            currentUserMember={currentUserMember}
+            currentUserMember={currentUserMember || undefined}
+            page={page}
+            totalPages={totalPages}
+            totalMembers={totalMembers}
+            onPageChange={setPage}
+            searchQuery={search}
+            onSearchChange={handleSearchChange}
+            activeTab={role}
+            onTabChange={handleRoleChange}
+            sortDirection={sortDirection}
+            onSortChange={setSortDirection}
+            isLoading={isLoadingMembers}
           />
         </div>
 
@@ -385,6 +550,19 @@ export default function ManageCommunityClient({
           onClose={() => setIsAddMemberOpen(false)}
           onAddMember={handleInviteMembers}
           availableRoles={availableRoles}
+          existingMemberUserIds={existingMemberUserIds}
+        />
+
+        {/* Edit Member Dialog Modal */}
+        <EditMemberModal
+          isOpen={isEditMemberOpen}
+          onClose={() => {
+            setIsEditMemberOpen(false);
+            setSelectedMemberForEdit(null);
+          }}
+          member={selectedMemberForEdit}
+          onUpdateMember={handleUpdateMember}
+          availableRoles={availableRoles}
         />
 
         {/* Member Details Sliding Side Sheet (Triggered by clicking any member in the table) */}
@@ -396,7 +574,7 @@ export default function ManageCommunityClient({
           onToggleTask={handleToggleTask}
           isEligibleToModify={isEligibleToModify}
           communityOwnerId={communityOwnerId}
-          currentUserMember={currentUserMember}
+          currentUserMember={currentUserMember || undefined}
           onUpdateRole={handleUpdateMemberType}
           onUpdateAccess={handleUpdateMemberAccess}
         />

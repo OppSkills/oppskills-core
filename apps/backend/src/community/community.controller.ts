@@ -8,10 +8,11 @@ import {
   Param,
   Patch,
   Post,
-  Query,
   Req,
   UnauthorizedException,
   UseGuards,
+  Query,
+  ForbiddenException,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -34,11 +35,12 @@ import {
   CheckCommunityHandleResponseDto,
   SuggestCommunityHandlesResponseDto,
 } from './dto/check-community-handle.dto';
+import { CommunityStatsResponseDto } from './dto/community-stats-response.dto';
 
 @ApiTags('Communities')
 @Controller('communities')
 export class CommunityController {
-  constructor(private readonly communityService: CommunityService) {}
+  constructor(private readonly communityService: CommunityService) { }
 
   @Get('my')
   @UseGuards(ClerkAuthGuard)
@@ -340,6 +342,35 @@ export class CommunityController {
     );
   }
 
+  @Get(':id/members/me')
+  @ApiOperation({
+    summary: 'Get current user member record in a community',
+  })
+  @ApiResponse({ status: 200, description: 'Member record' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden – regular members cannot access the dashboard' })
+  @ApiResponse({ status: 404, description: 'Not Found' })
+  async getMyMemberRecord(
+    @Param('id') communityId: string,
+    @Req() req: Request,
+  ) {
+    const userId = req.user?.id;
+    if (typeof userId !== 'string' || userId.trim().length === 0) {
+      throw new UnauthorizedException('User not found.');
+    }
+    const record = await this.communityService.getMemberRecord(userId, communityId);
+    // Dashboard eligibility: only ADMIN, MODERATOR, READ_ONLY (and the owner)
+    // may access the manage dashboard. Regular MEMBERs are community
+    // participants only and must not gain dashboard access.
+    const eligibleRoles = ['ADMIN', 'MODERATOR', 'READ_ONLY'];
+    if (!eligibleRoles.includes(record.accessControlRole as string)) {
+      throw new ForbiddenException(
+        'You do not have permission to view this community dashboard.',
+      );
+    }
+    return record;
+  }
+
   @Get(':id/members')
   @UseGuards(ClerkAuthGuard)
   @ApiBearerAuth('clerk-auth')
@@ -350,12 +381,28 @@ export class CommunityController {
   @ApiResponse({ status: 200, description: 'Members list' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden' })
-  async listMembers(@Param('id') communityId: string, @Req() req: Request) {
-    const userId = req.user?.id;
+  async listMembers(
+    @Param('id') communityId: string,
+    @Query('page') page?: string,
+    @Query('take') take?: string,
+    @Query('search') search?: string,
+    @Query('role') role?: string,
+    @Query('sortDirection') sortDirection?: 'asc' | 'desc',
+    @Req() req?: Request,
+  ) {
+    const userId = req?.user?.id;
     if (typeof userId !== 'string' || userId.trim().length === 0) {
       throw new UnauthorizedException('User not found.');
     }
-    return this.communityService.listMembers(userId, communityId);
+    const parsedPage = page ? Math.max(1, parseInt(page, 10) || 1) : undefined;
+    const parsedTake = take ? Math.max(1, parseInt(take, 10) || 20) : undefined;
+    return this.communityService.listMembers(userId, communityId, {
+      page: parsedPage,
+      take: parsedTake,
+      search,
+      role,
+      sortDirection,
+    });
   }
 
   @Delete(':id/members/:memberId')
@@ -378,5 +425,51 @@ export class CommunityController {
       throw new UnauthorizedException('User not found.');
     }
     return this.communityService.deleteMember(userId, communityId, memberId);
+  }
+
+  @Get(':id/stats')
+  @ApiOperation({
+    summary: 'Get community dashboard statistics',
+    description:
+      'Returns the statistics (members, page/post impressions, admin/moderator counts) for a community dashboard.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Community statistics retrieved successfully',
+    type: CommunityStatsResponseDto,
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 404, description: 'Not Found' })
+  async getCommunityStats(
+    @Param('id') id: string,
+    @Req() req: Request,
+  ): Promise<CommunityStatsResponseDto> {
+    const userId = req.user?.id;
+    if (typeof userId !== 'string' || userId.trim().length === 0) {
+      throw new UnauthorizedException('User not found.');
+    }
+    return this.communityService.getCommunityStats(userId, id);
+  }
+
+  @Post(':id/join')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Join a community',
+    description: 'Allows an authenticated user to join a community as a MEMBER, optionally attributing a referral code.',
+  })
+  @ApiResponse({ status: 200, description: 'Successfully joined community' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 409, description: 'Already a member' })
+  async joinCommunity(
+    @Param('id') communityId: string,
+    @Body('referralCode') referralCode: string | undefined,
+    @Req() req: Request,
+  ) {
+    const userId = req.user?.id;
+    if (typeof userId !== 'string' || userId.trim().length === 0) {
+      throw new UnauthorizedException('User not found.');
+    }
+    return this.communityService.joinCommunity(userId, communityId, referralCode);
   }
 }
