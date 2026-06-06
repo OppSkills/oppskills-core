@@ -120,3 +120,27 @@ function normalizeResourcePath(value: string): string {
   const withLeading = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
   return withLeading.replace(/\/+$/g, "");
 }
+
+export function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+export function requireString(obj: Record<string, unknown>, key: string): string {
+  const value = obj[key];
+  if (typeof value !== "string" || value.trim().length === 0) {
+    throw new Error(`Invalid response: missing "${key}"`);
+  }
+  return value;
+}
+
+export function optionalString(
+  obj: Record<string, unknown>,
+  key: string,
+): string | null {
+  const value = obj[key];
+  if (value === null || value === undefined) return null;
+  if (typeof value !== "string") {
+    throw new Error(`Invalid response: invalid "${key}"`);
+  }
+  return value;
+}

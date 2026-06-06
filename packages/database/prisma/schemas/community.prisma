@@ -135,8 +135,8 @@ enum Industry {
 
 enum CommunityAccessControlRole {
   ADMIN
-  READ_ONLY
   MODERATOR
+  READ_ONLY
   MEMBER
 
   @@map("CommunityAccessControlRole")

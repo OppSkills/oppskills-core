@@ -237,15 +237,20 @@ export default function ManageCommunityClient({
     }));
   }, [tasks]);
 
-  const handleAssignTask = (memberName: string) => {
+  const handleAssignTask = useCallback((memberName: string) => {
     setSelectedMemberForTask(memberName);
     setIsTaskTrackerOpen(true);
-  };
+  }, []);
 
-  const handleCloseTaskTracker = () => {
+  const handleCloseTaskTracker = useCallback(() => {
     setIsTaskTrackerOpen(false);
     setSelectedMemberForTask(null);
-  };
+  }, []);
+
+  const handleEditMember = useCallback((m: Member) => {
+    setSelectedMemberForEdit(m);
+    setIsEditMemberOpen(true);
+  }, []);
 
   const isOwner = loggedInUserId === communityOwnerId;
   const isAdmin = currentUserMember?.accessControlRole === "ADMIN";
@@ -315,7 +320,7 @@ export default function ManageCommunityClient({
     }
   };
 
-  const handleDeleteMember = async (id: string, name: string) => {
+  const handleDeleteMember = useCallback(async (id: string, name: string) => {
     try {
       const token = await getToken();
       if (!token) return;
@@ -332,7 +337,7 @@ export default function ManageCommunityClient({
       console.error("Failed to delete member:", err);
       toast.error(err.message || "Failed to remove member");
     }
-  };
+  }, [getToken, communityId, fetchMembers, page, search, role, sortDirection]);
 
   const handleUpdateMemberType = async (memberId: string, newRole: string) => {
     try {
@@ -497,10 +502,7 @@ export default function ManageCommunityClient({
             customTabs={customMemberTypes}
             members={members}
             onDeleteMember={handleDeleteMember}
-            onEditMember={(m) => {
-              setSelectedMemberForEdit(m);
-              setIsEditMemberOpen(true);
-            }}
+            onEditMember={handleEditMember}
             isEligibleToModify={isEligibleToModify}
             communityOwnerId={communityOwnerId}
             currentUserMember={currentUserMember || undefined}

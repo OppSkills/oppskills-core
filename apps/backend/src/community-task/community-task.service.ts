@@ -15,12 +15,16 @@ import {
 } from './dto/task-response.dto';
 import { TaskStatus } from '@prisma/client';
 import { Logger } from '../_utils/logger';
+import { CommunityService } from '../community/community.service';
 
 @Injectable()
 export class CommunityTaskService {
   private readonly logger = new Logger(CommunityTaskService.name);
 
-  constructor(private readonly emailService: EmailService) {}
+  constructor(
+    private readonly emailService: EmailService,
+    private readonly communityService: CommunityService,
+  ) {}
 
   /**
    * Helper to map user role in community to a numeric hierarchy level:
@@ -30,40 +34,14 @@ export class CommunityTaskService {
     userId: string,
     communityId: string,
   ): Promise<number> {
-    const community = await prisma.communityEntity.findUnique({
-      where: { id: communityId },
-      select: { ownerId: true },
-    });
-
-    if (!community) {
-      throw new NotFoundException('Community not found.');
+    const member = await this.communityService.getMemberRecord(userId, communityId);
+    const rank = this.communityService.getRoleRank(member.accessControlRole);
+    if (rank === 0) {
+      throw new ForbiddenException(
+        'You do not have permission to manage tasks in this community.',
+      );
     }
-
-    if (community.ownerId === userId) {
-      return 3; // OWNER is ADMIN level (highest)
-    }
-
-    const member = await prisma.communityMemberEntity.findFirst({
-      where: { communityId, userId },
-      select: { accessControlRole: true },
-    });
-
-    if (!member) {
-      throw new ForbiddenException('You are not a member of this community.');
-    }
-
-    switch (member.accessControlRole) {
-      case 'ADMIN':
-        return 3;
-      case 'MODERATOR':
-        return 2;
-      case 'READ_ONLY':
-        return 1;
-      default:
-        throw new ForbiddenException(
-          'You do not have permission to manage tasks in this community.',
-        );
-    }
+    return rank;
   }
 
   private formatUserName(user: {

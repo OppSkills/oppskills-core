@@ -222,44 +222,11 @@ export class CommunityService {
     };
   }
 
-  async checkCommunityManagementPermission(
-    userId: string,
-    communityId: string,
-  ) {
-    const community = await prisma.communityEntity.findUnique({
-      where: { id: communityId },
-      include: {
-        members: {
-          where: { userId },
-        },
-      },
-    });
-
-    if (!community) {
-      throw new NotFoundException('Community not found.');
-    }
-
-    const isOwner = community.ownerId === userId;
-    const myMemberRecord = community.members[0];
-    const hasDashboardAccess =
-      isOwner ||
-      (myMemberRecord &&
-        ['ADMIN', 'MODERATOR', 'READ_ONLY'].includes(
-          myMemberRecord.accessControlRole,
-        ));
-
-    if (!hasDashboardAccess) {
-      this.logger.warn({
-        action: 'COMMUNITY_PERMISSION_DENIED',
-        permissionType: 'MANAGE',
-        communityId,
-        userId,
-      });
-      throw new ForbiddenException(
-        'You do not have permission to manage this community.',
-      );
-    }
-    return community;
+  getRoleRank(accessControlRole: string): number {
+    if (accessControlRole === 'ADMIN') return 3;
+    if (accessControlRole === 'MODERATOR') return 2;
+    if (accessControlRole === 'READ_ONLY') return 1;
+    return 0;
   }
 
   async checkCommunityReadPermission(userId: string, communityId: string) {
@@ -960,16 +927,10 @@ export class CommunityService {
       );
     }
 
-    const getRank = (accessControlRole: string) => {
-      if (accessControlRole === 'ADMIN') return 3;
-      if (accessControlRole === 'MODERATOR') return 2;
-      return 1; // READ_ONLY
-    };
-
     const requesterRank = requesterMember
-      ? getRank(requesterMember.accessControlRole)
+      ? this.getRoleRank(requesterMember.accessControlRole)
       : 0;
-    const targetRank = getRank(targetMember.accessControlRole);
+    const targetRank = this.getRoleRank(targetMember.accessControlRole);
 
     if (requesterRank <= targetRank) {
       this.logger.warn({

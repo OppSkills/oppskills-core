@@ -1,4 +1,4 @@
-import { buildAuthHeaders, createApiClient } from "./apiClient";
+import { buildAuthHeaders, createApiClient, isRecord, requireString } from "./apiClient";
 
 const API = createApiClient("/media");
 
@@ -44,17 +44,7 @@ export type PresignDocumentUploadResponse = Readonly<{
   maxBytes: number;
 }>;
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
 
-function requireString(obj: Record<string, unknown>, key: string): string {
-  const value = obj[key];
-  if (typeof value !== "string" || value.trim().length === 0) {
-    throw new Error(`Invalid response: missing "${key}"`);
-  }
-  return value;
-}
 
 function requireNumber(obj: Record<string, unknown>, key: string): number {
   const value = obj[key];

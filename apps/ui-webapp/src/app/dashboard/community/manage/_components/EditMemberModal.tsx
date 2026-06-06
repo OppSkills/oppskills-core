@@ -59,6 +59,11 @@ export default function EditMemberModal({
         setRole("custom");
         setCustomRole(member.role);
       }
+    } else {
+      // Reset to defaults when member is cleared (modal closed/reset)
+      setRole("");
+      setCustomRole("");
+      setAccessControl("Read Only");
     }
   }, [member, availableRoles]);
 

@@ -1,4 +1,4 @@
-import { buildAuthHeaders, createApiClient } from "./apiClient";
+import { buildAuthHeaders, createApiClient, isRecord, requireString, optionalString } from "./apiClient";
 import type {
   CommunityMeetResponse,
   CreateCommunityMeetDto,
@@ -9,29 +9,7 @@ import type {
 const COMMUNITY_MEETS_API = createApiClient("/communities");
 const MEETS_API = createApiClient("/meets");
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
 
-function requireString(obj: Record<string, unknown>, key: string): string {
-  const value = obj[key];
-  if (typeof value !== "string" || value.trim().length === 0) {
-    throw new Error(`Invalid response: missing "${key}"`);
-  }
-  return value;
-}
-
-function optionalString(
-  obj: Record<string, unknown>,
-  key: string,
-): string | null {
-  const value = obj[key];
-  if (value === null || value === undefined) return null;
-  if (typeof value !== "string") {
-    throw new Error(`Invalid response: invalid "${key}"`);
-  }
-  return value;
-}
 
 function parseMeetResponse(
   raw: Record<string, unknown>,
