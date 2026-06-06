@@ -20,7 +20,6 @@ async function tokenOrThrow(getToken: () => Promise<string | null>) {
   return token;
 }
 
-
 export function useReferrals(entityType: ReferralEntityType, entityId: string) {
   const { getToken } = useAuth();
   return useQuery({

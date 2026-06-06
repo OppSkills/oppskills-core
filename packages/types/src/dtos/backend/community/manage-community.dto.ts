@@ -60,4 +60,3 @@ export interface PaginatedCommunityMembers {
   take: number;
   totalPages: number;
 }
-

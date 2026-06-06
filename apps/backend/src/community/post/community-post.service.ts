@@ -155,7 +155,12 @@ export class CommunityPostService {
     );
 
     const existing = await prisma.communityPostEntity.findFirst({
-      where: { id: postId, communityId, status: 'PUBLISHED', postKind: 'ORIGINAL' },
+      where: {
+        id: postId,
+        communityId,
+        status: 'PUBLISHED',
+        postKind: 'ORIGINAL',
+      },
     });
     if (!existing) {
       throw new NotFoundException('Post not found.');
@@ -281,16 +286,20 @@ export class CommunityPostService {
     }
 
     const cacheCursor = cursor ?? 'start';
-    const cached = await this.cacheService.getFeedPage<CommunityPostFeedResponseDto>(
-      community.id,
-      cacheCursor,
-      take,
-    );
+    const cached =
+      await this.cacheService.getFeedPage<CommunityPostFeedResponseDto>(
+        community.id,
+        cacheCursor,
+        take,
+      );
     if (cached) {
       if (viewerUserId) {
         return {
           ...cached,
-          items: await this.attachViewerFlagsToItems(cached.items, viewerUserId),
+          items: await this.attachViewerFlagsToItems(
+            cached.items,
+            viewerUserId,
+          ),
         };
       }
       return cached;
@@ -330,7 +339,10 @@ export class CommunityPostService {
     if (viewerUserId) {
       return {
         ...response,
-        items: await this.attachViewerFlagsToItems(response.items, viewerUserId),
+        items: await this.attachViewerFlagsToItems(
+          response.items,
+          viewerUserId,
+        ),
       };
     }
 
@@ -352,7 +364,12 @@ export class CommunityPostService {
       throw new NotFoundException('Community not found.');
     }
 
-    const posts = await this.fetchUserFeedPosts(userId, community.id, cursor, take + 1);
+    const posts = await this.fetchUserFeedPosts(
+      userId,
+      community.id,
+      cursor,
+      take + 1,
+    );
     const hasMore = posts.length > take;
     const pagePosts = hasMore ? posts.slice(0, take) : posts;
 
@@ -381,8 +398,7 @@ export class CommunityPostService {
       status: 'PUBLISHED';
       postKind: 'ORIGINAL';
       OR?: Array<
-        | { createdAt: Date; id: { lt: string } }
-        | { createdAt: { lt: Date } }
+        { createdAt: Date; id: { lt: string } } | { createdAt: { lt: Date } }
       >;
     } = {
       communityId,
@@ -427,8 +443,7 @@ export class CommunityPostService {
       communityId: string;
       status: 'PUBLISHED';
       OR?: Array<
-        | { createdAt: Date; id: { lt: string } }
-        | { createdAt: { lt: Date } }
+        { createdAt: Date; id: { lt: string } } | { createdAt: { lt: Date } }
       >;
     } = {
       authorId: userId,
@@ -467,7 +482,10 @@ export class CommunityPostService {
       .map((item) => item.id);
     const repostedMap =
       originalPostIds.length > 0
-        ? await this.repostService.batchIsReposted(originalPostIds, viewerUserId)
+        ? await this.repostService.batchIsReposted(
+            originalPostIds,
+            viewerUserId,
+          )
         : {};
 
     return items.map((item) => ({
@@ -483,7 +501,10 @@ export class CommunityPostService {
     item: CommunityPostDetailResponseDto,
     viewerUserId: string,
   ): Promise<CommunityPostDetailResponseDto> {
-    const [withFlags] = await this.attachViewerFlagsToItems([item], viewerUserId);
+    const [withFlags] = await this.attachViewerFlagsToItems(
+      [item],
+      viewerUserId,
+    );
     return withFlags;
   }
 

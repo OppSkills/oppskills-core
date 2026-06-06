@@ -34,7 +34,9 @@ export class NotificationService {
     type: 'event' | 'hackathon' | 'community';
     recipientCount: number;
   }> {
-    const provided = [eventSlugOrId, hackathonSlugOrId, communityId].filter(Boolean);
+    const provided = [eventSlugOrId, hackathonSlugOrId, communityId].filter(
+      Boolean,
+    );
     if (provided.length > 1) {
       throw new BadRequestException(
         'Only one identifier (event, hackathon, or community) can be provided.',
@@ -120,9 +122,10 @@ export class NotificationService {
           );
         }
 
-        const allowedRoles = mode === 'edit'
-          ? ['ADMIN', 'MODERATOR']
-          : ['ADMIN', 'MODERATOR', 'READ_ONLY'];
+        const allowedRoles =
+          mode === 'edit'
+            ? ['ADMIN', 'MODERATOR']
+            : ['ADMIN', 'MODERATOR', 'READ_ONLY'];
 
         if (!allowedRoles.includes(hasMemberRole.accessControlRole)) {
           throw new ForbiddenException(

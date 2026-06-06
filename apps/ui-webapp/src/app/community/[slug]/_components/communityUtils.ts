@@ -16,6 +16,9 @@ export function getAuthorInitials(author: CommunityPostAuthorInfo): string {
 }
 
 export function stripHtmlPreview(html: string, maxLength = 100): string {
-  const text = html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+  const text = html
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
   return text.length > maxLength ? `${text.slice(0, maxLength)}...` : text;
 }

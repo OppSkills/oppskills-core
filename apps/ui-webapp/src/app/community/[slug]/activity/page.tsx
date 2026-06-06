@@ -11,7 +11,10 @@ import { getPublicCommunityByHandle } from "@/lib/api/communityApi";
 import { useUserFeed } from "@/hooks/useCommunityPosts";
 import PostContent from "../_components/PostContent";
 import QuotedPostCard from "../_components/QuotedPostCard";
-import { formatAuthorName, getAuthorInitials } from "../_components/communityUtils";
+import {
+  formatAuthorName,
+  getAuthorInitials,
+} from "../_components/communityUtils";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 
@@ -58,8 +61,13 @@ export default function CommunityActivityPage() {
   if (!isSignedIn || !userId) {
     return (
       <div className="max-w-3xl mx-auto px-4 py-16 text-center">
-        <p className="text-lg font-bold text-neutral-700">Sign in to view your activity.</p>
-        <Link href={`/community/${handle}`} className="text-[#5D3EBB] font-semibold mt-2 inline-block">
+        <p className="text-lg font-bold text-neutral-700">
+          Sign in to view your activity.
+        </p>
+        <Link
+          href={`/community/${handle}`}
+          className="text-[#5D3EBB] font-semibold mt-2 inline-block"
+        >
           Back to community
         </Link>
       </div>
@@ -112,11 +120,14 @@ export default function CommunityActivityPage() {
                 <div>
                   <p className="font-bold text-neutral-800 text-sm">
                     {item.postKind === "REPOST" && "You reposted · "}
-                    {item.postKind === "QUOTE_REPOST" && "You reposted with caption · "}
+                    {item.postKind === "QUOTE_REPOST" &&
+                      "You reposted with caption · "}
                     {formatAuthorName(item.author)}
                   </p>
                   <p className="text-xs text-neutral-400 font-semibold">
-                    {formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })}
+                    {formatDistanceToNow(new Date(item.createdAt), {
+                      addSuffix: true,
+                    })}
                   </p>
                 </div>
               </div>
@@ -125,14 +136,22 @@ export default function CommunityActivityPage() {
                 <PostContent content={item.content} />
               )}
               {item.repostedFrom && (
-                <QuotedPostCard post={item.repostedFrom} communityHandle={handle} />
+                <QuotedPostCard
+                  post={item.repostedFrom}
+                  communityHandle={handle}
+                />
               )}
               {item.postKind === "ORIGINAL" && (
                 <>
                   <PostContent content={item.content} />
                   {item.images[0] && (
                     <div className="relative w-full h-40 mt-3 rounded-xl overflow-hidden">
-                      <Image src={item.images[0]} alt="" fill className="object-cover" />
+                      <Image
+                        src={item.images[0]}
+                        alt=""
+                        fill
+                        className="object-cover"
+                      />
                     </div>
                   )}
                 </>

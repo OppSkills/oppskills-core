@@ -89,7 +89,12 @@ export default function PostImagesGrid({
 
   if (count === 3) {
     return (
-      <div className={cn(wrapper, "grid grid-cols-2 grid-rows-2 gap-1 h-72 sm:h-96")}>
+      <div
+        className={cn(
+          wrapper,
+          "grid grid-cols-2 grid-rows-2 gap-1 h-72 sm:h-96",
+        )}
+      >
         <GridCell
           src={images[0]}
           alt="Post image 1"
@@ -115,7 +120,9 @@ export default function PostImagesGrid({
   const extraCount = count - COMMUNITY_POST_FEED_IMAGE_GRID_VISIBLE;
 
   return (
-    <div className={cn(wrapper, "grid grid-cols-2 grid-rows-3 gap-1 h-72 sm:h-96")}>
+    <div
+      className={cn(wrapper, "grid grid-cols-2 grid-rows-3 gap-1 h-72 sm:h-96")}
+    >
       <GridCell
         src={images[0]}
         alt="Post image 1"

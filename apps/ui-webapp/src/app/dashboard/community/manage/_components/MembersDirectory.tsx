@@ -409,7 +409,8 @@ export default function MembersDirectory({
                 members.map((member, index) => {
                   const isChecked = selectedIds.has(member.id);
                   const isCurrentUser =
-                    currentUserMember && member.userId === currentUserMember.userId;
+                    currentUserMember &&
+                    member.userId === currentUserMember.userId;
                   return (
                     <tr
                       key={member.id}
@@ -536,7 +537,10 @@ export default function MembersDirectory({
                                   <MoreVertical className="w-5 h-5 stroke-1.5" />
                                 </button>
                               </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="w-44 bg-white border border-neutral-200 shadow-lg rounded-xl p-1.5 z-50">
+                              <DropdownMenuContent
+                                align="end"
+                                className="w-44 bg-white border border-neutral-200 shadow-lg rounded-xl p-1.5 z-50"
+                              >
                                 {canEditMember(member) && (
                                   <DropdownMenuItem
                                     onClick={() => onEditMember?.(member)}
@@ -548,7 +552,9 @@ export default function MembersDirectory({
                                 )}
                                 {canDeleteMember(member) && (
                                   <DropdownMenuItem
-                                    onClick={() => handleDeleteMember(member.id, member.name)}
+                                    onClick={() =>
+                                      handleDeleteMember(member.id, member.name)
+                                    }
                                     className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold text-red-600 hover:bg-red-50 hover:text-red-700 cursor-pointer focus:bg-red-50 outline-hidden"
                                   >
                                     <Trash2 className="w-4 h-4 text-red-500" />
@@ -588,4 +594,3 @@ export default function MembersDirectory({
     </div>
   );
 }
-

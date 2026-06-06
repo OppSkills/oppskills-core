@@ -80,7 +80,13 @@ export function usePostComments(
   const take = options?.take ?? 20;
 
   return useInfiniteQuery({
-    queryKey: ["community-post-comments", handle, postId, take, isSignedIn] as const,
+    queryKey: [
+      "community-post-comments",
+      handle,
+      postId,
+      take,
+      isSignedIn,
+    ] as const,
     queryFn: async ({ pageParam }) => {
       const token = isSignedIn ? await getToken() : undefined;
       return getPostComments(
@@ -141,7 +147,13 @@ export function useUserFeed(
   const take = options?.take ?? 10;
 
   return useInfiniteQuery({
-    queryKey: ["community-user-feed", handle, userId, take, isSignedIn] as const,
+    queryKey: [
+      "community-user-feed",
+      handle,
+      userId,
+      take,
+      isSignedIn,
+    ] as const,
     queryFn: async ({ pageParam }) => {
       const token = isSignedIn ? await getToken() : undefined;
       return getUserFeed(
@@ -337,7 +349,9 @@ export function useRepostPost(communityId: string, handle: string) {
       queryClient.invalidateQueries({
         queryKey: ["community-post", handle, postId],
       });
-      queryClient.invalidateQueries({ queryKey: ["community-user-feed", handle] });
+      queryClient.invalidateQueries({
+        queryKey: ["community-user-feed", handle],
+      });
     },
   });
 }
@@ -357,7 +371,9 @@ export function useUndoRepost(communityId: string, handle: string) {
       queryClient.invalidateQueries({
         queryKey: ["community-post", handle, postId],
       });
-      queryClient.invalidateQueries({ queryKey: ["community-user-feed", handle] });
+      queryClient.invalidateQueries({
+        queryKey: ["community-user-feed", handle],
+      });
     },
   });
 }

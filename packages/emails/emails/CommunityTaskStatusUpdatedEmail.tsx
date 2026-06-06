@@ -50,8 +50,8 @@ export function CommunityTaskStatusUpdatedEmail({
               Your task has been {statusText}!
             </Heading>
             <Text style={paragraph}>
-              <strong>{assignerName}</strong> has <strong>{statusText}</strong> your task in
-              the <strong>{communityName}</strong> community.
+              <strong>{assignerName}</strong> has <strong>{statusText}</strong>{" "}
+              your task in the <strong>{communityName}</strong> community.
             </Text>
             <Section style={taskCard}>
               <Text style={taskTitleText}>
@@ -68,7 +68,10 @@ export function CommunityTaskStatusUpdatedEmail({
                 </Text>
               )}
               <Text style={taskStatusText}>
-                <strong>Status</strong>: <span style={isApproved ? statusApproved : statusRejected}>{statusText.toUpperCase()}</span>
+                <strong>Status</strong>:{" "}
+                <span style={isApproved ? statusApproved : statusRejected}>
+                  {statusText.toUpperCase()}
+                </span>
               </Text>
             </Section>
             <Section style={ctaSection}>

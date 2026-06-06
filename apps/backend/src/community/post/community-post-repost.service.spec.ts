@@ -34,7 +34,9 @@ describe('CommunityPostRepostService', () => {
       communityId: 'comm-1',
       repostCount: 2,
     });
-    (prisma.communityPostRepostEntity.findUnique as jest.Mock).mockResolvedValue({
+    (
+      prisma.communityPostRepostEntity.findUnique as jest.Mock
+    ).mockResolvedValue({
       id: 'repost-record-1',
     });
 

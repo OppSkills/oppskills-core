@@ -40,7 +40,9 @@ export default function CommunityPostPage() {
   if (!profile) {
     return (
       <div className="w-full max-w-3xl mx-auto px-4 py-16 text-center">
-        <p className="text-lg font-bold text-neutral-700">Community not found.</p>
+        <p className="text-lg font-bold text-neutral-700">
+          Community not found.
+        </p>
       </div>
     );
   }

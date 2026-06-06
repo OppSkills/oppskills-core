@@ -83,7 +83,10 @@ export default function PostCard({
           </button>
           {showMenu && (
             <>
-              <div className="fixed inset-0 z-30" onClick={() => setShowMenu(false)} />
+              <div
+                className="fixed inset-0 z-30"
+                onClick={() => setShowMenu(false)}
+              />
               <div className="absolute right-0 mt-2 w-44 bg-white border border-neutral-100 rounded-2xl shadow-xl z-40 py-2 overflow-hidden">
                 {canManage && (
                   <button
@@ -115,17 +118,17 @@ export default function PostCard({
         <PostContent content={post.content} />
       )}
       {post.repostedFrom && (
-        <QuotedPostCard post={post.repostedFrom} communityHandle={communityHandle} />
+        <QuotedPostCard
+          post={post.repostedFrom}
+          communityHandle={communityHandle}
+        />
       )}
       {(!post.postKind || post.postKind === "ORIGINAL") && (
         <PostContent content={post.content} />
       )}
 
       {post.images && post.images.length > 0 && post.postKind !== "REPOST" && (
-        <PostImagesGrid
-          images={post.images}
-          onImageClick={handleImageClick}
-        />
+        <PostImagesGrid images={post.images} onImageClick={handleImageClick} />
       )}
 
       <PostEngagementBar

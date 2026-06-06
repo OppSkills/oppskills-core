@@ -67,15 +67,20 @@ export default function ManageCommunityClient({
   const [take] = useState(20);
   const [search, setSearch] = useState("");
   const [role, setRole] = useState("All Members");
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc" | null>(null);
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc" | null>(
+    null,
+  );
   const [totalPages, setTotalPages] = useState(1);
   const [totalMembers, setTotalMembers] = useState(0);
   const [isLoadingMembers, setIsLoadingMembers] = useState(false);
-  const [currentUserMember, setCurrentUserMember] = useState<Member | null>(null);
+  const [currentUserMember, setCurrentUserMember] = useState<Member | null>(
+    null,
+  );
 
   // Edit Member Modal States
   const [isEditMemberOpen, setIsEditMemberOpen] = useState(false);
-  const [selectedMemberForEdit, setSelectedMemberForEdit] = useState<Member | null>(null);
+  const [selectedMemberForEdit, setSelectedMemberForEdit] =
+    useState<Member | null>(null);
 
   // Shared Dynamic State Pools
   const [members, setMembers] = useState<Member[]>(initialMembers);
@@ -83,34 +88,32 @@ export default function ManageCommunityClient({
   const [availableRoles, setAvailableRoles] = useState<string[]>(defaultRoles);
   const [tasks, setTasks] = useState<any[]>([]);
 
-  const fetchMembers = useCallback(async (
-    p: number,
-    s: string,
-    r: string,
-    sort: "asc" | "desc" | null
-  ) => {
-    if (!isLoaded) return;
-    try {
-      const token = await getToken();
-      if (!token) return;
-      setIsLoadingMembers(true);
-      const res = await listCommunityMembers(token, communityId, {
-        page: p,
-        take,
-        search: s || undefined,
-        role: r === "All Members" ? undefined : r,
-        sortDirection: sort || undefined,
-      });
-      setMembers(res.items);
-      setTotalMembers(res.total);
-      setTotalPages(res.totalPages);
-    } catch (err) {
-      console.error("Failed to load community members:", err);
-      toast.error("Failed to load community members");
-    } finally {
-      setIsLoadingMembers(false);
-    }
-  }, [isLoaded, getToken, communityId, take]);
+  const fetchMembers = useCallback(
+    async (p: number, s: string, r: string, sort: "asc" | "desc" | null) => {
+      if (!isLoaded) return;
+      try {
+        const token = await getToken();
+        if (!token) return;
+        setIsLoadingMembers(true);
+        const res = await listCommunityMembers(token, communityId, {
+          page: p,
+          take,
+          search: s || undefined,
+          role: r === "All Members" ? undefined : r,
+          sortDirection: sort || undefined,
+        });
+        setMembers(res.items);
+        setTotalMembers(res.total);
+        setTotalPages(res.totalPages);
+      } catch (err) {
+        console.error("Failed to load community members:", err);
+        toast.error("Failed to load community members");
+      } finally {
+        setIsLoadingMembers(false);
+      }
+    },
+    [isLoaded, getToken, communityId, take],
+  );
 
   useEffect(() => {
     void fetchMembers(page, search, role, sortDirection);
@@ -186,7 +189,9 @@ export default function ManageCommunityClient({
   const [isMeetSchedulerOpen, setIsMeetSchedulerOpen] = useState(false);
   const [isTaskTrackerOpen, setIsTaskTrackerOpen] = useState(false);
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
-  const [existingMemberUserIds, setExistingMemberUserIds] = useState<string[]>([]);
+  const [existingMemberUserIds, setExistingMemberUserIds] = useState<string[]>(
+    [],
+  );
 
   // Fetch all existing community member user IDs when Add Member modal is open
   useEffect(() => {
@@ -322,24 +327,29 @@ export default function ManageCommunityClient({
     }
   };
 
-  const handleDeleteMember = useCallback(async (id: string, name: string) => {
-    try {
-      const token = await getToken();
-      if (!token) return;
-      await deleteCommunityMember(token, communityId, id);
+  const handleDeleteMember = useCallback(
+    async (id: string, name: string) => {
+      try {
+        const token = await getToken();
+        if (!token) return;
+        await deleteCommunityMember(token, communityId, id);
 
-      void fetchMembers(page, search, role, sortDirection);
+        void fetchMembers(page, search, role, sortDirection);
 
-      const updatedTypes = await getUniqueMemberTypes(token, communityId);
-      setCustomMemberTypes(updatedTypes);
-      setAvailableRoles(updatedTypes.length > 0 ? updatedTypes : defaultRoles);
+        const updatedTypes = await getUniqueMemberTypes(token, communityId);
+        setCustomMemberTypes(updatedTypes);
+        setAvailableRoles(
+          updatedTypes.length > 0 ? updatedTypes : defaultRoles,
+        );
 
-      toast.success(`Removed ${name} from community`);
-    } catch (err: any) {
-      console.error("Failed to delete member:", err);
-      toast.error(err.message || "Failed to remove member");
-    }
-  }, [getToken, communityId, fetchMembers, page, search, role, sortDirection]);
+        toast.success(`Removed ${name} from community`);
+      } catch (err: any) {
+        console.error("Failed to delete member:", err);
+        toast.error(err.message || "Failed to remove member");
+      }
+    },
+    [getToken, communityId, fetchMembers, page, search, role, sortDirection],
+  );
 
   const handleUpdateMemberType = async (memberId: string, newRole: string) => {
     try {
@@ -429,7 +439,12 @@ export default function ManageCommunityClient({
         await updateMemberType(token, communityId, memberId, newRole);
       }
       if (isAccessChanged) {
-        await updateMemberAccess(token, communityId, memberId, accessControlRole);
+        await updateMemberAccess(
+          token,
+          communityId,
+          memberId,
+          accessControlRole,
+        );
       }
 
       if (isRoleChanged || isAccessChanged) {

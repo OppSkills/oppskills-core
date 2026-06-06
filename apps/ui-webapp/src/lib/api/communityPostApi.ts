@@ -188,9 +188,8 @@ export async function undoRepost(
   communityId: string,
   postId: string,
 ): Promise<UndoCommunityPostRepostResponse> {
-  const res = await AUTH_API.delete(
-    `/${communityId}/posts/${postId}/repost`,
-    { headers: buildAuthHeaders(token) },
-  );
+  const res = await AUTH_API.delete(`/${communityId}/posts/${postId}/repost`, {
+    headers: buildAuthHeaders(token),
+  });
   return res.data as UndoCommunityPostRepostResponse;
 }

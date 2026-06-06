@@ -642,7 +642,9 @@ export default function CreateCommunityPage() {
                     <div className="flex justify-end w-full pt-2">
                       <Button
                         type="submit"
-                        disabled={!consentChecked || isSubmitting || !handleReady}
+                        disabled={
+                          !consentChecked || isSubmitting || !handleReady
+                        }
                         className="bg-[#2E1E66] hover:bg-[#1E1146] text-white font-bold px-8 py-3 rounded-full text-base h-auto"
                       >
                         {isSubmitting ? (

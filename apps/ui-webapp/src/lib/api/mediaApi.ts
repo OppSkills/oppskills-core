@@ -1,4 +1,9 @@
-import { buildAuthHeaders, createApiClient, isRecord, requireString } from "./apiClient";
+import {
+  buildAuthHeaders,
+  createApiClient,
+  isRecord,
+  requireString,
+} from "./apiClient";
 
 const API = createApiClient("/media");
 
@@ -44,8 +49,6 @@ export type PresignDocumentUploadResponse = Readonly<{
   publicUrl: string;
   maxBytes: number;
 }>;
-
-
 
 function requireNumber(obj: Record<string, unknown>, key: string): number {
   const value = obj[key];

@@ -125,7 +125,10 @@ export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
-export function requireString(obj: Record<string, unknown>, key: string): string {
+export function requireString(
+  obj: Record<string, unknown>,
+  key: string,
+): string {
   const value = obj[key];
   if (typeof value !== "string" || value.trim().length === 0) {
     throw new Error(`Invalid response: missing "${key}"`);

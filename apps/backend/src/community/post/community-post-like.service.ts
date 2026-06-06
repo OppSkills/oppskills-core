@@ -325,7 +325,10 @@ export class CommunityPostLikeService implements OnModuleDestroy {
 
     const postIds = new Set<string>();
 
-    for (const pattern of ['cp:like-flush-staging:*', 'cp:like-flush:*'] as const) {
+    for (const pattern of [
+      'cp:like-flush-staging:*',
+      'cp:like-flush:*',
+    ] as const) {
       const stream = this.redis.scanStream({ match: pattern, count: 100 });
       for await (const keys of stream) {
         for (const key of keys as string[]) {
@@ -338,6 +341,8 @@ export class CommunityPostLikeService implements OnModuleDestroy {
       }
     }
 
-    await Promise.all([...postIds].map((postId) => this.flushPostLikes(postId)));
+    await Promise.all(
+      [...postIds].map((postId) => this.flushPostLikes(postId)),
+    );
   }
 }

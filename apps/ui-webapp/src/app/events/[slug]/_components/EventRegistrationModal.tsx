@@ -573,10 +573,12 @@ export function EventRegistrationModal({
         userCategory: onboardingValues.userCategory as UserCategory | undefined,
         interests: onboardingValues.interests,
         skills: onboardingValues.skills,
-        experienceLevel:
-          onboardingValues.experienceLevel as ExperienceLevel | undefined,
-        teamPreference:
-          onboardingValues.teamPreference as TeamPreference | undefined,
+        experienceLevel: onboardingValues.experienceLevel as
+          | ExperienceLevel
+          | undefined,
+        teamPreference: onboardingValues.teamPreference as
+          | TeamPreference
+          | undefined,
         schoolName: onboardingValues.schoolName,
         schoolClass: onboardingValues.schoolClass,
         schoolAddress: onboardingValues.schoolAddress,

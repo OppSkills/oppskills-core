@@ -68,11 +68,5 @@ export default async function CommunityNotificationPage(props: {
   // READ_ONLY members can view but cannot mutate
   const isReadOnly = !isOwner && role === "READ_ONLY";
 
-  return (
-    <SendNotification
-      type="community"
-      id={id}
-      isReadOnly={isReadOnly}
-    />
-  );
+  return <SendNotification type="community" id={id} isReadOnly={isReadOnly} />;
 }

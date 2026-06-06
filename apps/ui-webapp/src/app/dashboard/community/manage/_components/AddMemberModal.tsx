@@ -320,15 +320,17 @@ export default function AddMemberModal({
               <SelectValue placeholder="Select access control" />
             </SelectTrigger>
             <SelectContent className="rounded-2xl shadow-md border-neutral-200">
-              {["Admin Access", "Moderator", "Read Only", "Member"].map((level) => (
-                <SelectItem
-                  key={level}
-                  value={level}
-                  className="rounded-lg font-medium cursor-pointer"
-                >
-                  {level}
-                </SelectItem>
-              ))}
+              {["Admin Access", "Moderator", "Read Only", "Member"].map(
+                (level) => (
+                  <SelectItem
+                    key={level}
+                    value={level}
+                    className="rounded-lg font-medium cursor-pointer"
+                  >
+                    {level}
+                  </SelectItem>
+                ),
+              )}
             </SelectContent>
           </Select>
         </div>

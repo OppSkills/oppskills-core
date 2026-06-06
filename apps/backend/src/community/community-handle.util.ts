@@ -28,10 +28,7 @@ export function deriveCommunityHandleFromName(name: string): string {
 }
 
 /** Build a handle by appending a suffix, truncating the base so the result fits. */
-function appendHandleSuffix(
-  baseHandle: string,
-  suffix: string,
-): string | null {
+function appendHandleSuffix(baseHandle: string, suffix: string): string | null {
   const maxBaseLen = COMMUNITY_HANDLE_MAX_LENGTH - suffix.length;
   if (maxBaseLen < COMMUNITY_HANDLE_MIN_LENGTH) return null;
 

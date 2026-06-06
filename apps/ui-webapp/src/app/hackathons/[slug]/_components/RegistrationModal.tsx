@@ -228,10 +228,7 @@ export function RegistrationModal({
   const handleOnboardingChange = useCallback(
     (next: RegistrationOnboardingValues) => {
       setOnboardingValues((prev) => {
-        if (
-          next.userCategory &&
-          next.userCategory !== prev.userCategory
-        ) {
+        if (next.userCategory && next.userCategory !== prev.userCategory) {
           return clearRegistrationOnboardingForCategory(
             next,
             next.userCategory as UserCategoryValue,
@@ -340,10 +337,7 @@ export function RegistrationModal({
           for (const field of merged) {
             const id = field.id;
             if (id === "default-name") {
-              setIf(
-                id,
-                [me.firstName, me.lastName].filter(Boolean).join(" "),
-              );
+              setIf(id, [me.firstName, me.lastName].filter(Boolean).join(" "));
             } else if (id === "default-email") {
               setIf(id, me.email);
             } else if (id === "default-phone") {
@@ -925,9 +919,8 @@ export function RegistrationModal({
         return;
       }
 
-      const onboardingValidation = validateRegistrationOnboarding(
-        onboardingValues,
-      );
+      const onboardingValidation =
+        validateRegistrationOnboarding(onboardingValues);
       if (!onboardingValidation.isValid) {
         setOnboardingErrors(onboardingValidation.errors);
         toast.error("Please complete your profile details.");

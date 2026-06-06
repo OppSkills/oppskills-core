@@ -55,7 +55,9 @@ export default function RepostModal({
 
   const handleQuote = async () => {
     if (isPostContentEmpty(caption)) return;
-    if (getPlainTextLengthFromHtml(caption) > COMMUNITY_POST_CONTENT_MAX_LENGTH) {
+    if (
+      getPlainTextLengthFromHtml(caption) > COMMUNITY_POST_CONTENT_MAX_LENGTH
+    ) {
       toast.error(
         `Caption cannot exceed ${COMMUNITY_POST_CONTENT_MAX_LENGTH} characters.`,
       );
@@ -86,7 +88,11 @@ export default function RepostModal({
   const footer =
     mode === "quote" ? (
       <div className="flex gap-3 justify-end w-full">
-        <Button variant="outline" onClick={() => setMode("choose")} disabled={isProcessing}>
+        <Button
+          variant="outline"
+          onClick={() => setMode("choose")}
+          disabled={isProcessing}
+        >
           Back
         </Button>
         <Button

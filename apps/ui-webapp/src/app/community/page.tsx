@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Suspense, useMemo, useCallback } from "react";
+import { useState, Suspense, useMemo, useCallback, useRef } from "react";
 import { usePublicCommunitiesPaged } from "@/hooks/useCommunities";
 import { GenericListingPage } from "@/components/common/GenericListingPage";
 import { ListingItem } from "@/components/common/ListingCard";
@@ -20,7 +20,7 @@ function CommunitiesPageContent() {
 
   // Read parameters from URL (Single source of truth)
   const search = searchParams.get("q") || "";
-  
+
   const rawIndustry = searchParams.get("industry") || "";
   const industry = useMemo(() => {
     return rawIndustry.split(",").filter(Boolean);
@@ -30,7 +30,9 @@ function CommunitiesPageContent() {
 
   const rawSortOrder = searchParams.get("sortOrder");
   const sortOrder = useMemo(() => {
-    return rawSortOrder === "asc" || rawSortOrder === "desc" ? rawSortOrder : "desc";
+    return rawSortOrder === "asc" || rawSortOrder === "desc"
+      ? rawSortOrder
+      : "desc";
   }, [rawSortOrder]);
 
   const rawPage = searchParams.get("page");
@@ -74,43 +76,52 @@ function CommunitiesPageContent() {
     }));
   }, [communities]);
 
-  const updateUrl = useCallback((updates: {
-    search?: string;
-    industry?: string[];
-    sort?: string;
-    sortOrder?: "asc" | "desc";
-    page?: number;
-  }) => {
-    const params = new URLSearchParams(searchParams.toString());
+  const updateUrl = useCallback(
+    (updates: {
+      search?: string;
+      industry?: string[];
+      sort?: string;
+      sortOrder?: "asc" | "desc";
+      page?: number;
+    }) => {
+      const params = new URLSearchParams(searchParams.toString());
 
-    if (updates.search !== undefined) {
-      if (updates.search) params.set("q", updates.search);
-      else params.delete("q");
-    }
-    if (updates.industry !== undefined) {
-      if (updates.industry.length > 0) params.set("industry", updates.industry.join(","));
-      else params.delete("industry");
-    }
-    if (updates.sort !== undefined) {
-      if (updates.sort && updates.sort !== "recently_added") params.set("sort", updates.sort);
-      else params.delete("sort");
-    }
-    if (updates.sortOrder !== undefined) {
-      if (updates.sortOrder && updates.sortOrder !== "desc") params.set("sortOrder", updates.sortOrder);
-      else params.delete("sortOrder");
-    }
-    if (updates.page !== undefined) {
-      if (updates.page > 1) params.set("page", updates.page.toString());
-      else params.delete("page");
-    } else {
-      // Reset page to 1 whenever filters change
-      if (updates.search !== undefined || updates.industry !== undefined) {
-        params.delete("page");
+      if (updates.search !== undefined) {
+        if (updates.search) params.set("q", updates.search);
+        else params.delete("q");
       }
-    }
+      if (updates.industry !== undefined) {
+        if (updates.industry.length > 0)
+          params.set("industry", updates.industry.join(","));
+        else params.delete("industry");
+      }
+      if (updates.sort !== undefined) {
+        if (updates.sort && updates.sort !== "recently_added")
+          params.set("sort", updates.sort);
+        else params.delete("sort");
+      }
+      if (updates.sortOrder !== undefined) {
+        if (updates.sortOrder && updates.sortOrder !== "desc")
+          params.set("sortOrder", updates.sortOrder);
+        else params.delete("sortOrder");
+      }
+      if (updates.page !== undefined) {
+        if (updates.page > 1) params.set("page", updates.page.toString());
+        else params.delete("page");
+      } else {
+        // Reset page to 1 whenever filters change
+        if (updates.search !== undefined || updates.industry !== undefined) {
+          params.delete("page");
+        }
+      }
 
-    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-  }, [router, pathname, searchParams]);
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    },
+    [router, pathname, searchParams],
+  );
+
+  const updateUrlRef = useRef(updateUrl);
+  updateUrlRef.current = updateUrl;
 
   const handleClearFilters = useCallback(() => {
     router.replace(pathname, { scroll: false });
@@ -118,53 +129,84 @@ function CommunitiesPageContent() {
 
   const handlePageSizeChange = useCallback((val: number) => {
     setPerPage(val);
-    updateUrl({ page: 1 });
-  }, [updateUrl]);
+    updateUrlRef.current({ page: 1 });
+  }, []);
 
   const handlePageChange = useCallback((page: number) => {
-    updateUrl({ page });
-  }, [updateUrl]);
+    updateUrlRef.current({ page });
+  }, []);
 
-  const handleSetFilters = useCallback((f: any) => {
-    // Map sort actions back to URL updates
-    if (typeof f === "function") {
-      const prev = { sort, sortOrder };
-      const next = f(prev);
-      updateUrl({ sort: next.sort, sortOrder: next.sortOrder, page: 1 });
-    } else {
-      updateUrl({ sort: f.sort, sortOrder: f.sortOrder, page: 1 });
-    }
-  }, [sort, sortOrder, updateUrl]);
+  const handleSetFilters = useCallback(
+    (f: any) => {
+      // Map sort actions back to URL updates
+      if (typeof f === "function") {
+        const prev = { sort, sortOrder };
+        const next = f(prev);
+        updateUrlRef.current({
+          sort: next.sort,
+          sortOrder: next.sortOrder,
+          page: 1,
+        });
+      } else {
+        updateUrlRef.current({ sort: f.sort, sortOrder: f.sortOrder, page: 1 });
+      }
+    },
+    [sort, sortOrder],
+  );
 
-  const handleFilterChange = useCallback((newVals: { search: string; industry: string[] }) => {
-    updateUrl({ search: newVals.search, industry: newVals.industry, page: 1 });
-  }, [updateUrl]);
+  const handleFilterChange = useCallback(
+    (newVals: { search: string; industry: string[] }) => {
+      updateUrlRef.current({
+        search: newVals.search,
+        industry: newVals.industry,
+        page: 1,
+      });
+    },
+    [],
+  );
 
-  const paginationConfig = useMemo(() => ({
-    setPerPage: handlePageSizeChange,
-    perPage,
-    curPage,
-    totalPages,
-    onPageChange: handlePageChange,
-  }), [handlePageSizeChange, perPage, curPage, totalPages, handlePageChange]);
+  const paginationConfig = useMemo(
+    () => ({
+      setPerPage: handlePageSizeChange,
+      perPage,
+      curPage,
+      totalPages,
+      onPageChange: handlePageChange,
+    }),
+    [handlePageSizeChange, perPage, curPage, totalPages, handlePageChange],
+  );
 
-  const filtersConfig = useMemo(() => ({
-    search,
-    modes: [],
-    status: [],
-    eventDates: [],
-    eligibility: [],
-    sort,
-    sortOrder,
-  }), [search, sort, sortOrder]);
+  const filtersConfig = useMemo(
+    () => ({
+      search,
+      modes: [],
+      status: [],
+      eventDates: [],
+      eligibility: [],
+      sort,
+      sortOrder,
+    }),
+    [search, sort, sortOrder],
+  );
 
-  const filterSidebarElement = useMemo(() => (
-    <CommunityFilterSidebar
-      values={{ search, industry }}
-      onChange={handleFilterChange}
-      onClear={handleClearFilters}
-    />
-  ), [search, industry, handleFilterChange, handleClearFilters]);
+  const filterSidebarValues = useMemo(
+    () => ({
+      search,
+      industry,
+    }),
+    [search, industry],
+  );
+
+  const filterSidebarElement = useMemo(
+    () => (
+      <CommunityFilterSidebar
+        values={filterSidebarValues}
+        onChange={handleFilterChange}
+        onClear={handleClearFilters}
+      />
+    ),
+    [filterSidebarValues, handleFilterChange, handleClearFilters],
+  );
 
   return (
     <GenericListingPage

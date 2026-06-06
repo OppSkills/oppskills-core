@@ -66,7 +66,10 @@ export function CommunityFilterSidebar({
     return () => clearTimeout(timer);
   }, [localSearch]);
 
-  const handleCheckboxChange = (industry: string, checked: boolean | string) => {
+  const handleCheckboxChange = (
+    industry: string,
+    checked: boolean | string,
+  ) => {
     let updated: string[];
     if (checked === true) {
       updated = [...values.industry, industry];
