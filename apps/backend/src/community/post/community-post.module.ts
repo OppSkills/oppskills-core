@@ -11,9 +11,10 @@ import { CommunityPostCommentLikeService } from './community-post-comment-like.s
 import { CommunityPostRepostService } from './community-post-repost.service';
 import { CommunityPostCacheService } from './community-post-cache.service';
 import { CommunityModule } from '../community.module';
+import { AnalyticsModule } from '../../analytics/analytics.module';
 
 @Module({
-  imports: [CommunityModule],
+  imports: [CommunityModule, AnalyticsModule],
   controllers: [
     CommunityPostPublicController,
     CommunityPostUserFeedController,

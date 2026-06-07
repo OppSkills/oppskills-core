@@ -5,6 +5,7 @@ model CommunityEntity {
   description           String?
   website               String?
   industry              Industry
+  views                 Int                     @default(0)
   coverImage            String?                 @map("cover_image")
   avatarImage           String?                 @map("avatar_image")
   ownerId               String                  @map("owner_id")
@@ -15,7 +16,7 @@ model CommunityEntity {
   members               CommunityMemberEntity[]
   communityTaskEntities CommunityTaskEntity[]
   posts                 CommunityPostEntity[]
-  notifications         notifications[]          @relation("CommunityNotifications")
+  notifications         notifications[]         @relation("CommunityNotifications")
 
   @@unique([name, ownerId])
   @@index([ownerId])
@@ -210,6 +211,8 @@ model CommunityPostEntity {
   repostCount        Int                 @default(0) @map("repost_count")
   postKind           CommunityPostKind   @default(ORIGINAL) @map("post_kind")
   repostedFromPostId String?             @map("reposted_from_post_id")
+  views              Int                 @default(0)
+  impressions        Int                 @default(0)
   status             CommunityPostStatus @default(PUBLISHED)
   createdAt          DateTime            @default(now()) @map("created_at")
   updatedAt          DateTime            @updatedAt @map("updated_at")

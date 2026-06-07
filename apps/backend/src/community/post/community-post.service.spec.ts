@@ -4,6 +4,7 @@ import { CommunityService } from '../community.service';
 import { CommunityPostCacheService } from './community-post-cache.service';
 import { CommunityPostLikeService } from './community-post-like.service';
 import { CommunityPostRepostService } from './community-post-repost.service';
+import { AnalyticsService } from 'src/analytics/analytics.service';
 
 describe('CommunityPostService', () => {
   let service: CommunityPostService;
@@ -34,6 +35,10 @@ describe('CommunityPostService', () => {
   };
 
   beforeEach(async () => {
+    const mockAnalyticsService = {
+      trackServedPosts: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         CommunityPostService,
@@ -41,6 +46,7 @@ describe('CommunityPostService', () => {
         { provide: CommunityPostCacheService, useValue: mockCacheService },
         { provide: CommunityPostLikeService, useValue: mockLikeService },
         { provide: CommunityPostRepostService, useValue: mockRepostService },
+        { provide: AnalyticsService, useValue: mockAnalyticsService },
       ],
     }).compile();
 

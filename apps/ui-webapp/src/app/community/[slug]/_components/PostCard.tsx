@@ -9,6 +9,7 @@ import PostContent from "./PostContent";
 import PostEngagementBar from "./PostEngagementBar";
 import PostImagesGrid from "./PostImagesGrid";
 import QuotedPostCard from "./QuotedPostCard";
+import { usePostImpression } from "@/hooks/usePostImpression";
 
 interface PostCardProps {
   post: Post;
@@ -32,6 +33,7 @@ export default function PostCard({
   const [showMenu, setShowMenu] = useState(false);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
+  const impressionRef = usePostImpression(post.id);
 
   const handleImageClick = (index: number) => {
     setLightboxIndex(index);
@@ -46,7 +48,10 @@ export default function PostCard({
   const commentHref = `/community/${communityHandle}/posts/${post.id}`;
 
   return (
-    <div className="w-full bg-white rounded-3xl border border-neutral-200 p-5 sm:p-6 flex flex-col gap-5 shadow-xs relative">
+    <div
+      ref={impressionRef}
+      className="w-full bg-white rounded-3xl border border-neutral-200 p-5 sm:p-6 flex flex-col gap-5 shadow-xs relative"
+    >
       <div className="flex items-center justify-between relative">
         <div className="flex items-center gap-3">
           <div className="relative w-12 h-12 rounded-full overflow-hidden border border-neutral-100 bg-neutral-900 flex items-center justify-center font-bold text-white text-lg select-none">

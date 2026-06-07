@@ -12,6 +12,7 @@ import {
   CreateCommunityPostDto,
   UpdateCommunityPostDto,
 } from './dto/create-community-post.dto';
+import { AnalyticsService } from 'src/analytics/analytics.service';
 import type {
   CommunityPostDetailResponseDto,
   CommunityPostFeedItemDto,
@@ -90,6 +91,7 @@ export class CommunityPostService {
     private readonly cacheService: CommunityPostCacheService,
     private readonly likeService: CommunityPostLikeService,
     private readonly repostService: CommunityPostRepostService,
+    private readonly analyticsService: AnalyticsService,
   ) {}
 
   encodeCursor(createdAt: Date, id: string): string {
@@ -244,7 +246,9 @@ export class CommunityPostService {
         throw new NotFoundException('Post not found.');
       }
       if (viewerUserId) {
-        return this.attachViewerFlags(cached, viewerUserId);
+        const result = await this.attachViewerFlags(cached, viewerUserId);
+        await this.analyticsService.trackServedPosts(viewerUserId, [cached.id]);
+        return result;
       }
       return cached;
     }
@@ -266,7 +270,9 @@ export class CommunityPostService {
     await this.cacheService.setPost(postId, baseItem);
 
     if (viewerUserId) {
-      return this.attachViewerFlags(baseItem, viewerUserId);
+      const result = await this.attachViewerFlags(baseItem, viewerUserId);
+      await this.analyticsService.trackServedPosts(viewerUserId, [baseItem.id]);
+      return result;
     }
     return baseItem;
   }
@@ -294,13 +300,16 @@ export class CommunityPostService {
       );
     if (cached) {
       if (viewerUserId) {
-        return {
+        const result = {
           ...cached,
           items: await this.attachViewerFlagsToItems(
             cached.items,
             viewerUserId,
           ),
         };
+        const postIds = result.items.map((item) => item.id);
+        await this.analyticsService.trackServedPosts(viewerUserId, postIds);
+        return result;
       }
       return cached;
     }
@@ -337,13 +346,16 @@ export class CommunityPostService {
     );
 
     if (viewerUserId) {
-      return {
+      const result = {
         ...response,
         items: await this.attachViewerFlagsToItems(
           response.items,
           viewerUserId,
         ),
       };
+      const postIds = result.items.map((item) => item.id);
+      await this.analyticsService.trackServedPosts(viewerUserId, postIds);
+      return result;
     }
 
     return response;
@@ -383,7 +395,13 @@ export class CommunityPostService {
         ? this.encodeCursor(lastPost.createdAt, lastPost.id)
         : null;
 
-    return { items, nextCursor, hasMore };
+    const result = { items, nextCursor, hasMore };
+    if (viewerUserId) {
+      const postIds = result.items.map((item) => item.id);
+      await this.analyticsService.trackServedPosts(viewerUserId, postIds);
+    }
+
+    return result;
   }
 
   private async fetchCommunityFeedPosts(

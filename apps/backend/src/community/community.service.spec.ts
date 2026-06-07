@@ -23,10 +23,16 @@ describe('CommunityService', () => {
   const mockEmailQueue = {
     addCommunityWelcomeBatch: jest.fn(),
   };
+  const mockAnalyticsService = {
+    trackCommunityView: jest.fn(),
+  };
 
   beforeEach(() => {
     jest.clearAllMocks();
-    service = new CommunityService(mockEmailQueue as any);
+    service = new CommunityService(
+      mockEmailQueue as any,
+      mockAnalyticsService as any,
+    );
     (prisma.communityEntity.findUnique as jest.Mock).mockResolvedValue({
       id: 'comm1',
       ownerId: 'user1',

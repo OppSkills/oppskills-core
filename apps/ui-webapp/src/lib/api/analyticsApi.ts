@@ -108,3 +108,18 @@ export async function getHighestPerformingListings(
   });
   return res.data;
 }
+
+/**
+ * Track post impressions on the backend.
+ */
+export async function trackPostImpressions(
+  token: string,
+  postIds: string[],
+): Promise<{ success: boolean; trackedCount: number }> {
+  const res = await API.post(
+    "/posts/impressions",
+    { postIds },
+    { headers: buildAuthHeaders(token) },
+  );
+  return res.data;
+}

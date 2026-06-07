@@ -1,7 +1,8 @@
-import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
 import { prisma } from '@oppskills/db';
 import type Redis from 'ioredis';
 import { CacheService } from 'src/common/cache.service';
+import { Logger } from 'src/_utils/logger';
 import type {
   OrganizerRegistrationsSummaryDto,
   OrganizerOpportunitiesSummaryDto,
@@ -177,6 +178,73 @@ export class AnalyticsService {
     this.redis.incr(`pi:${type}:${slug}`).catch(() => {});
   }
 
+  async trackCommunityView(communityId: string) {
+    this.redis.incr(`pv:community:${communityId}`).catch(() => {});
+  }
+
+  async trackServedPosts(userId: string, postIds: string[]) {
+    if (!userId || postIds.length === 0) return;
+    const key = `served:u:${userId}`;
+    const now = Math.floor(Date.now() / 1000);
+    const args: (string | number)[] = [];
+    for (const id of postIds) {
+      args.push(now, id);
+    }
+    try {
+      await this.redis.zremrangebyscore(key, 0, now - 300);
+      await this.redis.zadd(key, ...args);
+      await this.redis.expire(key, 300);
+    } catch (err) {
+      this.logger.error(`Failed to track served posts for user ${userId}`, err);
+    }
+  }
+
+  async trackPostImpressions(userId: string, postIds: string[]): Promise<string[]> {
+    if (!userId || postIds.length === 0) return [];
+    
+    const now = Math.floor(Date.now() / 1000);
+    
+    const luaScript = `
+      local userId = ARGV[1]
+      local now = tonumber(ARGV[2])
+      local servedKey = 'served:u:' .. userId
+      local result = {}
+
+      for i = 1, #KEYS do
+        local postId = KEYS[i]
+        local score = redis.call('ZSCORE', servedKey, postId)
+        if score then
+          local age = now - tonumber(score)
+          if age <= 300 then
+            local dedupKey = 'imp:dedup:' .. userId .. ':' .. postId
+            local added = redis.call('SET', dedupKey, '1', 'EX', 86400, 'NX')
+            if added then
+              redis.call('INCR', 'pi:post:' .. postId)
+              table.insert(result, postId)
+            end
+          end
+        end
+      end
+      return result
+    `;
+
+    try {
+      const result = (await this.redis.eval(
+        luaScript,
+        postIds.length,
+        ...postIds,
+        userId,
+        now.toString(),
+      )) as string[];
+      
+      this.logger.info(`Tracked ${result.length} impressions for user ${userId}:`, result);
+      return result;
+    } catch (err) {
+      this.logger.error(`Failed to track post impressions for user ${userId}`, err);
+      return [];
+    }
+  }
+
   async flushToDb() {
     const stream = this.redis.scanStream({
       match: '*:*:*', // matches pv:*:* and pi:*:*
@@ -223,6 +291,26 @@ export class AnalyticsService {
                 where: { slug },
                 data: {
                   ...(metric === 'pv' && { views: { increment: count } }),
+                  ...(metric === 'pi' && {
+                    impressions: { increment: count },
+                  }),
+                },
+              });
+            }
+
+            if (type === 'community') {
+              await prisma.communityEntity.update({
+                where: { id: slug },
+                data: {
+                  ...(metric === 'pv' && { views: { increment: count } }),
+                },
+              });
+            }
+
+            if (type === 'post') {
+              await prisma.communityPostEntity.update({
+                where: { id: slug },
+                data: {
                   ...(metric === 'pi' && {
                     impressions: { increment: count },
                   }),
@@ -285,7 +373,7 @@ export class AnalyticsService {
   async getEventDetailedStats(
     slug: string,
     userId: string,
-    options: { period?: string; from?: string; to?: string },
+    options: { period?: string; from?: string; to?: string } = {},
   ) {
     const event = await prisma.eventEntity.findFirst({
       where: {
@@ -420,7 +508,7 @@ export class AnalyticsService {
   async getHackathonDetailedStats(
     slug: string,
     userId: string,
-    options: { period?: string; from?: string; to?: string },
+    options: { period?: string; from?: string; to?: string } = {},
   ) {
     const hackathon = await prisma.hackathonEntity.findFirst({
       where: {
