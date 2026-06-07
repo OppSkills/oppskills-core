@@ -56,6 +56,8 @@ describe('EventService - Google Sheets logging', () => {
       googleSheetsService,
       eventEmitter,
       analyticsService,
+      {} as any, // ReferralService mock
+      {} as any, // LocationService mock
     );
     jest.clearAllMocks();
   });

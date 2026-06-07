@@ -1,14 +1,26 @@
 import {
   Controller,
   Get,
+  Post,
+  Body,
   Param,
   NotFoundException,
   UseGuards,
   Req,
   Query,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { ClerkAuthGuard } from '../common/clerk-auth.guard';
 import { AnalyticsService } from './analytics.service';
+import { RateLimit } from 'src/common/rate-limit';
+import { IsArray, IsString, ArrayNotEmpty } from 'class-validator';
+
+export class TrackImpressionsDto {
+  @IsArray()
+  @IsString({ each: true })
+  @ArrayNotEmpty()
+  postIds: string[];
+}
 import type {
   OrganizerRegistrationsSummaryDto,
   OrganizerOpportunitiesSummaryDto,
@@ -212,5 +224,22 @@ export class AnalyticsController {
     const userId = req.user?.id;
     if (!userId) throw new NotFoundException('User not found');
     return this.analyticsService.getSettingsSummary(userId);
+  }
+
+  @Post('posts/impressions')
+  @RateLimit({ limit: 45, windowMs: 60_000, keyPrefix: 'posts-impressions' })
+  async trackPostImpressions(
+    @Body() dto: TrackImpressionsDto,
+    @Req() req: any,
+  ): Promise<{ success: boolean; trackedCount: number }> {
+    const userId = req.user?.id;
+    if (!userId) {
+      throw new UnauthorizedException('User not authenticated');
+    }
+    const tracked = await this.analyticsService.trackPostImpressions(
+      userId,
+      dto.postIds,
+    );
+    return { success: true, trackedCount: tracked.length };
   }
 }

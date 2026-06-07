@@ -43,7 +43,6 @@ jest.mock('@oppskills/db', () => {
       },
       userEntity: { findUnique: jest.fn() },
       eventRegistrationSubmissionEntity: { findFirst: jest.fn() },
-      eventPaymentEntity: { findFirst: jest.fn() },
       $transaction: jest.fn(async (cb: (client: typeof tx) => unknown) =>
         cb(tx),
       ),

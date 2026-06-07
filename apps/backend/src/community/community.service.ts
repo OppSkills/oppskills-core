@@ -18,6 +18,7 @@ import { Logger } from '../_utils/logger';
 import type { PublicCommunityListItemDto } from './dto/public-community-list-item.dto';
 import type { PublicCommunityProfileDto } from './dto/public-community-profile.dto';
 import { UpdateCommunityDto } from './dto/update-community.dto';
+import { AnalyticsService } from '../analytics/analytics.service';
 import {
   buildHandleCandidates,
   deriveCommunityHandleFromName,
@@ -29,7 +30,10 @@ import {
 export class CommunityService {
   private readonly logger = new Logger(CommunityService.name);
 
-  constructor(private readonly communityEmailQueue: CommunityEmailQueue) {}
+  constructor(
+    private readonly communityEmailQueue: CommunityEmailQueue,
+    private readonly analyticsService: AnalyticsService,
+  ) {}
 
   /**
    * Communities the user can open in the manage dashboard: owned, or member with ADMIN/EDITOR.
@@ -331,6 +335,8 @@ export class CommunityService {
     if (!community) {
       throw new NotFoundException('Community not found.');
     }
+
+    await this.analyticsService.trackCommunityView(community.id);
 
     let myRole: PublicCommunityProfileDto['myRole'] = null;
     if (viewerUserId) {

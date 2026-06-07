@@ -17,6 +17,8 @@ import RepostModal from "./RepostModal";
 import { ShareModal } from "@/components/common/ShareModal";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { getSafeToken } from "@/lib/auth-utils";
+import { queuePostImpression } from "@/hooks/usePostImpression";
 import {
   useCommunityPost,
   usePostComments,
@@ -98,8 +100,9 @@ export default function PostDetailView({
   postId,
   communityId,
 }: PostDetailViewProps) {
-  const { isSignedIn } = useAuth();
+  const { isSignedIn, getToken } = useAuth();
   const loadMoreRef = useRef<HTMLDivElement>(null);
+  const trackedRef = useRef(false);
 
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [isRepostOpen, setIsRepostOpen] = useState(false);
@@ -134,6 +137,13 @@ export default function PostDetailView({
     observer.observe(el);
     return () => observer.disconnect();
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  useEffect(() => {
+    if (post && isSignedIn && !trackedRef.current) {
+      trackedRef.current = true;
+      queuePostImpression(post.id, () => getSafeToken(getToken));
+    }
+  }, [post, isSignedIn, getToken]);
 
   const shareLink =
     typeof window !== "undefined"
