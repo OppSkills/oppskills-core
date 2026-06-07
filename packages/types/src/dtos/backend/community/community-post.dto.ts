@@ -121,6 +121,7 @@ export interface PublicCommunityProfile {
   avatarImage: string | null;
   memberCount: number;
   postCount: number;
+  repostCount: number;
   createdAt: string;
   myRole: CommunityMyRole;
 }

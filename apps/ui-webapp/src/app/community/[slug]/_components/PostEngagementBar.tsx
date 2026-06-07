@@ -39,7 +39,9 @@ export default function PostEngagementBar({
             : "text-neutral-500 hover:text-neutral-700 hover:bg-neutral-50",
         )}
       >
-        <ThumbsUp className={cn("w-4 h-4 shrink-0", isLiked ? "fill-[#5D3EBB]" : "")} />
+        <ThumbsUp
+          className={cn("w-4 h-4 shrink-0", isLiked ? "fill-[#5D3EBB]" : "")}
+        />
         <span className="hidden sm:inline">Like</span>
         <span className="text-xs font-semibold">({likes})</span>
       </button>

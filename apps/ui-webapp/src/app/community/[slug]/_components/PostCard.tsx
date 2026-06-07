@@ -78,7 +78,9 @@ export default function PostCard({
       // Navigate to post detail to see the new comment
       router.push(postHref);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to add comment.");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to add comment.",
+      );
     } finally {
       setIsSubmittingComment(false);
     }
@@ -109,7 +111,9 @@ export default function PostCard({
               {post.authorName}
             </span>
             <div className="flex items-center gap-1.5 text-xs text-neutral-400 font-bold">
-              <span className="whitespace-nowrap">{formatK(post.followersCount)} Followers</span>
+              <span className="whitespace-nowrap">
+                {formatK(post.followersCount)} Followers
+              </span>
               <span>•</span>
               <span className="whitespace-nowrap">{post.timeframe}</span>
             </div>

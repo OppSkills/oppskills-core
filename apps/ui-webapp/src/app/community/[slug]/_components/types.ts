@@ -9,6 +9,7 @@ export interface CommunityDetails {
   isVerified: boolean;
   followers: number;
   following: number;
+  reposts: number;
   bannerUrl: string | null;
   logoUrl: string | null;
   website: string | null;

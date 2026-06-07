@@ -11,6 +11,7 @@ import {
   Calendar,
   Loader2,
   MessageSquare,
+  Users,
 } from "lucide-react";
 import Link from "next/link";
 import { SignedIn, SignedOut } from "@clerk/nextjs";
@@ -201,6 +202,12 @@ const Navbar = () => {
                         <span className="font-medium">Event</span>
                       </DropdownMenuItem>
                     </Link>
+                    <Link href="/dashboard/community/create">
+                      <DropdownMenuItem className="cursor-pointer py-3 focus:bg-primary-50 focus:text-primary-700">
+                        <Users className="mr-2.5 h-4 w-4 text-neutral-500" />
+                        <span className="font-medium">List Community</span>
+                      </DropdownMenuItem>
+                    </Link>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
@@ -327,6 +334,16 @@ const Navbar = () => {
                     >
                       <Calendar className="w-6 h-6 text-neutral-500" />
                       <span className="text-xl font-semibold">Event</span>
+                    </Link>
+                    <Link
+                      href="/dashboard/community/create"
+                      onClick={() => setIsOpen(false)}
+                      className="flex items-center gap-4 px-4 py-4 rounded-2xl hover:bg-neutral-200"
+                    >
+                      <Users className="w-6 h-6 text-neutral-500" />
+                      <span className="text-xl font-semibold">
+                        List Community
+                      </span>
                     </Link>
                   </div>
                 </SignedIn>

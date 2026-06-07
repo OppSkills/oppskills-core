@@ -1,11 +1,61 @@
 "use client";
 
 import Link from "next/link";
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 import { Home } from "@solar-icons/react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@clerk/nextjs";
+import { globalChatsCache } from "@/hooks/useChatsPage";
+
+function ChatBreadcrumbLabel({ chatId }: { chatId: string }) {
+  const [label, setLabel] = useState<string>("Loading...");
+  const { getToken, isSignedIn } = useAuth();
+
+  useEffect(() => {
+    let active = true;
+
+    // Check in-memory cache first
+    const cached = globalChatsCache?.find((c) => c.id === chatId);
+    if (cached) {
+      setLabel(cached.name);
+      return;
+    }
+
+    if (!isSignedIn) {
+      setLabel("Chat");
+      return;
+    }
+
+    async function fetchChat() {
+      try {
+        const token = await getToken();
+        if (!token) {
+          if (active) setLabel("Chat");
+          return;
+        }
+        const { getConversation } = await import("@/lib/api/chatApi");
+        const detail = await getConversation(token, chatId);
+        if (active) {
+          setLabel(detail.name);
+        }
+      } catch (err) {
+        console.error("Failed to fetch chat for breadcrumb:", err);
+        if (active) setLabel("Chat");
+      }
+    }
+
+    void fetchChat();
+    return () => {
+      active = false;
+    };
+  }, [chatId, isSignedIn, getToken]);
+
+  return (
+    <span className="truncate max-w-[150px] sm:max-w-[240px]">{label}</span>
+  );
+}
 
 export function Breadcrumbs() {
   const pathname = usePathname();
@@ -58,9 +108,14 @@ export function Breadcrumbs() {
     subSegments.forEach((segment, index) => {
       currentPath += `/${segment}`;
       const isLast = index === subSegments.length - 1;
+      const isChatId = index > 0 && subSegments[index - 1] === "chats";
 
       items.push({
-        label: formatLabel(segment),
+        label: isChatId ? (
+          <ChatBreadcrumbLabel chatId={segment} />
+        ) : (
+          formatLabel(segment)
+        ),
         href: currentPath,
         active: isLast,
       });

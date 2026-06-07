@@ -182,6 +182,10 @@ export class AnalyticsService {
     this.redis.incr(`pv:community:${communityId}`).catch(() => {});
   }
 
+  async trackPostView(postId: string) {
+    this.redis.incr(`pv:post:${postId}`).catch(() => {});
+  }
+
   async trackServedPosts(userId: string, postIds: string[]) {
     if (!userId || postIds.length === 0) return;
     const key = `served:u:${userId}`;
@@ -199,11 +203,14 @@ export class AnalyticsService {
     }
   }
 
-  async trackPostImpressions(userId: string, postIds: string[]): Promise<string[]> {
+  async trackPostImpressions(
+    userId: string,
+    postIds: string[],
+  ): Promise<string[]> {
     if (!userId || postIds.length === 0) return [];
-    
+
     const now = Math.floor(Date.now() / 1000);
-    
+
     const luaScript = `
       local userId = ARGV[1]
       local now = tonumber(ARGV[2])
@@ -236,11 +243,17 @@ export class AnalyticsService {
         userId,
         now.toString(),
       )) as string[];
-      
-      this.logger.info(`Tracked ${result.length} impressions for user ${userId}:`, result);
+
+      this.logger.info(
+        `Tracked ${result.length} impressions for user ${userId}:`,
+        result,
+      );
       return result;
     } catch (err) {
-      this.logger.error(`Failed to track post impressions for user ${userId}`, err);
+      this.logger.error(
+        `Failed to track post impressions for user ${userId}`,
+        err,
+      );
       return [];
     }
   }
@@ -313,6 +326,9 @@ export class AnalyticsService {
                 data: {
                   ...(metric === 'pi' && {
                     impressions: { increment: count },
+                  }),
+                  ...(metric === 'pv' && {
+                    views: { increment: count },
                   }),
                 },
               });

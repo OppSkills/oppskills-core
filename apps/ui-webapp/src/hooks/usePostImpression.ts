@@ -33,10 +33,7 @@ export function queuePostImpression(
           await trackPostImpressions(token, postIds);
         }
       } catch (err) {
-        console.error(
-          "[usePostImpression] Failed to flush impressions",
-          err,
-        );
+        console.error("[usePostImpression] Failed to flush impressions", err);
       }
     }, 2000); // 2 seconds batch window
   }

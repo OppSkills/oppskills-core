@@ -213,7 +213,7 @@ function IdentityFieldsBody({
         <div className="flex items-center gap-1.5 text-indigo-600/80 font-medium italic text-sm sm:pt-1.5">
           <Globe className="w-4 h-4 shrink-0" aria-hidden />
           <span className="break-all select-all" aria-label="Community URL">
-            https://oppskills.com/c/
+            https://oppskills.com/community/
             <span className="font-bold underline decoration-dotted">
               {displayHandle}
             </span>
