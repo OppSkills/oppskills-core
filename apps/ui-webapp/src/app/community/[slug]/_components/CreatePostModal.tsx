@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import { PlusCircle, Send, Sparkles, X } from "lucide-react";
+import { PlusCircle, Send, LayoutGrid, X } from "lucide-react";
 import CustomModal from "./CustomModal";
 import AdjustImagesModal from "./AdjustImagesModal";
 import PresetImagesModal from "./PresetImagesModal";
@@ -290,7 +290,7 @@ export default function CreatePostModal({
               disabled={images.length >= COMMUNITY_POST_IMAGES_MAX_COUNT}
               className="flex-1 border border-dashed border-neutral-200 hover:border-neutral-300 hover:bg-neutral-50/50 py-3 rounded-full flex items-center justify-center gap-2 text-sm font-extrabold text-neutral-500 transition-all cursor-pointer active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Sparkles className="w-5 h-5 text-amber-500" />
+              <LayoutGrid className="w-4 h-4" />
               <span>Choose Preset Image</span>
             </button>
           </div>

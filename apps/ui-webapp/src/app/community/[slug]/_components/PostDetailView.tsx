@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
-import { Loader2, ArrowLeft } from "lucide-react";
+import { Loader2, ArrowLeft, Share } from "lucide-react";
 import { useAuth } from "@clerk/nextjs";
 import { toast } from "sonner";
 import type { CommunityPostFeedItem } from "@oppskills/types";
@@ -205,27 +205,37 @@ export default function PostDetailView({
       </Link>
 
       <article className="bg-white rounded-3xl border border-neutral-200 p-5 sm:p-6 flex flex-col gap-5 shadow-xs">
-        <div className="flex items-center gap-3">
-          <div className="relative w-12 h-12 rounded-full overflow-hidden bg-neutral-900 flex items-center justify-center text-white font-bold shrink-0">
-            {post.author.imageUrl ? (
-              <Image
-                src={post.author.imageUrl}
-                alt={authorName}
-                fill
-                className="object-cover"
-              />
-            ) : (
-              getAuthorInitials(post.author)
-            )}
+        <div className="flex items-center justify-between relative">
+          <div className="flex items-center gap-3">
+            <div className="relative w-12 h-12 rounded-full overflow-hidden bg-neutral-900 flex items-center justify-center text-white font-bold shrink-0">
+              {post.author.imageUrl ? (
+                <Image
+                  src={post.author.imageUrl}
+                  alt={authorName}
+                  fill
+                  className="object-cover"
+                />
+              ) : (
+                getAuthorInitials(post.author)
+              )}
+            </div>
+            <div>
+              <p className="font-extrabold text-neutral-800">{authorName}</p>
+              <p className="text-xs text-neutral-400 font-bold">
+                {formatDistanceToNow(new Date(post.createdAt), {
+                  addSuffix: true,
+                })}
+              </p>
+            </div>
           </div>
-          <div>
-            <p className="font-extrabold text-neutral-800">{authorName}</p>
-            <p className="text-xs text-neutral-400 font-bold">
-              {formatDistanceToNow(new Date(post.createdAt), {
-                addSuffix: true,
-              })}
-            </p>
-          </div>
+
+          <button
+            onClick={() => setIsShareOpen(true)}
+            className="text-neutral-400 hover:text-neutral-600 hover:bg-neutral-50 p-2 rounded-full transition-all duration-300"
+            title="Share Post"
+          >
+            <Share className="w-5 h-5" />
+          </button>
         </div>
 
         <PostBody post={post} communityHandle={handle} />
@@ -239,7 +249,6 @@ export default function PostDetailView({
           isReposted={post.isRepostedByMe}
           onLike={handleLike}
           onRepost={handleRepost}
-          onShare={() => setIsShareOpen(true)}
         />
       </article>
 
