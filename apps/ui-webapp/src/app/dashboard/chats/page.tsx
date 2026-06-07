@@ -914,7 +914,7 @@ export default function ChatsPage() {
   }, [chats, activeTab]);
 
   return (
-    <div className="flex flex-1 w-full h-[calc(100vh-64px)] min-h-0 bg-background overflow-hidden relative font-sans text-neutral-900">
+    <div className="flex flex-1 w-full h-full min-h-0 bg-background overflow-hidden relative font-sans text-neutral-900">
       {/* ── LEFT SIDEBAR ───────────────────────────────────── */}
       {/* Mobile/Tablet: slide-over drawer + semi-transparent backdrop */}
       {/* Desktop (lg+): inline panel, always visible */}
@@ -1449,19 +1449,25 @@ export default function ChatsPage() {
                   </div>
                 )}
 
-                {/* Chat Timeline (Scrollable Messages) */}
-                <div
-                  ref={scrollContainerRef}
-                  onScroll={handleScroll}
-                  className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 scrollbar bg-neutral-100 relative"
-                >
-                  {/* Background illustration – shown at 20% opacity */}
-                  <img
-                    src="/illustrations/chats/active_chat_bg.png"
-                    alt=""
+                {/* Chat Timeline Container */}
+                <div className="flex-1 min-h-0 relative flex flex-col">
+                  {/* Background illustration – fixed so it doesn't scroll with messages */}
+                  <div
                     aria-hidden="true"
-                    className="absolute inset-0 w-full h-full object-cover opacity-20 pointer-events-none select-none"
+                    className="pointer-events-none select-none absolute inset-0 z-0 bg-neutral-100"
+                    style={{
+                      backgroundImage: "url('/illustrations/chats/active_chat_bg.png')",
+                      backgroundSize: "cover",
+                      backgroundPosition: "center",
+                      opacity: 0.1,
+                    }}
                   />
+                  {/* Chat Timeline (Scrollable Messages) */}
+                  <div
+                    ref={scrollContainerRef}
+                    onScroll={handleScroll}
+                    className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 scrollbar relative z-10 bg-transparent"
+                  >
                   <BoneyardSkeleton
                     loading={messagesLoading}
                     name="chat-message-timeline"
@@ -1861,9 +1867,13 @@ export default function ChatsPage() {
                   </BoneyardSkeleton>
                   <div ref={messagesEndRef} />
                 </div>
+              </div>
 
                 {/* Message Input Container (with Reply Preview) */}
-                <div className="border-t border-neutral-300 bg-white shrink-0 z-10 flex flex-col shadow-inner">
+                <div
+                  className="border-t border-neutral-300 bg-white shrink-0 z-10 flex flex-col shadow-inner"
+                  style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+                >
                   {/* Reply Preview Bar */}
                   <AnimatePresence>
                     {replyingToMessage && (

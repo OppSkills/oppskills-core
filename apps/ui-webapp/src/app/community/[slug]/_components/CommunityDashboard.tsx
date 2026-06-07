@@ -342,8 +342,15 @@ export default function CommunityDashboard({
     );
   }
 
+  const handleCommentPost = async (postId: string, content: string) => {
+    // PostCard handles navigation to post page after comment publish
+    // This is a no-op at the parent level — inline comment is self-contained
+    void postId;
+    void content;
+  };
+
   return (
-    <div className="w-full max-w-5xl mx-auto px-4 py-8 flex flex-col gap-6 animate-in fade-in duration-500">
+    <div className="w-full max-w-5xl mx-auto py-8 flex flex-col gap-6 animate-in fade-in duration-500">
       <input
         ref={coverInputRef}
         type="file"
@@ -368,28 +375,33 @@ export default function CommunityDashboard({
       />
 
       <div className="w-full flex flex-col gap-6">
-        <CommunityHeader
-          details={details}
-          canManage={canManage}
-          isFollowing={isFollowing}
-          isFollowLoading={isFollowLoading}
-          onEditCover={
-            canManage ? () => coverInputRef.current?.click() : undefined
-          }
-          onEditAvatar={
-            canManage ? () => avatarInputRef.current?.click() : undefined
-          }
-          onCreatePost={canManage ? () => setIsCreatingPost(true) : undefined}
-          onFollow={canManage ? undefined : handleFollow}
-          onUnfollow={canManage ? undefined : handleUnfollow}
-        />
+        {/* Full-width on mobile (no horizontal padding), padded on sm+ */}
+        <div className="sm:px-4">
+          <CommunityHeader
+            details={details}
+            canManage={canManage}
+            isFollowing={isFollowing}
+            isFollowLoading={isFollowLoading}
+            onEditCover={
+              canManage ? () => coverInputRef.current?.click() : undefined
+            }
+            onEditAvatar={
+              canManage ? () => avatarInputRef.current?.click() : undefined
+            }
+            onCreatePost={canManage ? () => setIsCreatingPost(true) : undefined}
+            onFollow={canManage ? undefined : handleFollow}
+            onUnfollow={canManage ? undefined : handleUnfollow}
+          />
+        </div>
 
-        <AboutCard
-          details={details}
-          onEditAbout={canManage ? () => setIsEditAboutOpen(true) : undefined}
-        />
+        <div className="px-4">
+          <AboutCard
+            details={details}
+            onEditAbout={canManage ? () => setIsEditAboutOpen(true) : undefined}
+          />
+        </div>
 
-        <div className="flex flex-col gap-5 w-full">
+        <div className="flex flex-col gap-5 w-full px-4">
           <div className="flex items-center justify-between border-b border-neutral-100 pb-2">
             <h3 className="text-xl font-extrabold text-neutral-800 tracking-tight">
               Community Feed
@@ -419,6 +431,7 @@ export default function CommunityDashboard({
                     onDelete={handleDeletePost}
                     onRepost={handleRepostPost}
                     onShare={handleSharePost}
+                    onComment={handleCommentPost}
                     canManage={canManage}
                   />
                 </div>

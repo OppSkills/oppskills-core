@@ -1,6 +1,4 @@
-"use client";
-
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { getDisplayUrl } from "./communityUtils";
 
@@ -19,6 +17,10 @@ export default function ImageLightbox({
   currentIndex,
   onIndexChange,
 }: ImageLightboxProps) {
+  const pointerStartX = useRef<number | null>(null);
+  const pointerStartY = useRef<number | null>(null);
+  const isDragging = useRef<boolean>(false);
+
   // Keypress event navigation (Arrow keys to navigate, Escape to close)
   useEffect(() => {
     if (!isOpen) return;
@@ -49,12 +51,75 @@ export default function ImageLightbox({
     onIndexChange(nextIndex);
   };
 
+  // Pointer event handlers for swipe/drag detection
+  const handlePointerDown = (e: React.PointerEvent) => {
+    if (images.length <= 1) return;
+    // Only respond to primary mouse button or touch/pen inputs
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+
+    pointerStartX.current = e.clientX;
+    pointerStartY.current = e.clientY;
+    isDragging.current = true;
+
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch (err) {
+      // Ignore fallback
+    }
+  };
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    if (!isDragging.current) return;
+
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch (err) {
+      // Ignore fallback
+    }
+
+    if (pointerStartX.current !== null && pointerStartY.current !== null) {
+      const diffX = pointerStartX.current - e.clientX;
+      const diffY = pointerStartY.current - e.clientY;
+      const minSwipeDistance = 50;
+
+      // Detect horizontal swipe
+      if (Math.abs(diffX) > Math.abs(diffY)) {
+        if (Math.abs(diffX) > minSwipeDistance) {
+          if (diffX > 0) {
+            handleNext();
+          } else {
+            handlePrev();
+          }
+        }
+      }
+    }
+
+    isDragging.current = false;
+    pointerStartX.current = null;
+    pointerStartY.current = null;
+  };
+
+  const handlePointerCancel = (e: React.PointerEvent) => {
+    if (isDragging.current) {
+      try {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      } catch (err) {}
+      isDragging.current = false;
+    }
+    pointerStartX.current = null;
+    pointerStartY.current = null;
+  };
+
   if (!isOpen || !images || images.length === 0) return null;
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-neutral-900/50 backdrop-blur-xs transition-opacity duration-300 animate-in fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-neutral-900/50 backdrop-blur-xs transition-opacity duration-300 animate-in fade-in touch-none select-none"
       onClick={onClose}
+      onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerCancel}
+      style={{ touchAction: "none" }}
     >
       {/* Top Right Close Button */}
       <button
@@ -86,7 +151,7 @@ export default function ImageLightbox({
         <img
           src={getDisplayUrl(images[currentIndex])}
           alt={`Preview image ${currentIndex + 1}`}
-          className="max-w-full max-h-[85vh] object-contain rounded-2xl select-none"
+          className="max-w-full max-h-[85vh] object-contain rounded-2xl select-none pointer-events-none"
           draggable="false"
         />
       </div>

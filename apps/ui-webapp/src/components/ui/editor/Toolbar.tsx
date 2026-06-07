@@ -165,7 +165,7 @@ export default function Toolbar({ editor }: { editor: Editor }) {
     }`;
 
   return (
-    <div className="flex flex-wrap items-center gap-1 border-b p-2 bg-gray-50/50">
+    <div className="flex flex-nowrap items-center gap-1 border-b p-2 bg-gray-50/50 overflow-x-auto scrollbar-none">
       {/* History */}
       <div className="flex items-center gap-0.5 border-r pr-2 mr-1">
         <button
