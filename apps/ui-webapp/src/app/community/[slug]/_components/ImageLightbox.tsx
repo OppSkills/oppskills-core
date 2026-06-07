@@ -2,6 +2,7 @@
 
 import React, { useEffect } from "react";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { getDisplayUrl } from "./communityUtils";
 
 interface ImageLightboxProps {
   isOpen: boolean;
@@ -83,7 +84,7 @@ export default function ImageLightbox({
         {/* We use an standard img tag for fluid responsive lightbox sizing */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={images[currentIndex]}
+          src={getDisplayUrl(images[currentIndex])}
           alt={`Preview image ${currentIndex + 1}`}
           className="max-w-full max-h-[85vh] object-contain rounded-2xl select-none"
           draggable="false"

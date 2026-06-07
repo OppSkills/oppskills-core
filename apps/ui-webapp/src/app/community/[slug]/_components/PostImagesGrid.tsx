@@ -4,6 +4,7 @@ import React from "react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { COMMUNITY_POST_FEED_IMAGE_GRID_VISIBLE } from "@oppskills/types/constants";
+import { getDisplayUrl } from "./communityUtils";
 
 interface PostImagesGridProps {
   images: string[];
@@ -24,6 +25,7 @@ function GridCell({
   overlay?: string;
   className?: string;
 }) {
+  const displaySrc = getDisplayUrl(src);
   return (
     <button
       type="button"
@@ -33,7 +35,7 @@ function GridCell({
         className,
       )}
     >
-      <Image src={src} alt={alt} fill className="object-cover" />
+      <Image src={displaySrc} alt={alt} fill className="object-cover" />
       {overlay ? (
         <div className="absolute inset-0 bg-black/55 flex items-center justify-center">
           <span className="text-white text-2xl sm:text-3xl font-extrabold tracking-tight">

@@ -22,3 +22,10 @@ export function stripHtmlPreview(html: string, maxLength = 100): string {
     .trim();
   return text.length > maxLength ? `${text.slice(0, maxLength)}...` : text;
 }
+
+export function getDisplayUrl(url: string): string {
+  if (url && url.startsWith("https://oppskills.co/")) {
+    return url.replace("https://oppskills.co", "");
+  }
+  return url;
+}
