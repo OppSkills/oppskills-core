@@ -332,25 +332,25 @@ export class CommunityService {
 
     await this.analyticsService.trackCommunityView(community.id);
 
-    const memberCount = await prisma.communityMemberEntity.count({
-      where: { communityId: community.id },
-    });
-
-    const originalPostCount = await prisma.communityPostEntity.count({
-      where: {
-        communityId: community.id,
-        status: 'PUBLISHED',
-        postKind: { in: ['ORIGINAL', 'QUOTE_REPOST'] },
-      },
-    });
-
-    const repostCount = await prisma.communityPostEntity.count({
-      where: {
-        communityId: community.id,
-        status: 'PUBLISHED',
-        postKind: 'REPOST',
-      },
-    });
+    const [memberCount, originalPostCount, repostCount] = await Promise.all([
+      prisma.communityMemberEntity.count({
+        where: { communityId: community.id },
+      }),
+      prisma.communityPostEntity.count({
+        where: {
+          communityId: community.id,
+          status: 'PUBLISHED',
+          postKind: { in: ['ORIGINAL', 'QUOTE_REPOST'] },
+        },
+      }),
+      prisma.communityPostEntity.count({
+        where: {
+          communityId: community.id,
+          status: 'PUBLISHED',
+          postKind: 'REPOST',
+        },
+      }),
+    ]);
 
     let myRole: PublicCommunityProfileDto['myRole'] = null;
     if (viewerUserId) {
