@@ -77,7 +77,7 @@ export default function CommunityHeader({
         {canManage && onEditCover && (
           <button
             onClick={onEditCover}
-            className="absolute top-4 right-4 bg-white/80 hover:bg-white text-neutral-700 p-2 rounded-full shadow-md hover:scale-105 transition-all opacity-0 group-hover:opacity-100 duration-300 z-20"
+            className="absolute top-4 right-4 bg-white/80 hover:bg-white text-neutral-700 p-2 rounded-full shadow-md hover:scale-105 transition-all sm:opacity-0 sm:group-hover:opacity-100 duration-300 z-20"
             title="Edit cover image"
           >
             <Edit2 className="w-4 h-4" />
@@ -113,7 +113,7 @@ export default function CommunityHeader({
           {canManage && onEditAvatar && (
             <button
               onClick={onEditAvatar}
-              className="absolute bottom-1 right-1 bg-white/90 hover:bg-white text-neutral-700 p-1.5 rounded-full shadow-md hover:scale-105 transition-all opacity-0 group-hover/avatar:opacity-100 duration-300"
+              className="absolute bottom-1 right-1 bg-white/90 hover:bg-white text-neutral-700 p-1.5 rounded-full shadow-md hover:scale-105 transition-all sm:opacity-0 sm:group-hover/avatar:opacity-100 duration-300"
               title="Edit community photo"
             >
               <Edit2 className="w-3.5 h-3.5" />
