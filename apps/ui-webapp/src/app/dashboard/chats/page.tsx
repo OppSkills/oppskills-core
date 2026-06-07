@@ -40,6 +40,7 @@ import {
   LogOut,
   Trash2,
   Calendar,
+  PanelLeftClose,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useChatsPage } from "@/hooks/useChatsPage";
@@ -409,11 +410,19 @@ export default function ChatsPage() {
     "Members" | "Media" | "Docs"
   >("Media");
 
-  // Auto-close right sidebar on chat switch
+  // Left sidebar mobile overlay state
+  const [showLeftSidebar, setShowLeftSidebar] = useState(!selectedChatId);
+
+  // Auto-close right sidebar on chat switch; open left sidebar when no chat selected; close left sidebar on mobile when chat is selected
   useEffect(() => {
     setShowRightSidebar(false);
     setActiveRightSidebarTab("Media");
     setShowChatMenu(false);
+    if (!selectedChatId) {
+      setShowLeftSidebar(true);
+    } else {
+      setShowLeftSidebar(false);
+    }
   }, [selectedChatId]);
 
   // Compute matching message IDs
@@ -906,12 +915,36 @@ export default function ChatsPage() {
 
   return (
     <div className="flex flex-1 w-full h-[calc(100vh-64px)] min-h-0 bg-background overflow-hidden relative font-sans text-neutral-900">
-      {/* Sidebar Container */}
-      <div
+      {/* ── LEFT SIDEBAR ───────────────────────────────────── */}
+      {/* Mobile/Tablet: slide-over drawer + semi-transparent backdrop */}
+      {/* Desktop (lg+): inline panel, always visible */}
+
+      {/* Backdrop (mobile/tablet only — covers the chat area behind the drawer) */}
+      <AnimatePresence>
+        {showLeftSidebar && selectedChatId && (
+          <motion.div
+            key="left-sidebar-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="lg:hidden fixed inset-0 bg-black/40 z-40"
+            onClick={() => setShowLeftSidebar(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Sidebar panel */}
+      <motion.div
+        key="left-sidebar"
+        initial={selectedChatId ? { x: "-100%" } : false}
+        animate={{ x: (showLeftSidebar || !selectedChatId) ? 0 : "-100%" }}
+        transition={{ type: "spring", damping: 28, stiffness: 260 }}
         className={`
-        ${selectedChatId ? "hidden md:flex" : "flex"}
-        w-full md:w-[380px] border-r border-neutral-300 flex-col bg-white shrink-0 h-full relative z-10
-      `}
+          fixed lg:relative inset-y-0 left-0 z-50 lg:z-10
+          w-[85vw] max-w-[360px] md:w-[320px] lg:w-[380px]
+          border-r border-neutral-300 flex flex-col bg-white shrink-0 h-full lg:!transform-none
+        `}
       >
         {/* Search Header */}
         <div className="p-5 pb-3">
@@ -934,13 +967,13 @@ export default function ChatsPage() {
         </div>
 
         {/* Tab Filters */}
-        <div className="flex px-4 border-b border-neutral-200 gap-1">
+        <div className="flex px-4 border-b border-neutral-200 overflow-x-auto scrollbar-none">
           {(["All", "Unread", "Groups", "Individual"] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={`
-                flex-1 text-center py-3 text-xs font-semibold tracking-wide transition-all border-b-2 relative uppercase
+                shrink-0 px-3 text-center py-3 text-xs font-semibold tracking-wide transition-all border-b-2 relative uppercase whitespace-nowrap
                 ${activeTab === tab
                   ? "text-primary-600 border-primary-500"
                   : "text-neutral-500 border-transparent hover:text-neutral-700"
@@ -949,7 +982,7 @@ export default function ChatsPage() {
             >
               {tab}
               {tab === "Unread" && chats.some((c) => c.unreadCount > 0) && (
-                <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-UI-Success animate-pulse" />
+                <span className="absolute top-2 right-1 w-2 h-2 rounded-full bg-UI-Success animate-pulse" />
               )}
             </button>
           ))}
@@ -1089,59 +1122,69 @@ export default function ChatsPage() {
           <Plus className="w-4 h-4" />
           <span>Create Group</span>
         </button>
-      </div>
+      </motion.div>
 
-      {/* Main Body (Chat Area) */}
+      {/* ── MAIN BODY (Chat Area) ──────────────────────────── */}
       <div
-        className={`
-        ${selectedChatId ? "flex" : "hidden md:flex"}
-        flex-1 flex-col h-full bg-neutral-100 relative min-w-0
-      `}
+        className="flex flex-1 flex-col h-full bg-neutral-100 relative min-w-0"
       >
         {activeChat ? (
           <>
             {/* Active Chat Header */}
-            <div className="h-16 border-b border-neutral-300 bg-white px-4 md:px-6 flex items-center justify-between shrink-0 shadow-sm z-10">
-              <div
-                onClick={() => setShowRightSidebar(!showRightSidebar)}
-                className="flex items-center gap-3 min-w-0 cursor-pointer hover:opacity-80 transition-all"
-                title="Click to view details"
-              >
-                {/* Back button (Mobile only) */}
+            <div className="h-16 border-b border-neutral-300 bg-white px-3 md:px-5 flex items-center justify-between shrink-0 shadow-sm z-10">
+              {/* Left side: nav controls + clickable chat profile */}
+              <div className="flex items-center gap-2 min-w-0 flex-1">
+                {/* Sidebar toggle — tablet only (md, not lg) */}
                 <button
-                  onClick={(e) => {
-                    e.stopPropagation();
+                  onClick={() => setShowLeftSidebar((v) => !v)}
+                  className="hidden md:flex lg:hidden p-2 rounded-full hover:bg-neutral-100 text-neutral-600 hover:text-neutral-900 shrink-0 transition-colors"
+                  aria-label="Toggle chat list"
+                >
+                  <PanelLeftClose className="w-5 h-5" />
+                </button>
+
+                {/* Back button — mobile only */}
+                <button
+                  onClick={() => {
                     router.push("/dashboard/chats");
+                    setShowLeftSidebar(true);
                   }}
-                  className="md:hidden p-1.5 rounded-full hover:bg-neutral-200 text-neutral-700 shrink-0 transition-colors"
+                  className="flex md:hidden p-1.5 rounded-full hover:bg-neutral-200 text-neutral-700 shrink-0 transition-colors"
                 >
                   <ArrowLeft className="w-5 h-5" />
                 </button>
 
-                <img
-                  src={activeChat.imageUrl}
-                  alt={activeChat.name}
-                  className="w-10 h-10 rounded-full object-cover border border-neutral-200 shrink-0"
-                />
-
-                <div className="min-w-0">
-                  <h3 className="text-sm md:text-base font-bold text-neutral-900 truncate font-aeonicPro">
-                    {activeChat.name}
-                  </h3>
-                  <p
-                    className={`text-[10px] md:text-xs truncate ${!activeChat.isGroup &&
+                {/* Clickable profile area */}
+                <div
+                  onClick={() => setShowRightSidebar(!showRightSidebar)}
+                  className="flex items-center gap-2.5 min-w-0 cursor-pointer hover:opacity-80 transition-all"
+                  title="Click to view details"
+                >
+                  <img
+                    src={activeChat.imageUrl}
+                    alt={activeChat.name}
+                    className="w-10 h-10 rounded-full object-cover border border-neutral-200 shrink-0"
+                  />
+                  <div className="min-w-0">
+                    <h3 className="text-sm md:text-base font-bold text-neutral-900 truncate font-aeonicPro">
+                      {activeChat.name}
+                    </h3>
+                    <p
+                      className={`text-[10px] md:text-xs truncate ${
+                        !activeChat.isGroup &&
                         isDmPeerOnline(activeChat, currentUserId)
-                        ? "text-emerald-600"
-                        : "text-neutral-500"
+                          ? "text-emerald-600"
+                          : "text-neutral-500"
                       }`}
-                  >
-                    {chatPresenceSubtitle}
-                  </p>
+                    >
+                      {chatPresenceSubtitle}
+                    </p>
+                  </div>
                 </div>
               </div>
 
               {/* Utility Header Actions */}
-              <div className="flex items-center gap-1 md:gap-2 text-neutral-600">
+              <div className="flex items-center gap-1 text-neutral-600 shrink-0">
                 {/* Audio/video calls — post-MVP
                 <button className="p-2 rounded-full hover:bg-neutral-100 hover:text-primary-600 transition-colors">
                   <Phone className="w-4 h-4 md:w-5 h-5" />
@@ -1260,9 +1303,9 @@ export default function ChatsPage() {
 
                 {/* Message Filter / Search Bar */}
                 {(isSearchingMessages || showDateFilter) && (
-                  <div className="bg-white border-b border-neutral-300 px-4 md:px-6 py-2.5 flex flex-wrap items-center gap-3 shrink-0 shadow-xs z-10">
+                  <div className="bg-white border-b border-neutral-300 px-3 md:px-5 py-2.5 flex flex-wrap items-center gap-2 md:gap-3 shrink-0 shadow-xs z-10">
                     {isSearchingMessages && (
-                      <div className="relative flex items-center flex-1 min-w-[280px]">
+                      <div className="relative flex items-center flex-1 min-w-0 w-full md:w-auto">
                         <div className="relative flex-1">
                           <input
                             type="text"
@@ -1356,7 +1399,7 @@ export default function ChatsPage() {
                     )}
 
                     {showDateFilter && (
-                      <div className="flex items-center gap-2 text-xs">
+                      <div className="flex flex-wrap items-center gap-2 text-xs w-full md:w-auto">
                         <span className="font-semibold text-neutral-500">
                           From:
                         </span>
@@ -1364,7 +1407,7 @@ export default function ChatsPage() {
                           type="date"
                           value={startDateFilter}
                           onChange={(e) => setStartDateFilter(e.target.value)}
-                          className="px-2.5 py-1.5 border border-neutral-300 rounded-xl text-xs outline-none focus:border-primary-500 font-semibold shadow-2xs bg-white"
+                          className="flex-1 min-w-[130px] px-2.5 py-1.5 border border-neutral-300 rounded-xl text-xs outline-none focus:border-primary-500 font-semibold shadow-2xs bg-white"
                         />
                         <span className="font-semibold text-neutral-500">
                           To:
@@ -1373,7 +1416,7 @@ export default function ChatsPage() {
                           type="date"
                           value={endDateFilter}
                           onChange={(e) => setEndDateFilter(e.target.value)}
-                          className="px-2.5 py-1.5 border border-neutral-300 rounded-xl text-xs outline-none focus:border-primary-500 font-semibold shadow-2xs bg-white"
+                          className="flex-1 min-w-[130px] px-2.5 py-1.5 border border-neutral-300 rounded-xl text-xs outline-none focus:border-primary-500 font-semibold shadow-2xs bg-white"
                         />
                         {(startDateFilter || endDateFilter) && (
                           <button
@@ -1917,6 +1960,20 @@ export default function ChatsPage() {
               </div>
 
               {/* Right Sidebar Details */}
+              {/* Backdrop for right sidebar on small screens */}
+              <AnimatePresence>
+                {showRightSidebar && (
+                  <motion.div
+                    key="right-sidebar-backdrop"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="lg:hidden absolute inset-0 bg-black/40 z-40"
+                    onClick={() => setShowRightSidebar(false)}
+                  />
+                )}
+              </AnimatePresence>
               <AnimatePresence>
                 {showRightSidebar && (
                   <motion.div
@@ -1924,7 +1981,7 @@ export default function ChatsPage() {
                     animate={{ x: 0 }}
                     exit={{ x: "100%" }}
                     transition={{ type: "spring", damping: 25, stiffness: 220 }}
-                    className="absolute inset-y-0 right-0 md:relative w-80 lg:w-[350px] shrink-0 border-l border-neutral-300 bg-white flex flex-col h-full z-45 shadow-lg md:shadow-none overflow-hidden"
+                    className="absolute inset-y-0 right-0 lg:relative w-[90vw] sm:w-96 lg:w-[350px] shrink-0 border-l border-neutral-300 bg-white flex flex-col h-full z-45 shadow-xl lg:shadow-none overflow-hidden"
                   >
                     {/* Header profile info */}
                     <div
@@ -2199,8 +2256,8 @@ export default function ChatsPage() {
             </div>
           </>
         ) : (
-          /* Placeholder View (Default Screen) */
-          <div className="flex-1 flex items-center justify-center p-4 md:p-8 text-center bg-neutral-100 h-full overflow-hidden select-none">
+          /* Placeholder View (Default Screen) — hidden on mobile (sidebar covers full screen) */
+          <div className="hidden md:flex flex-1 items-center justify-center p-4 md:p-8 text-center bg-neutral-100 h-full overflow-hidden select-none">
             <div className="relative max-w-lg w-full aspect-[4/3] flex items-center justify-center">
               <img
                 src="/illustrations/chats/chat_illustration_placeholder.png"

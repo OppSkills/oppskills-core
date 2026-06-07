@@ -2,9 +2,10 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import { PlusCircle, Send, Sparkles } from "lucide-react";
+import { PlusCircle, Send, Sparkles, X } from "lucide-react";
 import CustomModal from "./CustomModal";
 import AdjustImagesModal from "./AdjustImagesModal";
+import PresetImagesModal from "./PresetImagesModal";
 import { Button } from "@/components/ui/button";
 import { Post } from "./types";
 import { isPostContentEmpty } from "./PostContent";
@@ -14,6 +15,8 @@ import {
   COMMUNITY_POST_IMAGES_MAX_COUNT,
 } from "@oppskills/types/constants";
 import { getPlainTextLengthFromHtml } from "@/lib/community/textUtils";
+import { getDisplayUrl } from "./communityUtils";
+import { useDebounce } from "@/hooks/use-debounce";
 
 const RichTextEditor = dynamic(
   () => import("@/components/ui/editor/RichtextEditor"),
@@ -27,15 +30,6 @@ interface CreatePostModalProps {
   onPublish: (content: string, images: string[]) => void | Promise<void>;
 }
 
-const PRESET_MOCK_IMAGES = [
-  "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=1200&auto=format&fit=crop&q=80",
-  "https://images.unsplash.com/photo-1515187029135-18ee286d815b?w=1200&auto=format&fit=crop&q=80",
-  "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200&auto=format&fit=crop&q=80",
-  "https://images.unsplash.com/photo-1614741118887-7a4ee193a5fa?w=1200&auto=format&fit=crop&q=80",
-  "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=1200&auto=format&fit=crop&q=80",
-  "https://images.unsplash.com/photo-1552664730-d307ca884978?w=1200&auto=format&fit=crop&q=80",
-];
-
 export default function CreatePostModal({
   isOpen,
   onClose,
@@ -47,8 +41,8 @@ export default function CreatePostModal({
   const [isAdjusting, setIsAdjusting] = useState(false);
   const [adjustStartIndex, setAdjustStartIndex] = useState(0);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [isPresetOpen, setIsPresetOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const mockImageIndexRef = useRef(0);
 
   const resetForm = useCallback(() => {
     setImages((prev) => {
@@ -58,8 +52,41 @@ export default function CreatePostModal({
       return [];
     });
     setContent("");
-    mockImageIndexRef.current = 0;
   }, []);
+
+  const debouncedContent = useDebounce(content, 1000);
+  const debouncedImages = useDebounce(images, 1000);
+
+  // Restore draft automatically when opening modal (for new posts only)
+  useEffect(() => {
+    if (isOpen && !postToEdit) {
+      const savedDraft = localStorage.getItem("community_post_draft");
+      if (savedDraft) {
+        try {
+          const { content: draftContent, images: draftImages } = JSON.parse(savedDraft);
+          if (typeof draftContent === "string") setContent(draftContent);
+          if (Array.isArray(draftImages)) setImages(draftImages);
+        } catch (e) {
+          console.error("Failed to restore post draft:", e);
+        }
+      }
+    }
+  }, [isOpen, postToEdit]);
+
+  // Save draft automatically when content/images change, only if modal is open and not editing
+  useEffect(() => {
+    if (!isOpen || postToEdit) return;
+
+    if (debouncedContent || debouncedImages.length > 0) {
+      const draft = {
+        content: debouncedContent,
+        images: debouncedImages,
+      };
+      localStorage.setItem("community_post_draft", JSON.stringify(draft));
+    } else {
+      localStorage.removeItem("community_post_draft");
+    }
+  }, [debouncedContent, debouncedImages, isOpen, postToEdit]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -108,26 +135,24 @@ export default function CreatePostModal({
     e.target.value = "";
   };
 
-  const handleAddMockImage = () => {
-    if (images.length >= COMMUNITY_POST_IMAGES_MAX_COUNT) {
-      toast.error(
-        `You can attach up to ${COMMUNITY_POST_IMAGES_MAX_COUNT} images.`,
-      );
-      return;
-    }
-    const notYetUsed = PRESET_MOCK_IMAGES.filter(
-      (url) => !images.includes(url),
-    );
-    const pool = notYetUsed.length > 0 ? notYetUsed : PRESET_MOCK_IMAGES;
-    const idx = mockImageIndexRef.current % pool.length;
-    mockImageIndexRef.current += 1;
-    const img = pool[idx];
-    setImages((prev) => [...prev, img]);
-    toast.success("Preset image attached.");
+  const handleTogglePreset = (presetUrl: string) => {
+    setImages((prev) => {
+      if (prev.includes(presetUrl)) {
+        return prev.filter((url) => url !== presetUrl);
+      }
+      if (prev.length >= COMMUNITY_POST_IMAGES_MAX_COUNT) return prev;
+      return [...prev, presetUrl];
+    });
   };
 
   const handleRemoveImage = (indexToRemove: number) => {
-    setImages((prev) => prev.filter((_, idx) => idx !== indexToRemove));
+    setImages((prev) => {
+      const url = prev[indexToRemove];
+      if (url?.startsWith("blob:")) {
+        URL.revokeObjectURL(url);
+      }
+      return prev.filter((_, idx) => idx !== indexToRemove);
+    });
   };
 
   const handleImageCropped = (index: number, croppedObjectUrl: string) => {
@@ -160,6 +185,8 @@ export default function CreatePostModal({
     setIsPublishing(true);
     try {
       await onPublish(content, images);
+      // Clear draft on successful post
+      localStorage.removeItem("community_post_draft");
       resetForm();
       onClose();
     } finally {
@@ -208,19 +235,29 @@ export default function CreatePostModal({
                 {images.map((img, idx) => (
                   <div
                     key={`${idx}-${img.slice(-16)}`}
-                    onClick={() => {
-                      setAdjustStartIndex(idx);
-                      setIsAdjusting(true);
-                    }}
-                    className="relative w-24 h-16 rounded-xl overflow-hidden cursor-pointer border border-neutral-100 hover:scale-[1.03] active:scale-95 transition-all shrink-0"
-                    title="Click to crop image"
+                    className="relative w-24 h-16 rounded-xl overflow-hidden border border-neutral-100 hover:scale-[1.03] active:scale-95 transition-all shrink-0 group"
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={img}
+                      src={getDisplayUrl(img)}
                       alt={`Attached graphic preview ${idx + 1}`}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover cursor-pointer"
+                      onClick={() => {
+                        setAdjustStartIndex(idx);
+                        setIsAdjusting(true);
+                      }}
                     />
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRemoveImage(idx);
+                      }}
+                      className="absolute top-1 right-1 bg-black/60 hover:bg-red-600 text-white rounded-full p-0.5 shadow-md hover:scale-110 transition-all z-10"
+                      title="Remove image"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
                   </div>
                 ))}
               </div>
@@ -249,12 +286,12 @@ export default function CreatePostModal({
 
             <button
               type="button"
-              onClick={handleAddMockImage}
+              onClick={() => setIsPresetOpen(true)}
               disabled={images.length >= COMMUNITY_POST_IMAGES_MAX_COUNT}
               className="flex-1 border border-dashed border-neutral-200 hover:border-neutral-300 hover:bg-neutral-50/50 py-3 rounded-full flex items-center justify-center gap-2 text-sm font-extrabold text-neutral-500 transition-all cursor-pointer active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Sparkles className="w-5 h-5 text-amber-500" />
-              <span>Add Preset Mock Image</span>
+              <span>Choose Preset Image</span>
             </button>
           </div>
         </div>
@@ -269,6 +306,15 @@ export default function CreatePostModal({
           onRemoveImage={handleRemoveImage}
           onImageCropped={handleImageCropped}
           onContinue={() => setIsAdjusting(false)}
+        />
+      )}
+
+      {isPresetOpen && (
+        <PresetImagesModal
+          isOpen={isPresetOpen}
+          onClose={() => setIsPresetOpen(false)}
+          selectedImages={images}
+          onTogglePreset={handleTogglePreset}
         />
       )}
     </>

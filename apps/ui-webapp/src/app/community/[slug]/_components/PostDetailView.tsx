@@ -29,6 +29,7 @@ import {
   formatAuthorName,
   getAuthorInitials,
   stripHtmlPreview,
+  getDisplayUrl,
 } from "./communityUtils";
 
 interface PostDetailViewProps {
@@ -79,7 +80,7 @@ function PostBody({
               )}
             >
               <Image
-                src={img}
+                src={getDisplayUrl(img)}
                 alt={`Post image ${index + 1}`}
                 fill
                 className="object-cover"

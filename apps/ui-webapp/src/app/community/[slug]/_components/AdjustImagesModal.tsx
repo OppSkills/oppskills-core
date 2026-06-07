@@ -11,6 +11,7 @@ import { X } from "lucide-react";
 import CustomModal from "./CustomModal";
 import { Button } from "@/components/ui/button";
 import { blobToCroppedFile, getCroppedImageBlob } from "@/lib/chat/cropImage";
+import { getDisplayUrl } from "./communityUtils";
 
 interface AdjustImagesModalProps {
   isOpen: boolean;
@@ -160,7 +161,7 @@ export default function AdjustImagesModal({
               <img
                 key={activeSrc}
                 ref={imgRef}
-                src={activeSrc}
+                src={getDisplayUrl(activeSrc)}
                 alt="Crop preview"
                 crossOrigin="anonymous"
                 onLoad={onImageLoad}
@@ -191,7 +192,7 @@ export default function AdjustImagesModal({
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={img}
+                  src={getDisplayUrl(img)}
                   alt={`Thumbnail ${idx + 1}`}
                   className="w-full h-full object-cover"
                 />
