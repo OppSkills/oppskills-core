@@ -17,6 +17,8 @@ import RepostModal from "./RepostModal";
 import { Button } from "@/components/ui/button";
 import { ShareModal } from "@/components/common/ShareModal";
 import { CommunityDetails, Post } from "./types";
+import CommunityDashboardFallback from "./CommunityDashboardFallback";
+import { Skeleton } from "@/components/ui/skeleton";
 
 import {
   followCommunity,
@@ -43,6 +45,26 @@ interface CommunityDashboardProps {
 
 function canManageCommunity(myRole: string | null | undefined): boolean {
   return myRole === "OWNER" || myRole === "ADMIN" || myRole === "MODERATOR";
+}
+
+function PostFeedSkeleton() {
+  return (
+    <div className="flex flex-col gap-6 w-full animate-pulse">
+      {Array.from({ length: 3 }).map((_, i) => (
+        <div key={i} className="w-full bg-white border border-neutral-200 rounded-3xl p-5 sm:p-6 flex flex-col gap-4 shadow-2xs">
+          <div className="flex gap-3 items-center">
+            <Skeleton className="w-12 h-12 rounded-full bg-neutral-200" />
+            <div className="flex flex-col gap-1.5">
+              <Skeleton className="h-4 w-28 rounded-md bg-neutral-200" />
+              <Skeleton className="h-3 w-40 rounded-sm bg-neutral-200" />
+            </div>
+          </div>
+          <Skeleton className="h-4 w-full rounded-md bg-neutral-200 mt-1" />
+          <Skeleton className="h-4 w-5/6 rounded-md bg-neutral-200" />
+        </div>
+      ))}
+    </div>
+  );
 }
 
 export default function CommunityDashboard({
@@ -103,6 +125,7 @@ export default function CommunityDashboard({
       isVerified: false,
       followers: profile.memberCount,
       following: profile.postCount,
+      reposts: profile.repostCount || 0,
       bannerUrl: profile.coverImage,
       logoUrl: profile.avatarImage,
       website: profile.website,
@@ -327,11 +350,7 @@ export default function CommunityDashboard({
   };
 
   if (profileLoading) {
-    return (
-      <div className="w-full flex justify-center py-24">
-        <Loader2 className="w-8 h-8 animate-spin text-[#5D3EBB]" />
-      </div>
-    );
+    return <CommunityDashboardFallback />;
   }
 
   if (profileError || !details) {
@@ -424,9 +443,7 @@ export default function CommunityDashboard({
           </div>
 
           {postsLoading ? (
-            <div className="flex justify-center py-12">
-              <Loader2 className="w-6 h-6 animate-spin text-[#5D3EBB]" />
-            </div>
+            <PostFeedSkeleton />
           ) : posts.length > 0 ? (
             <div className="flex flex-col gap-6 w-full">
               {posts.map((post) => (

@@ -33,6 +33,9 @@ export class PublicCommunityProfileDto {
   postCount: number;
 
   @ApiProperty()
+  repostCount: number;
+
+  @ApiProperty()
   createdAt: Date;
 
   @ApiPropertyOptional({

@@ -75,7 +75,7 @@ import { getMe } from "@/lib/api/usersApi";
 const MESSAGE_PAGE_SIZE = 30;
 
 // Simple in-memory global cache persisting across page mounts
-let globalChatsCache: Chat[] = [];
+export let globalChatsCache: Chat[] = [];
 let globalSearchUsersCache: SearchUserHit[] = [];
 let globalGroupSearchUsersCache: SearchUserHit[] = [];
 let globalLoadingCache = true;

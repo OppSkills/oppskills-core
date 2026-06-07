@@ -323,12 +323,6 @@ export class CommunityService {
               },
             }
           : {}),
-        _count: {
-          select: {
-            members: true,
-            posts: { where: { status: 'PUBLISHED' } },
-          },
-        },
       },
     });
 
@@ -337,6 +331,26 @@ export class CommunityService {
     }
 
     await this.analyticsService.trackCommunityView(community.id);
+
+    const memberCount = await prisma.communityMemberEntity.count({
+      where: { communityId: community.id },
+    });
+
+    const originalPostCount = await prisma.communityPostEntity.count({
+      where: {
+        communityId: community.id,
+        status: 'PUBLISHED',
+        postKind: { in: ['ORIGINAL', 'QUOTE_REPOST'] },
+      },
+    });
+
+    const repostCount = await prisma.communityPostEntity.count({
+      where: {
+        communityId: community.id,
+        status: 'PUBLISHED',
+        postKind: 'REPOST',
+      },
+    });
 
     let myRole: PublicCommunityProfileDto['myRole'] = null;
     if (viewerUserId) {
@@ -361,8 +375,9 @@ export class CommunityService {
       industry: community.industry,
       coverImage: community.coverImage,
       avatarImage: community.avatarImage,
-      memberCount: community._count.members,
-      postCount: community._count.posts,
+      memberCount,
+      postCount: originalPostCount,
+      repostCount,
       createdAt: community.createdAt,
       myRole,
     };

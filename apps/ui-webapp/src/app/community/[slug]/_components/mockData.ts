@@ -6,6 +6,7 @@ export const initialCommunityDetails: CommunityDetails = {
   isVerified: true,
   followers: 14000,
   following: 0,
+  reposts: 0,
   bannerUrl: null, // Starts null, we will support uploads/fallback nicely
   logoUrl: null,
   website: null,

@@ -248,6 +248,14 @@ export default function ChatsPage() {
   const idParam = params?.id as string | undefined;
   const selectedChatId = idParam || null;
 
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   const {
     chats,
     loading,
@@ -309,7 +317,7 @@ export default function ChatsPage() {
   const [showSticky, setShowSticky] = useState<boolean>(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const lastScrollTopRef = useRef<number>(0);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const focusInput = () => {
     setTimeout(() => {
@@ -814,6 +822,13 @@ export default function ChatsPage() {
     scrollToBottom,
   ]);
 
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (!isMobile && e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage(e);
+    }
+  };
+
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputMessage.trim() || !selectedChatId) return;
@@ -942,7 +957,8 @@ export default function ChatsPage() {
         transition={{ type: "spring", damping: 28, stiffness: 260 }}
         className={`
           fixed lg:relative inset-y-0 left-0 z-50 lg:z-10
-          w-[85vw] max-w-[360px] md:w-[320px] lg:w-[380px]
+          ${selectedChatId ? "w-[85vw] max-w-[360px]" : "w-full max-w-none"}
+          md:w-[320px] lg:w-[380px]
           border-r border-neutral-300 flex flex-col bg-white shrink-0 h-full lg:!transform-none
         `}
       >
@@ -1131,7 +1147,7 @@ export default function ChatsPage() {
         {activeChat ? (
           <>
             {/* Active Chat Header */}
-            <div className="h-16 border-b border-neutral-300 bg-white px-3 md:px-5 flex items-center justify-between shrink-0 shadow-sm z-10">
+            <div className="h-16 border-b border-neutral-300 bg-white px-3 md:px-5 flex items-center justify-between shrink-0 shadow-sm z-20">
               {/* Left side: nav controls + clickable chat profile */}
               <div className="flex items-center gap-2 min-w-0 flex-1">
                 {/* Sidebar toggle — tablet only (md, not lg) */}
@@ -1551,7 +1567,7 @@ export default function ChatsPage() {
                               key={message.stableKey ?? message.id}
                               id={`msg-${message.id}`}
                               data-message-date={message.timestamp}
-                              className="flex justify-end items-end gap-2 transition-all duration-300 w-full"
+                              className="flex justify-end items-end gap-2 transition-all duration-300 w-full my-1.5"
                             >
                               <div className="relative group flex items-end gap-2 max-w-[75%] md:max-w-[60%]">
                                 {/* Hover reply action icon: immediately to the left of the bubble */}
@@ -1569,12 +1585,29 @@ export default function ChatsPage() {
                                   </button>
                                 </div>
 
-                                <div className="w-full flex flex-col">
+                                <div className="w-full flex flex-col relative">
+                                  {/* Swipe reply icon behind bubble */}
+                                  {isMobile && (
+                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 z-0 flex items-center justify-center text-primary-500 pointer-events-none">
+                                      <CornerUpLeft className="w-5 h-5 text-neutral-400 animate-pulse" />
+                                    </div>
+                                  )}
                                   {/* Bubble content */}
-                                  <div
+                                  <motion.div
+                                    drag={isMobile ? "x" : false}
+                                    dragConstraints={{ left: -100, right: 0 }}
+                                    dragElastic={0.6}
+                                    onDragEnd={(event, info) => {
+                                      const threshold = 55;
+                                      if (info.offset.x < -threshold) {
+                                        setReplyingToMessage(message);
+                                        focusInput();
+                                      }
+                                    }}
+                                    dragTransition={{ bounceStiffness: 600, bounceDamping: 35 }}
                                     className={`
-                                        p-3 md:p-4 rounded-2xl shadow-sm text-sm font-normal relative leading-relaxed transition-all duration-300 min-w-[80px]
-                                        bg-primary-600 text-white rounded-br-none
+                                        p-3 md:p-4 rounded-2xl shadow-sm text-sm font-normal relative leading-relaxed min-w-[80px] cursor-grab active:cursor-grabbing select-none z-10
+                                        bg-primary-600 text-white rounded-br-none transition-[box-shadow,border-color,background-color] duration-300
                                         ${highlightedMessageId === message.id ||
                                         (isSearchingMessages &&
                                           matchingMessageIds[
@@ -1684,7 +1717,7 @@ export default function ChatsPage() {
                                       </span>
                                       <OutgoingMessageStatus message={message} />
                                     </div>
-                                  </div>
+                                  </motion.div>
                                 </div>
                               </div>
                             </div>
@@ -1693,7 +1726,7 @@ export default function ChatsPage() {
                               key={message.id}
                               id={`msg-${message.id}`}
                               data-message-date={message.timestamp}
-                              className="flex justify-start items-end gap-2 transition-all duration-300 w-full"
+                              className="flex justify-start items-end gap-2 transition-all duration-300 w-full my-1.5"
                             >
                               {/* Participant Avatar for group chat left-aligned messages */}
                               {!message.isYou && activeChat.isGroup && (
@@ -1703,19 +1736,29 @@ export default function ChatsPage() {
                               )}
 
                               <div className="relative group flex items-end gap-2 max-w-[75%] md:max-w-[60%]">
-                                <div className="w-full flex flex-col">
-                                  {/* Sender Name in Group Chat */}
-                                  {!message.isYou && activeChat.isGroup && (
-                                    <span className="text-[10px] font-bold text-neutral-500 ml-2.5 mb-0.5">
-                                      {message.senderName}
-                                    </span>
+                                <div className="w-full flex flex-col relative">
+                                  {/* Swipe reply icon behind bubble */}
+                                  {isMobile && (
+                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 z-0 flex items-center justify-center text-primary-500 pointer-events-none">
+                                      <CornerUpLeft className="w-5 h-5 text-neutral-400 animate-pulse" />
+                                    </div>
                                   )}
-
                                   {/* Bubble content */}
-                                  <div
+                                  <motion.div
+                                    drag={isMobile ? "x" : false}
+                                    dragConstraints={{ left: 0, right: 100 }}
+                                    dragElastic={0.6}
+                                    onDragEnd={(event, info) => {
+                                      const threshold = 55;
+                                      if (info.offset.x > threshold) {
+                                        setReplyingToMessage(message);
+                                        focusInput();
+                                      }
+                                    }}
+                                    dragTransition={{ bounceStiffness: 600, bounceDamping: 35 }}
                                     className={`
-                                        p-3 md:p-4 rounded-2xl shadow-sm text-sm font-normal relative leading-relaxed transition-all duration-300 min-w-[80px]
-                                        bg-white text-neutral-900 rounded-bl-none border border-neutral-200
+                                        p-3 md:p-4 rounded-2xl shadow-sm text-sm font-normal relative leading-relaxed min-w-[80px] cursor-grab active:cursor-grabbing select-none z-10
+                                        bg-white text-neutral-900 rounded-bl-none border border-neutral-200 transition-[box-shadow,border-color,background-color] duration-300
                                         ${highlightedMessageId === message.id ||
                                         (isSearchingMessages &&
                                           matchingMessageIds[
@@ -1825,7 +1868,7 @@ export default function ChatsPage() {
                                         {formatTime12h(message.timestamp)}
                                       </span>
                                     </div>
-                                  </div>
+                                  </motion.div>
                                 </div>
 
                                 {/* Hover reply action icon: immediately to the right of the bubble */}
@@ -1908,7 +1951,7 @@ export default function ChatsPage() {
                   {/* Message Input Bar */}
                   <form
                     onSubmit={handleSendMessage}
-                    className="h-20 px-4 md:px-6 flex items-center gap-3 w-full"
+                    className="min-h-[5rem] py-3 px-4 md:px-6 flex items-end gap-3 w-full"
                   >
                     <div
                       className="relative shrink-0"
@@ -1936,18 +1979,19 @@ export default function ChatsPage() {
                     </div>
 
                     {/* Input field */}
-                    <div className="flex-1 bg-neutral-100 border border-neutral-200 hover:border-neutral-300 rounded-full px-4 py-2.5 flex items-center transition-colors">
-                      <input
+                    <div className="flex-1 bg-neutral-100 border border-neutral-200 hover:border-neutral-300 rounded-2xl px-4 py-2 flex items-end transition-colors min-h-[44px]">
+                      <textarea
                         ref={inputRef}
-                        type="text"
+                        rows={Math.min(4, Math.max(2, inputMessage.split("\n").length))}
                         value={inputMessage}
                         onChange={(e) => setInputMessage(e.target.value)}
+                        onKeyDown={handleInputKeyDown}
                         placeholder="Type a message..."
-                        className="w-full bg-transparent border-none outline-none text-sm text-neutral-800 placeholder-neutral-500 focus:ring-0 py-0.5"
+                        className="w-full bg-transparent border-none outline-none text-sm text-neutral-800 placeholder-neutral-500 focus:ring-0 py-1 resize-none"
                       />
                       <ChatEmojiPicker
                         onEmojiSelect={insertEmoji}
-                        className="p-1 text-neutral-500 hover:text-primary-600 transition-colors shrink-0 ml-2"
+                        className="p-1 text-neutral-500 hover:text-primary-600 transition-colors shrink-0 ml-2 mb-0.5"
                       />
                     </div>
 
@@ -1956,7 +2000,7 @@ export default function ChatsPage() {
                       type="submit"
                       disabled={!inputMessage.trim()}
                       className={`
-                        p-3 rounded-full text-white transition-all shrink-0 shadow-md hover:shadow-lg
+                        p-3 rounded-full text-white transition-all shrink-0 shadow-md hover:shadow-lg mb-0.5
                         ${inputMessage.trim()
                           ? "bg-primary-600 hover:bg-primary-700 cursor-pointer scale-100 active:scale-95"
                           : "bg-neutral-300 cursor-not-allowed opacity-80"

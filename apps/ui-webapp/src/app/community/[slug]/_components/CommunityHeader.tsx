@@ -6,6 +6,12 @@ import { Check, Edit2, Loader2, Plus, UserPlus, UserMinus } from "lucide-react";
 import { CommunityDetails } from "./types";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 
 interface CommunityHeaderProps {
   details: CommunityDetails;
@@ -122,12 +128,26 @@ export default function CommunityHeader({
                 Members
               </div>
               <div className="w-1.5 h-1.5 rounded-full bg-neutral-300" />
-              <div>
-                <span className="text-neutral-800 font-extrabold">
-                  {details.following}
-                </span>{" "}
-                Posts
-              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="flex items-center gap-1 hover:text-[#5D3EBB] hover:scale-105 active:scale-95 transition-all focus:outline-none cursor-pointer">
+                    <span className="text-neutral-800 font-extrabold">
+                      {details.following}
+                    </span>{" "}
+                    Posts
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-44 bg-white border border-neutral-200 shadow-md rounded-xl p-1.5 z-50">
+                  <DropdownMenuItem className="flex justify-between items-center px-3 py-2 text-xs font-semibold text-neutral-700 rounded-lg hover:bg-neutral-50 focus:bg-neutral-50 transition-colors outline-none cursor-default select-none">
+                    <span>Original Posts</span>
+                    <span className="font-extrabold text-neutral-900">{details.following}</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="flex justify-between items-center px-3 py-2 text-xs font-semibold text-neutral-700 rounded-lg hover:bg-neutral-50 focus:bg-neutral-50 transition-colors outline-none cursor-default select-none">
+                    <span>Reposts</span>
+                    <span className="font-extrabold text-neutral-900">{details.reposts}</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
 
             {canManage && onCreatePost ? (
