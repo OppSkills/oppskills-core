@@ -57,6 +57,42 @@ function ChatBreadcrumbLabel({ chatId }: { chatId: string }) {
   );
 }
 
+function CommunityManageBreadcrumbLabel({
+  communityId,
+}: {
+  communityId: string;
+}) {
+  const [label, setLabel] = useState<string>("Community");
+  const { getToken, isSignedIn } = useAuth();
+
+  useEffect(() => {
+    let active = true;
+
+    if (!isSignedIn) return;
+
+    async function fetchName() {
+      try {
+        const token = await getToken();
+        if (!token) return;
+        const { getCommunity } = await import("@/lib/api/communityApi");
+        const detail = await getCommunity(token, communityId);
+        if (active) setLabel(detail.name);
+      } catch {
+        // keep fallback label
+      }
+    }
+
+    void fetchName();
+    return () => {
+      active = false;
+    };
+  }, [communityId, isSignedIn, getToken]);
+
+  return (
+    <span className="truncate max-w-[120px] sm:max-w-[200px]">{label}</span>
+  );
+}
+
 export function Breadcrumbs() {
   const pathname = usePathname();
 
@@ -91,13 +127,14 @@ export function Breadcrumbs() {
     const isProfile = segments.includes("profile");
     const rootPath = isProfile ? "/profile" : "/dashboard";
 
-    const items: { label: React.ReactNode; href: string; active: boolean }[] = [
-      {
-        label: <Home className="size-4" />,
-        href: rootPath,
-        active: pathname === rootPath,
-      },
-    ];
+    const items: { label: React.ReactNode; href: string; active: boolean }[] =
+      [
+        {
+          label: <Home className="size-4" />,
+          href: rootPath,
+          active: pathname === rootPath,
+        },
+      ];
 
     let currentPath = rootPath;
 
@@ -109,13 +146,25 @@ export function Breadcrumbs() {
       currentPath += `/${segment}`;
       const isLast = index === subSegments.length - 1;
       const isChatId = index > 0 && subSegments[index - 1] === "chats";
+      // Detect /dashboard/community/manage/[id]
+      const isCommunityManageId =
+        index > 0 &&
+        subSegments[index - 1] === "manage" &&
+        subSegments[index - 2] === "community";
+
+      let labelNode: React.ReactNode;
+      if (isChatId) {
+        labelNode = <ChatBreadcrumbLabel chatId={segment} />;
+      } else if (isCommunityManageId) {
+        labelNode = (
+          <CommunityManageBreadcrumbLabel communityId={segment} />
+        );
+      } else {
+        labelNode = formatLabel(segment);
+      }
 
       items.push({
-        label: isChatId ? (
-          <ChatBreadcrumbLabel chatId={segment} />
-        ) : (
-          formatLabel(segment)
-        ),
+        label: labelNode,
         href: currentPath,
         active: isLast,
       });
@@ -128,25 +177,34 @@ export function Breadcrumbs() {
 
   return (
     <nav
-      className="flex items-center text-sm font-medium text-neutral-500"
+      className="flex items-center text-sm font-medium text-neutral-500 min-w-0 overflow-hidden"
       aria-label="Breadcrumb"
     >
-      <ol className="flex items-center gap-1.5">
+      <ol className="flex items-center gap-1.5 min-w-0 overflow-hidden">
         {breadcrumbItems.map((item, index) => (
-          <li key={item.href} className="flex items-center gap-1.5">
+          <li
+            key={item.href}
+            className={cn(
+              "flex items-center gap-1.5 shrink-0",
+              // Last item can shrink and truncate to avoid overlapping right buttons
+              index === breadcrumbItems.length - 1 && "min-w-0 shrink",
+            )}
+          >
             {index > 0 && (
               <ChevronRight className="size-3.5 text-neutral-400 shrink-0" />
             )}
             <Link
               href={item.href}
               className={cn(
-                "transition-colors hover:text-primary-600",
+                "transition-colors hover:text-primary-600 min-w-0",
                 item.active
                   ? "text-primary-900 font-semibold pointer-events-none"
                   : "text-neutral-500",
               )}
             >
-              <div className="flex items-center">{item.label}</div>
+              <div className="flex items-center min-w-0 overflow-hidden">
+                {item.label}
+              </div>
             </Link>
           </li>
         ))}

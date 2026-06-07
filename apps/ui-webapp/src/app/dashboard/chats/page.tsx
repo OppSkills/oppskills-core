@@ -1216,7 +1216,7 @@ export default function ChatsPage() {
                     <MoreVertical className="size-4 md:size-5" />
                   </button>
                   {showChatMenu && activeChat && (
-                    <div className="absolute right-0 top-full mt-1 w-52 py-1 bg-white border border-neutral-200 rounded-xl shadow-lg z-30">
+                    <div className="absolute right-0 top-full mt-1 w-52 py-1 bg-white border border-neutral-200 rounded-xl shadow-lg z-50">
                       <button
                         type="button"
                         onClick={() => {
@@ -1305,7 +1305,7 @@ export default function ChatsPage() {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
                       transition={{ duration: 0.2 }}
-                      className="absolute top-4 left-1/2 -translate-x-1/2 z-40"
+                      className="absolute top-4 left-1/2 -translate-x-1/2 z-20"
                     >
                       <span className="bg-white border border-neutral-200 text-neutral-700 px-4 py-1.5 rounded-full shadow-md font-semibold text-xs whitespace-nowrap">
                         {stickyDate}
@@ -1595,8 +1595,9 @@ export default function ChatsPage() {
                                     {/* Bubble content */}
                                     <motion.div
                                       drag={isMobile ? "x" : false}
-                                      dragConstraints={{ left: -100, right: 0 }}
-                                      dragElastic={0.6}
+                                      dragConstraints={{ left: 0, right: 0 }}
+                                      dragElastic={0.3}
+                                      animate={{ x: 0 }}
                                       onDragEnd={(event, info) => {
                                         const threshold = 55;
                                         if (info.offset.x < -threshold) {
@@ -1605,8 +1606,8 @@ export default function ChatsPage() {
                                         }
                                       }}
                                       dragTransition={{
-                                        bounceStiffness: 600,
-                                        bounceDamping: 35,
+                                        bounceStiffness: 800,
+                                        bounceDamping: 40,
                                       }}
                                       className={`
                                         p-3 md:p-4 rounded-2xl shadow-sm text-sm font-normal relative leading-relaxed min-w-[80px] cursor-grab active:cursor-grabbing select-none z-10
@@ -1757,8 +1758,9 @@ export default function ChatsPage() {
                                     {/* Bubble content */}
                                     <motion.div
                                       drag={isMobile ? "x" : false}
-                                      dragConstraints={{ left: 0, right: 100 }}
-                                      dragElastic={0.6}
+                                      dragConstraints={{ left: 0, right: 0 }}
+                                      dragElastic={0.3}
+                                      animate={{ x: 0 }}
                                       onDragEnd={(event, info) => {
                                         const threshold = 55;
                                         if (info.offset.x > threshold) {
@@ -1767,8 +1769,8 @@ export default function ChatsPage() {
                                         }
                                       }}
                                       dragTransition={{
-                                        bounceStiffness: 600,
-                                        bounceDamping: 35,
+                                        bounceStiffness: 800,
+                                        bounceDamping: 40,
                                       }}
                                       className={`
                                         p-3 md:p-4 rounded-2xl shadow-sm text-sm font-normal relative leading-relaxed min-w-[80px] cursor-grab active:cursor-grabbing select-none z-10
