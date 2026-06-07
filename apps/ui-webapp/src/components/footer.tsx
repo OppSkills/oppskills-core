@@ -31,6 +31,7 @@ const Footer = () => {
       { name: "Opportunities", href: "/hackathons" },
       { name: "Events", href: "/events" },
       { name: "Festivals", href: "/festivals" },
+      { name: "Community", href: "/community" },
       { name: chatNavLink.name, href: chatNavLink.href },
     ],
     OppSkills: [

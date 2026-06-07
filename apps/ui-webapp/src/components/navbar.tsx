@@ -71,6 +71,7 @@ const Navbar = () => {
     { name: "Hackathons", href: "/hackathons" },
     { name: "Festivals", href: "/festivals" },
     { name: "Events", href: "/events" },
+    { name: "Community", href: "/community" },
   ];
 
   useEffect(() => {
