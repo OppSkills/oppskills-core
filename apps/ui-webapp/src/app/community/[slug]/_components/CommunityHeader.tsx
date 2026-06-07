@@ -23,6 +23,8 @@ interface CommunityHeaderProps {
   onCreatePost?: () => void;
   onFollow?: () => void;
   onUnfollow?: () => void;
+  isCoverUploading?: boolean;
+  isAvatarUploading?: boolean;
 }
 
 export default function CommunityHeader({
@@ -35,6 +37,8 @@ export default function CommunityHeader({
   onCreatePost,
   onFollow,
   onUnfollow,
+  isCoverUploading = false,
+  isAvatarUploading = false,
 }: CommunityHeaderProps) {
   const formatFollowers = (count: number) => {
     if (count >= 1000) {
@@ -51,13 +55,22 @@ export default function CommunityHeader({
             src={details.bannerUrl}
             alt="Community Banner"
             fill
-            className="object-cover"
+            className={cn("object-cover", isCoverUploading && "opacity-50")}
           />
         ) : (
           <div className="flex flex-col items-center justify-center p-6 text-center select-none">
             <h1 className="text-3xl sm:text-5xl font-serif text-[#2B1B17] tracking-tight font-medium">
               {details.name}
             </h1>
+          </div>
+        )}
+
+        {isCoverUploading && (
+          <div className="absolute inset-0 bg-black/35 flex items-center justify-center z-10">
+            <div className="flex items-center gap-2 bg-white/95 px-4 py-2 rounded-full shadow-lg text-[#5D3EBB] text-xs font-bold animate-pulse">
+              <Loader2 className="w-4 h-4 animate-spin text-[#5D3EBB]" />
+              <span>Updating banner...</span>
+            </div>
           </div>
         )}
 
@@ -80,11 +93,20 @@ export default function CommunityHeader({
                 src={details.logoUrl}
                 alt="Community Logo"
                 fill
-                className="object-cover"
+                className={cn(
+                  "object-cover",
+                  isAvatarUploading && "opacity-45",
+                )}
               />
             ) : (
               <div className="w-full h-full bg-neutral-900 text-white font-bold font-serif text-3xl sm:text-4xl flex items-center justify-center">
                 {details.name.charAt(0).toUpperCase()}
+              </div>
+            )}
+
+            {isAvatarUploading && (
+              <div className="absolute inset-0 bg-black/40 flex items-center justify-center z-10">
+                <Loader2 className="w-6 h-6 animate-spin text-white" />
               </div>
             )}
           </div>
@@ -137,14 +159,21 @@ export default function CommunityHeader({
                     Posts
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-44 bg-white border border-neutral-200 shadow-md rounded-xl p-1.5 z-50">
+                <DropdownMenuContent
+                  align="end"
+                  className="w-44 bg-white border border-neutral-200 shadow-md rounded-xl p-1.5 z-50"
+                >
                   <DropdownMenuItem className="flex justify-between items-center px-3 py-2 text-xs font-semibold text-neutral-700 rounded-lg hover:bg-neutral-50 focus:bg-neutral-50 transition-colors outline-none cursor-default select-none">
                     <span>Original Posts</span>
-                    <span className="font-extrabold text-neutral-900">{details.following}</span>
+                    <span className="font-extrabold text-neutral-900">
+                      {details.following}
+                    </span>
                   </DropdownMenuItem>
                   <DropdownMenuItem className="flex justify-between items-center px-3 py-2 text-xs font-semibold text-neutral-700 rounded-lg hover:bg-neutral-50 focus:bg-neutral-50 transition-colors outline-none cursor-default select-none">
                     <span>Reposts</span>
-                    <span className="font-extrabold text-neutral-900">{details.reposts}</span>
+                    <span className="font-extrabold text-neutral-900">
+                      {details.reposts}
+                    </span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

@@ -63,7 +63,8 @@ export default function CreatePostModal({
       const savedDraft = localStorage.getItem("community_post_draft");
       if (savedDraft) {
         try {
-          const { content: draftContent, images: draftImages } = JSON.parse(savedDraft);
+          const { content: draftContent, images: draftImages } =
+            JSON.parse(savedDraft);
           if (typeof draftContent === "string") setContent(draftContent);
           if (Array.isArray(draftImages)) setImages(draftImages);
         } catch (e) {

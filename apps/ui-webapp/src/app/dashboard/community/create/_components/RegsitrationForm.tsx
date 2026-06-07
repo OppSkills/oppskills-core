@@ -376,7 +376,7 @@ export default function RegsitrationForm() {
           <div className="flex items-center gap-1.5 text-indigo-600/80 font-medium italic text-sm">
             <Globe className="w-4 h-4 shrink-0" />
             <span className="break-all select-all">
-              https://oppskills.com/c/
+              https://oppskills.com/community/
               <span className="font-bold underline decoration-dotted">
                 {formattedHandle || "enter-user-Name"}
               </span>

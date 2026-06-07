@@ -62,8 +62,13 @@ export default function PresetImagesModal({
     const presetUrl = `https://oppskills.co/illustrations/community/preset/${filename}`;
     const isAlreadySelected = selectedImages.includes(presetUrl);
 
-    if (!isAlreadySelected && selectedImages.length >= COMMUNITY_POST_IMAGES_MAX_COUNT) {
-      toast.error(`You can attach up to ${COMMUNITY_POST_IMAGES_MAX_COUNT} images in total.`);
+    if (
+      !isAlreadySelected &&
+      selectedImages.length >= COMMUNITY_POST_IMAGES_MAX_COUNT
+    ) {
+      toast.error(
+        `You can attach up to ${COMMUNITY_POST_IMAGES_MAX_COUNT} images in total.`,
+      );
       return;
     }
 
@@ -95,12 +100,16 @@ export default function PresetImagesModal({
         {loading ? (
           <div className="flex flex-col items-center justify-center py-16 gap-3">
             <Loader2 className="w-8 h-8 animate-spin text-[#5D3EBB]" />
-            <span className="text-xs text-neutral-400 font-semibold font-sans animate-pulse">Loading illustrations...</span>
+            <span className="text-xs text-neutral-400 font-semibold font-sans animate-pulse">
+              Loading illustrations...
+            </span>
           </div>
         ) : presets.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <ImageIcon className="w-12 h-12 text-neutral-300 mb-2" />
-            <span className="text-sm text-neutral-400 font-semibold font-sans">No preset illustrations found.</span>
+            <span className="text-sm text-neutral-400 font-semibold font-sans">
+              No preset illustrations found.
+            </span>
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-4 max-h-[380px] overflow-y-auto p-1 scrollbar select-none">
@@ -128,7 +137,7 @@ export default function PresetImagesModal({
                     alt={titleName}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
-                  
+
                   {/* Title overlay at the bottom */}
                   <div className="absolute inset-x-0 bottom-0 bg-black/50 backdrop-blur-xs py-1.5 px-3 flex items-center justify-between text-white text-[11px] font-bold font-sans">
                     <span className="truncate">{titleName}</span>

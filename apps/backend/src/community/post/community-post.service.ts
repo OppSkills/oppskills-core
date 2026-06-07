@@ -245,6 +245,7 @@ export class CommunityPostService {
       if (cached.community.handle !== normalizedHandle) {
         throw new NotFoundException('Post not found.');
       }
+      await this.analyticsService.trackPostView(postId);
       if (viewerUserId) {
         const result = await this.attachViewerFlags(cached, viewerUserId);
         await this.analyticsService.trackServedPosts(viewerUserId, [cached.id]);
@@ -265,6 +266,8 @@ export class CommunityPostService {
     if (!post) {
       throw new NotFoundException('Post not found.');
     }
+
+    await this.analyticsService.trackPostView(postId);
 
     const baseItem = await this.hydrateFeedItem(post);
     await this.cacheService.setPost(postId, baseItem);

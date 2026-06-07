@@ -52,7 +52,9 @@ function ChatBreadcrumbLabel({ chatId }: { chatId: string }) {
     };
   }, [chatId, isSignedIn, getToken]);
 
-  return <span className="truncate max-w-[150px] sm:max-w-[240px]">{label}</span>;
+  return (
+    <span className="truncate max-w-[150px] sm:max-w-[240px]">{label}</span>
+  );
 }
 
 export function Breadcrumbs() {

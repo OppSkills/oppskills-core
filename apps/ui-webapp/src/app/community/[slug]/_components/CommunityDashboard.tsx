@@ -19,6 +19,7 @@ import { ShareModal } from "@/components/common/ShareModal";
 import { CommunityDetails, Post } from "./types";
 import CommunityDashboardFallback from "./CommunityDashboardFallback";
 import { Skeleton } from "@/components/ui/skeleton";
+import ImageCropDialog from "@/app/dashboard/community/create/_components/ImageCropDialog";
 
 import {
   followCommunity,
@@ -51,7 +52,10 @@ function PostFeedSkeleton() {
   return (
     <div className="flex flex-col gap-6 w-full animate-pulse">
       {Array.from({ length: 3 }).map((_, i) => (
-        <div key={i} className="w-full bg-white border border-neutral-200 rounded-3xl p-5 sm:p-6 flex flex-col gap-4 shadow-2xs">
+        <div
+          key={i}
+          className="w-full bg-white border border-neutral-200 rounded-3xl p-5 sm:p-6 flex flex-col gap-4 shadow-2xs"
+        >
           <div className="flex gap-3 items-center">
             <Skeleton className="w-12 h-12 rounded-full bg-neutral-200" />
             <div className="flex flex-col gap-1.5">
@@ -85,6 +89,12 @@ export default function CommunityDashboard({
   const [shareDescription, setShareDescription] = useState("");
   const [isUploadingImages, setIsUploadingImages] = useState(false);
   const [isFollowLoading, setIsFollowLoading] = useState(false);
+  const [isCoverUploading, setIsCoverUploading] = useState(false);
+  const [isAvatarUploading, setIsAvatarUploading] = useState(false);
+
+  const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
+  const [cropType, setCropType] = useState<"cover" | "avatar" | null>(null);
+  const [isCropOpen, setIsCropOpen] = useState(false);
 
   const {
     data: profile,
@@ -338,14 +348,60 @@ export default function CommunityDashboard({
     }
   };
 
+  const handleFileSelect = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    type: "cover" | "avatar",
+  ) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setCropImageSrc(reader.result as string);
+      setCropType(type);
+      setIsCropOpen(true);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleImageUpload = async (file: File, type: "cover" | "avatar") => {
-    const purpose = type === "cover" ? "COMMUNITY_COVER" : "COMMUNITY_AVATAR";
-    const url = await uploadImageFile(file, purpose);
-    if (!url) return;
-    if (type === "cover") {
-      await handleUpdateCommunity({ bannerUrl: url });
+    const isCover = type === "cover";
+    if (isCover) {
+      setIsCoverUploading(true);
     } else {
-      await handleUpdateCommunity({ logoUrl: url });
+      setIsAvatarUploading(true);
+    }
+
+    const toastId = toast.loading(
+      `Uploading ${isCover ? "banner" : "logo"}...`,
+    );
+    try {
+      const purpose = isCover ? "COMMUNITY_COVER" : "COMMUNITY_AVATAR";
+      const url = await uploadImageFile(file, purpose);
+      if (!url) {
+        throw new Error("Failed to get public URL for uploaded image.");
+      }
+      if (isCover) {
+        await handleUpdateCommunity({ bannerUrl: url });
+      } else {
+        await handleUpdateCommunity({ logoUrl: url });
+      }
+      toast.success(`${isCover ? "Banner" : "Logo"} updated successfully!`, {
+        id: toastId,
+      });
+    } catch (err) {
+      console.error(err);
+      toast.error(
+        err instanceof Error ? err.message : `Failed to update ${type}.`,
+        { id: toastId },
+      );
+    } finally {
+      if (isCover) {
+        setIsCoverUploading(false);
+      } else {
+        setIsAvatarUploading(false);
+      }
     }
   };
 
@@ -371,7 +427,9 @@ export default function CommunityDashboard({
     try {
       await commentMutation.mutateAsync({ postId, content });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to add comment.");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to add comment.",
+      );
     }
   };
 
@@ -382,22 +440,14 @@ export default function CommunityDashboard({
         type="file"
         accept="image/jpeg,image/png,image/webp"
         className="hidden"
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (file) void handleImageUpload(file, "cover");
-          e.target.value = "";
-        }}
+        onChange={(e) => handleFileSelect(e, "cover")}
       />
       <input
         ref={avatarInputRef}
         type="file"
         accept="image/jpeg,image/png,image/webp"
         className="hidden"
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (file) void handleImageUpload(file, "avatar");
-          e.target.value = "";
-        }}
+        onChange={(e) => handleFileSelect(e, "avatar")}
       />
 
       <div className="w-full flex flex-col gap-6">
@@ -408,6 +458,8 @@ export default function CommunityDashboard({
             canManage={canManage}
             isFollowing={isFollowing}
             isFollowLoading={isFollowLoading}
+            isCoverUploading={isCoverUploading}
+            isAvatarUploading={isAvatarUploading}
             onEditCover={
               canManage ? () => coverInputRef.current?.click() : undefined
             }
@@ -544,6 +596,23 @@ export default function CommunityDashboard({
           }
         />
       )}
+
+      <ImageCropDialog
+        isOpen={isCropOpen}
+        onClose={() => {
+          setIsCropOpen(false);
+          setCropImageSrc(null);
+          setCropType(null);
+        }}
+        imageSrc={cropImageSrc}
+        aspectRatio={cropType === "cover" ? 4 / 1 : 1 / 1}
+        title={cropType === "cover" ? "Crop Cover Banner" : "Crop Profile Logo"}
+        onCropComplete={(croppedFile) => {
+          if (cropType) {
+            void handleImageUpload(croppedFile, cropType);
+          }
+        }}
+      />
     </div>
   );
 }

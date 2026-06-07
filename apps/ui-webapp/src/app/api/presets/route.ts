@@ -11,7 +11,7 @@ export async function GET() {
       "public",
       "illustrations",
       "community",
-      "preset"
+      "preset",
     );
 
     if (!fs.existsSync(presetDir)) {
@@ -22,7 +22,7 @@ export async function GET() {
     const files = fs.readdirSync(presetDir);
     const imageExtensions = [".png", ".jpg", ".jpeg", ".svg", ".webp"];
     const images = files.filter((file) =>
-      imageExtensions.includes(path.extname(file).toLowerCase())
+      imageExtensions.includes(path.extname(file).toLowerCase()),
     );
 
     return NextResponse.json(images);
