@@ -31,6 +31,7 @@ import {
   useToggleCommunityPostLike,
   useRepostPost,
   useUndoRepost,
+  useCreateFeedPostComment,
 } from "@/hooks/useCommunityPosts";
 import { stripHtmlPreview } from "./communityUtils";
 import { presignImageUpload } from "@/lib/api/mediaApi";
@@ -89,6 +90,7 @@ export default function CommunityDashboard({
   const likeMutation = useToggleCommunityPostLike(profile?.id ?? "", handle);
   const repostMutation = useRepostPost(profile?.id ?? "", handle);
   const undoRepostMutation = useUndoRepost(profile?.id ?? "", handle);
+  const commentMutation = useCreateFeedPostComment(profile?.id ?? "", handle);
 
   const canManage = canManageCommunity(profile?.myRole);
   const isFollowing = profile?.myRole === "READ_ONLY";
@@ -343,10 +345,15 @@ export default function CommunityDashboard({
   }
 
   const handleCommentPost = async (postId: string, content: string) => {
-    // PostCard handles navigation to post page after comment publish
-    // This is a no-op at the parent level — inline comment is self-contained
-    void postId;
-    void content;
+    if (!isSignedIn) {
+      toast.error("Sign in to comment.");
+      return;
+    }
+    try {
+      await commentMutation.mutateAsync({ postId, content });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to add comment.");
+    }
   };
 
   return (

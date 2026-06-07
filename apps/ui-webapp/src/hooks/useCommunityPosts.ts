@@ -377,3 +377,32 @@ export function useUndoRepost(communityId: string, handle: string) {
     },
   });
 }
+
+export function useCreateFeedPostComment(communityId: string, handle: string) {
+  const { getToken } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      postId,
+      content,
+    }: {
+      postId: string;
+      content: string;
+    }) => {
+      const token = await getToken();
+      if (!token) throw new Error("Sign in to comment.");
+      return createPostComment(token, communityId, postId, { content });
+    },
+    onSuccess: (_comment, { postId }) => {
+      queryClient.invalidateQueries({
+        queryKey: ["community-post-comments", handle, postId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["community-post", handle, postId],
+      });
+      queryClient.invalidateQueries({ queryKey: ["community-posts", handle] });
+    },
+  });
+}
+

@@ -12,6 +12,7 @@ import PostImagesGrid from "./PostImagesGrid";
 import QuotedPostCard from "./QuotedPostCard";
 import { usePostImpression } from "@/hooks/usePostImpression";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 interface PostCardProps {
   post: Post;
@@ -76,6 +77,8 @@ export default function PostCard({
       setShowCommentBox(false);
       // Navigate to post detail to see the new comment
       router.push(postHref);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to add comment.");
     } finally {
       setIsSubmittingComment(false);
     }
