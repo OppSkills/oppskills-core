@@ -5,6 +5,6 @@ SET
   "accessControlRole" = 'ADMIN'
 FROM "community"."community" AS c
 WHERE
-  cm."communityId" = c.id
-  AND cm."userId" = c."ownerId"
+  cm.community_id = c.id
+  AND cm.user_id = c.owner_id
   AND cm."accessControlRole" = 'FOLLOWER';
