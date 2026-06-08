@@ -49,6 +49,7 @@ export interface CommunityStatsResponse {
   newMembers30Days: number;
   pageImpressions: number;
   postImpressions: number;
+  postViews: number;
   adminCount: number;
   moderatorCount: number;
 }

@@ -57,6 +57,7 @@ export type CommunityStatsResponse = Readonly<{
   newMembers30Days: number;
   pageImpressions: number;
   postImpressions: number;
+  postViews: number;
   adminCount: number;
   moderatorCount: number;
 }>;
@@ -339,6 +340,7 @@ export async function getCommunityStats(
       typeof raw.pageImpressions === "number" ? raw.pageImpressions : 0,
     postImpressions:
       typeof raw.postImpressions === "number" ? raw.postImpressions : 0,
+    postViews: typeof raw.postViews === "number" ? raw.postViews : 0,
     adminCount: typeof raw.adminCount === "number" ? raw.adminCount : 0,
     moderatorCount:
       typeof raw.moderatorCount === "number" ? raw.moderatorCount : 0,

@@ -1329,6 +1329,8 @@ export class CommunityService {
       adminCountDb,
       moderatorCount,
       hasOwnerInMembers,
+      postStats,
+      livePageViews,
     ] = await Promise.all([
       prisma.communityMemberEntity.count({
         where: { communityId },
@@ -1359,6 +1361,19 @@ export class CommunityService {
           },
         })
         .then((count) => count > 0),
+      // Aggregate post impressions and views for all published posts in this community
+      prisma.communityPostEntity.aggregate({
+        where: {
+          communityId,
+          status: 'PUBLISHED',
+        },
+        _sum: {
+          impressions: true,
+          views: true,
+        },
+      }),
+      // Live (unflushed) Redis buffer for community page views
+      this.analyticsService.getLiveCommunityPageViews(communityId),
     ]);
 
     let totalMembers = totalMembersDb;
@@ -1374,11 +1389,17 @@ export class CommunityService {
       }
     }
 
+    // pageImpressions = flushed DB views + live Redis buffer not yet flushed
+    const pageImpressions = (community.views ?? 0) + livePageViews;
+    const postImpressions = postStats._sum.impressions ?? 0;
+    const postViews = postStats._sum.views ?? 0;
+
     return {
       totalMembers,
       newMembers30Days,
-      pageImpressions: 0,
-      postImpressions: 0,
+      pageImpressions,
+      postImpressions,
+      postViews,
       adminCount,
       moderatorCount,
     };
