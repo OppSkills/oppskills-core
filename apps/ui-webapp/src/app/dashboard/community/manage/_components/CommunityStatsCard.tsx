@@ -6,8 +6,8 @@ import { cn } from "@/lib/utils";
 interface CommunityStatsCardProps {
   title: string;
   value: string | number;
-  badgeText: string;
-  badgeValue: string | number;
+  badgeText?: string;
+  badgeValue?: string | number;
   theme?: "dark" | "light";
   className?: string;
 }
@@ -46,26 +46,28 @@ export default function CommunityStatsCard({
         </span>
       </div>
 
-      <div className="flex items-center justify-between mt-auto pt-2">
-        <span
-          className={cn(
-            "text-xs",
-            isDark ? "text-primary-100" : "text-primary-700",
-          )}
-        >
-          {badgeText}
-        </span>
-        <div
-          className={cn(
-            "px-3 py-1 rounded-full text-xs font-bold font-sans tracking-wide min-w-fit shadow-xs",
-            isDark
-              ? "bg-[#181127] border border-primary-700/50 text-primary-200"
-              : "bg-[#271B40] text-white",
-          )}
-        >
-          {badgeValue}
+      {badgeText !== undefined && badgeValue !== undefined && (
+        <div className="flex items-center justify-between mt-auto pt-2">
+          <span
+            className={cn(
+              "text-xs",
+              isDark ? "text-primary-100" : "text-primary-700",
+            )}
+          >
+            {badgeText}
+          </span>
+          <div
+            className={cn(
+              "px-3 py-1 rounded-full text-xs font-bold font-sans tracking-wide min-w-fit shadow-xs",
+              isDark
+                ? "bg-[#181127] border border-primary-700/50 text-primary-200"
+                : "bg-[#271B40] text-white",
+            )}
+          >
+            {badgeValue}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

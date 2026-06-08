@@ -20,6 +20,13 @@ import {
 } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 import type {
   CommunityMember as MemberDetails,
@@ -248,20 +255,24 @@ export default function MemberDetailsSheet({
                   <label className="text-xs font-semibold text-neutral-500">
                     Access Control Level
                   </label>
-                  <select
+                  <Select
                     value={member.accessControlRole || "READ_ONLY"}
-                    onChange={(e) => {
+                    onValueChange={(value) => {
                       if (onUpdateAccess) {
-                        onUpdateAccess(member.id, e.target.value);
+                        onUpdateAccess(member.id, value);
                       }
                     }}
-                    className="h-10 px-3 border border-neutral-200 focus:border-[#835BD5] outline-none rounded-xl text-sm bg-white font-medium cursor-pointer shadow-3xs"
                   >
-                    <option value="ADMIN">Admin Access</option>
-                    <option value="MODERATOR">Moderator</option>
-                    <option value="READ_ONLY">Read Only</option>
-                    <option value="MEMBER">Member</option>
-                  </select>
+                    <SelectTrigger className="h-10 px-3 border border-neutral-200 focus:border-[#835BD5] outline-none rounded-xl text-sm bg-white font-medium cursor-pointer shadow-3xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ADMIN">Admin Access</SelectItem>
+                      <SelectItem value="MODERATOR">Moderator</SelectItem>
+                      <SelectItem value="READ_ONLY">Read Only</SelectItem>
+                      <SelectItem value="MEMBER">Member</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </div>
