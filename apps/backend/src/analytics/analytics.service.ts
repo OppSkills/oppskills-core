@@ -186,6 +186,19 @@ export class AnalyticsService {
     this.redis.incr(`pv:post:${postId}`).catch(() => {});
   }
 
+  /**
+   * Read the live (unflushed) Redis counter for community page views.
+   * Returns 0 if the key does not exist or Redis is unavailable.
+   */
+  async getLiveCommunityPageViews(communityId: string): Promise<number> {
+    try {
+      const val = await this.redis.get(`pv:community:${communityId}`);
+      return val ? Number(val) : 0;
+    } catch {
+      return 0;
+    }
+  }
+
   async trackServedPosts(userId: string, postIds: string[]) {
     if (!userId || postIds.length === 0) return;
     const key = `served:u:${userId}`;

@@ -84,15 +84,15 @@ export default function CommunityStats({
     {
       title: "Page Impressions",
       value: (stats?.pageImpressions ?? 0).toLocaleString(),
-      badgeText: "Registered last month",
-      badgeValue: "0",
+      badgeText: "Views",
+      badgeValue: (stats?.pageImpressions ?? 0).toLocaleString(),
       theme: "light" as const,
     },
     {
       title: "Post Impressions",
       value: (stats?.postImpressions ?? 0).toLocaleString(),
-      badgeText: "Newly launched",
-      badgeValue: "0",
+      badgeText: "Post Views",
+      badgeValue: (stats?.postViews ?? 0).toLocaleString(),
       theme: "light" as const,
     },
     {

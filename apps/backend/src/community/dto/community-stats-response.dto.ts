@@ -14,6 +14,9 @@ export class CommunityStatsResponseDto implements CommunityStatsResponse {
   @ApiProperty({ example: 0 })
   postImpressions: number;
 
+  @ApiProperty({ example: 0 })
+  postViews: number;
+
   @ApiProperty({ example: 12 })
   adminCount: number;
 
