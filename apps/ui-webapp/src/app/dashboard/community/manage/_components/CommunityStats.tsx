@@ -75,8 +75,8 @@ export default function CommunityStats({
 
   const statsData = [
     {
-      title: "Total Members",
-      value: (stats?.totalMembers ?? 0).toLocaleString(),
+      title: "Community Roster",
+      value: (stats?.rosterCount ?? 0).toLocaleString(),
       badgeText: "Joined last 30 days",
       badgeValue: (stats?.newMembers30Days ?? 0).toLocaleString(),
       theme: "dark" as const,

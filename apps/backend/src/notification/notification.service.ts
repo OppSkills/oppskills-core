@@ -9,6 +9,10 @@ import { CreateNotificationDto } from '@oppskills/types';
 import { NotificationQueue } from './queue/notification.queue';
 import { NotificationWorker } from './queue/notification.worker';
 import { Logger } from 'src/_utils/logger';
+import {
+  COMMUNITY_NOTIFICATION_ROSTER,
+  countCommunityAudience,
+} from './community-audience.util';
 
 @Injectable()
 export class NotificationService {
@@ -147,18 +151,38 @@ export class NotificationService {
    * Schedules or creates a new notification campaign.
    */
   async scheduleNotification(dto: CreateNotificationDto, userId: string) {
-    const { id, type, recipientCount } =
-      await this.assertEventOrHackathonAccess(
-        userId,
-        dto.eventId || dto.eventSlug,
-        dto.hackathonId || dto.hackathonSlug,
-        dto.communityId,
-        'edit',
-      );
+    const access = await this.assertEventOrHackathonAccess(
+      userId,
+      dto.eventId || dto.eventSlug,
+      dto.hackathonId || dto.hackathonSlug,
+      dto.communityId,
+      'edit',
+    );
+
+    const { id, type } = access;
+    let recipientCount = access.recipientCount;
 
     const actualEventId = type === 'event' ? id : undefined;
     const actualHackathonId = type === 'hackathon' ? id : undefined;
     const actualCommunityId = type === 'community' ? id : undefined;
+    const communityAudience = actualCommunityId
+      ? dto.communityAudience?.trim() || COMMUNITY_NOTIFICATION_ROSTER
+      : null;
+
+    if (actualCommunityId) {
+      const community = await prisma.communityEntity.findUnique({
+        where: { id: actualCommunityId },
+        select: { ownerId: true },
+      });
+      if (!community) {
+        throw new NotFoundException('Community not found');
+      }
+      recipientCount = await countCommunityAudience(
+        actualCommunityId,
+        community.ownerId,
+        communityAudience,
+      );
+    }
 
     const scheduleType = dto.scheduleType || 'IMMEDIATELY';
     const status = dto.status || 'QUEUED';
@@ -225,6 +249,7 @@ export class NotificationService {
         eventId: actualEventId || null,
         hackathonId: actualHackathonId || null,
         communityId: actualCommunityId || null,
+        communityAudience,
         content: dto.content,
         scheduleType,
         scheduledAt,
@@ -241,6 +266,7 @@ export class NotificationService {
         userId,
         notificationId: notification.id,
         recipientCount,
+        communityAudience,
         scheduleType,
         scheduledAt,
       });
@@ -257,11 +283,47 @@ export class NotificationService {
         notificationId: notification.id,
         level: 'INFO',
         message: `Notification created and enqueued with delay of ${delay}ms`,
-        meta: { delay, expectedFinishAt, recipientCount },
+        meta: {
+          delay,
+          expectedFinishAt,
+          recipientCount,
+          communityAudience,
+        },
       },
     });
 
     return notification;
+  }
+
+  async getCommunityAudienceCount(
+    communityId: string,
+    audience: string | undefined,
+    userId: string,
+  ) {
+    const { id } = await this.assertEventOrHackathonAccess(
+      userId,
+      undefined,
+      undefined,
+      communityId,
+      'view',
+    );
+
+    const community = await prisma.communityEntity.findUnique({
+      where: { id },
+      select: { ownerId: true },
+    });
+    if (!community) {
+      throw new NotFoundException('Community not found');
+    }
+
+    const selectedAudience = audience?.trim() || COMMUNITY_NOTIFICATION_ROSTER;
+    const count = await countCommunityAudience(
+      id,
+      community.ownerId,
+      selectedAudience,
+    );
+
+    return { audience: selectedAudience, count };
   }
 
   /**
@@ -378,6 +440,7 @@ export class NotificationService {
         eventId: true,
         hackathonId: true,
         communityId: true,
+        communityAudience: true,
         content: true,
         scheduleType: true,
         scheduledAt: true,

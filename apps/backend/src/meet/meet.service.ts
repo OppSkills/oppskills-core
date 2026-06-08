@@ -14,6 +14,10 @@ import type {
 } from '@oppskills/types';
 import { AccessToken, VideoGrant } from 'livekit-server-sdk';
 import { randomBytes } from 'crypto';
+import {
+  buildCommunityAudienceWhere,
+  COMMUNITY_NOTIFICATION_ROSTER,
+} from '../notification/community-audience.util';
 import { CreateCommunityMeetDto } from './dto/create-community-meet.dto';
 
 type MeetRow = Awaited<
@@ -139,18 +143,59 @@ export class MeetService {
   }
 
   private async assertCanJoinMeet(
-    _userId: string,
+    userId: string,
     meet: MeetRow,
   ): Promise<void> {
     if (meet.status === 'ENDED') {
       throw new BadRequestException('This meeting has ended.');
     }
 
-    if (meet.audienceScope === 'MEMBER_TYPES') {
-      throw new ForbiddenException(
-        'This meeting is restricted to specific member types (not yet supported).',
-      );
+    if (meet.audienceScope === 'ALL' || !meet.communityId) {
+      return;
     }
+
+    const community = meet.community;
+    if (!community) {
+      throw new ForbiddenException('Community not found for this meeting.');
+    }
+
+    if (meet.hostUserId === userId || community.ownerId === userId) {
+      return;
+    }
+
+    const audience =
+      meet.audienceFilter?.trim() || COMMUNITY_NOTIFICATION_ROSTER;
+
+    const member = await prisma.communityMemberEntity.findFirst({
+      where: {
+        ...buildCommunityAudienceWhere(
+          meet.communityId,
+          community.ownerId,
+          audience,
+        ),
+        userId,
+      },
+    });
+
+    if (member) {
+      return;
+    }
+
+    const isRoster =
+      !meet.audienceFilter?.trim() ||
+      meet.audienceFilter.trim() === COMMUNITY_NOTIFICATION_ROSTER;
+    if (isRoster && userId === community.ownerId) {
+      const ownerInMembers = await prisma.communityMemberEntity.count({
+        where: { communityId: meet.communityId, userId: community.ownerId },
+      });
+      if (ownerInMembers === 0) {
+        return;
+      }
+    }
+
+    throw new ForbiddenException(
+      `You do not have permission to join this meeting. Access is limited to: ${audience}.`,
+    );
   }
 
   private toResponse(meet: MeetRow): CommunityMeetResponse {
@@ -163,6 +208,7 @@ export class MeetService {
       description: meet.description,
       scheduledStartAt: meet.scheduledStartAt?.toISOString() ?? null,
       audienceScope: meet.audienceScope,
+      audienceFilter: meet.audienceFilter,
       hostUserId: meet.hostUserId,
       hostName: this.formatHostName(meet.host),
       status: meet.status,
@@ -198,6 +244,14 @@ export class MeetService {
       scheduledStartAt = now;
     }
 
+    const isCommunityMeet = communityId !== null;
+    const audienceScope =
+      dto.audienceScope ?? (isCommunityMeet ? 'MEMBER_TYPES' : 'ALL');
+    const audienceFilter =
+      isCommunityMeet && audienceScope === 'MEMBER_TYPES'
+        ? dto.audienceFilter?.trim() || COMMUNITY_NOTIFICATION_ROSTER
+        : null;
+
     const meet = await prisma.communityMeetEntity.create({
       data: {
         communityId,
@@ -206,7 +260,8 @@ export class MeetService {
         title: dto.title.trim(),
         description: dto.description?.trim() || null,
         scheduledStartAt,
-        audienceScope: dto.audienceScope ?? 'ALL',
+        audienceScope,
+        audienceFilter,
         hostUserId: userId,
         livekitRoomName,
         status,
@@ -297,6 +352,7 @@ export class MeetService {
       hostName: this.formatHostName(meet.host),
       hostUserId: meet.hostUserId,
       audienceScope: meet.audienceScope,
+      audienceFilter: meet.audienceFilter,
     };
   }
 

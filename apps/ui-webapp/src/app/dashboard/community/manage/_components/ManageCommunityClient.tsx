@@ -7,14 +7,27 @@ import MembersDirectory from "./MembersDirectory";
 import MeetScheduler from "./MeetScheduler";
 import TaskTracker from "./TaskTracker";
 import AddMemberModal from "./AddMemberModal";
+import AddMemberTypeModal from "./AddMemberTypeModal";
 import EditMemberModal from "./EditMemberModal";
 import MemberDetailsSheet from "./MemberDetailsSheet";
 import { toast } from "sonner";
 import { useAuth } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   getCommunity,
   getUniqueMemberTypes,
+  createMemberType,
+  deleteMemberType,
   addCommunityMembers,
   listCommunityMembers,
   deleteCommunityMember,
@@ -22,6 +35,8 @@ import {
   updateMemberAccess,
   getCommunityStats,
   getMyMemberRecord,
+  COMMUNITY_ROSTER_TAB,
+  FOLLOWERS_TAB,
   type CommunityStatsResponse,
 } from "@/lib/api/communityApi";
 import {
@@ -32,6 +47,7 @@ import { listTasks, updateTaskStatus } from "@/lib/api/communityTaskApi";
 
 import type {
   CommunityMember as Member,
+  CommunityMemberTypesResponse,
   CommunityTask as Task,
   CommunityMeet as Meet,
 } from "@oppskills/types";
@@ -66,12 +82,11 @@ export default function ManageCommunityClient({
   const [page, setPage] = useState(1);
   const [take] = useState(20);
   const [search, setSearch] = useState("");
-  const [role, setRole] = useState("All Members");
+  const [role, setRole] = useState(COMMUNITY_ROSTER_TAB);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc" | null>(
     null,
   );
   const [totalPages, setTotalPages] = useState(1);
-  const [totalMembers, setTotalMembers] = useState(0);
   const [isLoadingMembers, setIsLoadingMembers] = useState(false);
   const [currentUserMember, setCurrentUserMember] = useState<Member | null>(
     null,
@@ -85,8 +100,44 @@ export default function ManageCommunityClient({
   // Shared Dynamic State Pools
   const [members, setMembers] = useState<Member[]>(initialMembers);
   const [customMemberTypes, setCustomMemberTypes] = useState<string[]>([]);
+  const [storedMemberTypeLabels, setStoredMemberTypeLabels] = useState<string[]>(
+    [],
+  );
   const [availableRoles, setAvailableRoles] = useState<string[]>(defaultRoles);
+  const [deleteTypeDialog, setDeleteTypeDialog] = useState<{
+    open: boolean;
+    typeName: string;
+  }>({ open: false, typeName: "" });
+  const [isDeletingMemberType, setIsDeletingMemberType] = useState(false);
   const [tasks, setTasks] = useState<any[]>([]);
+
+  const RESERVED_MEMBER_TYPES = useMemo(
+    () => new Set(["FOLLOWER", "OWNER", "MEMBER", "FOLLOWERS"]),
+    [],
+  );
+
+  const mergedCustomTabs = useMemo(() => {
+    return customMemberTypes.filter(
+      (type) => !RESERVED_MEMBER_TYPES.has(type.toUpperCase()),
+    );
+  }, [customMemberTypes, RESERVED_MEMBER_TYPES]);
+
+  const deletableCustomTabs = useMemo(() => {
+    return storedMemberTypeLabels.filter(
+      (type) => !RESERVED_MEMBER_TYPES.has(type.toUpperCase()),
+    );
+  }, [storedMemberTypeLabels, RESERVED_MEMBER_TYPES]);
+
+  const applyMemberTypes = useCallback(
+    (response: CommunityMemberTypesResponse) => {
+      setCustomMemberTypes(response.types);
+      setStoredMemberTypeLabels(response.storedLabels);
+      setAvailableRoles(
+        response.types.length > 0 ? response.types : defaultRoles,
+      );
+    },
+    [],
+  );
 
   const fetchMembers = useCallback(
     async (p: number, s: string, r: string, sort: "asc" | "desc" | null) => {
@@ -99,11 +150,10 @@ export default function ManageCommunityClient({
           page: p,
           take,
           search: s || undefined,
-          role: r === "All Members" ? undefined : r,
+          role: r === COMMUNITY_ROSTER_TAB ? undefined : r,
           sortDirection: sort || undefined,
         });
         setMembers(res.items);
-        setTotalMembers(res.total);
         setTotalPages(res.totalPages);
       } catch (err) {
         console.error("Failed to load community members:", err);
@@ -138,7 +188,7 @@ export default function ManageCommunityClient({
           },
         );
 
-        const [details, meetItems, types, taskList, statsData, myMemberRecord] =
+        const [details, meetItems, memberTypes, taskList, statsData, myMemberRecord] =
           await Promise.all([
             getCommunity(token, communityId),
             listCommunityMeets(token, communityId),
@@ -165,8 +215,7 @@ export default function ManageCommunityClient({
           setCommunityName(details.name);
           setCommunityOwnerId(details.ownerId);
           setMeets(meetItems.map(toCommunityMeetUi));
-          setCustomMemberTypes(types);
-          setAvailableRoles(types.length > 0 ? types : defaultRoles);
+          applyMemberTypes(memberTypes);
           setTasks(taskList);
           setStats(statsData);
           setCurrentUserMember(myMemberRecord);
@@ -189,6 +238,7 @@ export default function ManageCommunityClient({
   const [isMeetSchedulerOpen, setIsMeetSchedulerOpen] = useState(false);
   const [isTaskTrackerOpen, setIsTaskTrackerOpen] = useState(false);
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
+  const [isAddTypeOpen, setIsAddTypeOpen] = useState(false);
   const [existingMemberUserIds, setExistingMemberUserIds] = useState<string[]>(
     [],
   );
@@ -204,7 +254,11 @@ export default function ManageCommunityClient({
             page: 1,
             take: 1000,
           });
-          setExistingMemberUserIds(res.items.map((m) => m.userId));
+          setExistingMemberUserIds(
+            res.items
+              .filter((m) => m.accessControlRole !== "FOLLOWER")
+              .map((m) => m.userId),
+          );
         } catch (err) {
           console.error("Failed to load existing member IDs:", err);
         }
@@ -272,6 +326,85 @@ export default function ManageCommunityClient({
     setPage(1);
   }, []);
 
+  const handleAddCustomType = useCallback(
+    async (typeName: string) => {
+      const trimmed = typeName.trim();
+      if (!trimmed) return;
+
+      const exists = customMemberTypes.some(
+        (t) => t.toLowerCase() === trimmed.toLowerCase(),
+      );
+      if (exists) {
+        toast.error(`"${trimmed}" already exists.`);
+        return;
+      }
+
+      try {
+        const token = await getToken();
+        if (!token) {
+          toast.error("You must be signed in.");
+          return;
+        }
+
+        const response = await createMemberType(token, communityId, trimmed);
+        applyMemberTypes(response);
+        setRole(trimmed);
+        setPage(1);
+        toast.success(`Added member type "${trimmed}".`);
+      } catch (error) {
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : "Failed to create member type.",
+        );
+      }
+    },
+    [customMemberTypes, getToken, communityId, applyMemberTypes],
+  );
+
+  const handleRequestDeleteCustomType = useCallback((typeName: string) => {
+    setDeleteTypeDialog({ open: true, typeName });
+  }, []);
+
+  const handleConfirmDeleteCustomType = useCallback(async () => {
+    const typeName = deleteTypeDialog.typeName.trim();
+    if (!typeName) return;
+
+    setIsDeletingMemberType(true);
+    try {
+      const token = await getToken();
+      if (!token) {
+        toast.error("You must be signed in.");
+        return;
+      }
+
+      const response = await deleteMemberType(token, communityId, typeName);
+      applyMemberTypes(response);
+
+      if (role === typeName) {
+        setRole(COMMUNITY_ROSTER_TAB);
+        setPage(1);
+      }
+
+      setDeleteTypeDialog({ open: false, typeName: "" });
+      toast.success(`Deleted member type "${typeName}".`);
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to delete member type.",
+      );
+    } finally {
+      setIsDeletingMemberType(false);
+    }
+  }, [
+    deleteTypeDialog.typeName,
+    getToken,
+    communityId,
+    applyMemberTypes,
+    role,
+  ]);
+
   // State Mutators
   const handleInviteMembers = async (
     selectedUsers: {
@@ -309,9 +442,7 @@ export default function ManageCommunityClient({
       setPage(1);
       void fetchMembers(1, search, role, sortDirection);
 
-      const updatedTypes = await getUniqueMemberTypes(token, communityId);
-      setCustomMemberTypes(updatedTypes);
-      setAvailableRoles(updatedTypes.length > 0 ? updatedTypes : defaultRoles);
+      applyMemberTypes(await getUniqueMemberTypes(token, communityId));
 
       const names = selectedUsers
         .map(
@@ -336,11 +467,7 @@ export default function ManageCommunityClient({
 
         void fetchMembers(page, search, role, sortDirection);
 
-        const updatedTypes = await getUniqueMemberTypes(token, communityId);
-        setCustomMemberTypes(updatedTypes);
-        setAvailableRoles(
-          updatedTypes.length > 0 ? updatedTypes : defaultRoles,
-        );
+        applyMemberTypes(await getUniqueMemberTypes(token, communityId));
 
         toast.success(`Removed ${name} from community`);
       } catch (err: any) {
@@ -348,7 +475,16 @@ export default function ManageCommunityClient({
         toast.error(err.message || "Failed to remove member");
       }
     },
-    [getToken, communityId, fetchMembers, page, search, role, sortDirection],
+    [
+      getToken,
+      communityId,
+      fetchMembers,
+      page,
+      search,
+      role,
+      sortDirection,
+      applyMemberTypes,
+    ],
   );
 
   const handleUpdateMemberType = async (memberId: string, newRole: string) => {
@@ -365,9 +501,7 @@ export default function ManageCommunityClient({
         prev && prev.id === memberId ? { ...prev, role: newRole } : prev,
       );
 
-      const updatedTypes = await getUniqueMemberTypes(token, communityId);
-      setCustomMemberTypes(updatedTypes);
-      setAvailableRoles(updatedTypes.length > 0 ? updatedTypes : defaultRoles);
+      applyMemberTypes(await getUniqueMemberTypes(token, communityId));
 
       toast.success("Member role updated successfully");
     } catch (err: any) {
@@ -450,11 +584,7 @@ export default function ManageCommunityClient({
       if (isRoleChanged || isAccessChanged) {
         void fetchMembers(page, search, role, sortDirection);
 
-        const updatedTypes = await getUniqueMemberTypes(token, communityId);
-        setCustomMemberTypes(updatedTypes);
-        setAvailableRoles(
-          updatedTypes.length > 0 ? updatedTypes : defaultRoles,
-        );
+        applyMemberTypes(await getUniqueMemberTypes(token, communityId));
 
         setSelectedMemberForDetails((prev) =>
           prev && prev.id === memberId
@@ -520,7 +650,14 @@ export default function ManageCommunityClient({
           <MembersDirectory
             onAssignTask={handleAssignTask}
             onViewDetails={setSelectedMemberForDetails}
-            customTabs={customMemberTypes}
+            customTabs={mergedCustomTabs}
+            deletableCustomTabs={deletableCustomTabs}
+            onAddCustomType={
+              isEligibleToModify ? () => setIsAddTypeOpen(true) : undefined
+            }
+            onDeleteCustomType={
+              isEligibleToModify ? handleRequestDeleteCustomType : undefined
+            }
             members={members}
             onDeleteMember={handleDeleteMember}
             onEditMember={handleEditMember}
@@ -529,7 +666,8 @@ export default function ManageCommunityClient({
             currentUserMember={currentUserMember || undefined}
             page={page}
             totalPages={totalPages}
-            totalMembers={totalMembers}
+            rosterTotal={stats?.rosterCount ?? 0}
+            followerCount={stats?.followerCount ?? 0}
             onPageChange={setPage}
             searchQuery={search}
             onSearchChange={handleSearchChange}
@@ -567,6 +705,49 @@ export default function ManageCommunityClient({
           availableRoles={availableRoles}
           existingMemberUserIds={existingMemberUserIds}
         />
+
+        <AddMemberTypeModal
+          isOpen={isAddTypeOpen}
+          onClose={() => setIsAddTypeOpen(false)}
+          onAddType={handleAddCustomType}
+          existingTypes={customMemberTypes}
+        />
+
+        <AlertDialog
+          open={deleteTypeDialog.open}
+          onOpenChange={(open) =>
+            setDeleteTypeDialog((prev) => ({
+              open,
+              typeName: open ? prev.typeName : "",
+            }))
+          }
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete member type?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will remove the &quot;{deleteTypeDialog.typeName}&quot;
+                tab. Members must be reassigned before deleting a type that is
+                still in use. This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isDeletingMemberType}>
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction
+                disabled={isDeletingMemberType}
+                onClick={(event) => {
+                  event.preventDefault();
+                  void handleConfirmDeleteCustomType();
+                }}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {isDeletingMemberType ? "Deleting..." : "Delete type"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         {/* Edit Member Dialog Modal */}
         <EditMemberModal

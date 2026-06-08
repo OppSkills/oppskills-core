@@ -28,6 +28,7 @@ import { CreateCommunityDto } from './dto/create-community.dto';
 import { CommunityResponseDto } from './dto/community-response.dto';
 import { CommunityListItemDto } from './dto/community-list-item.dto';
 import { AddCommunityMembersDto } from './dto/add-community-members.dto';
+import { CreateMemberTypeDto } from './dto/create-member-type.dto';
 import { UpdateMemberTypeDto } from './dto/update-member-type.dto';
 import { UpdateMemberAccessDto } from './dto/update-member-access.dto';
 import { UpdateCommunityDto } from './dto/update-community.dto';
@@ -280,6 +281,73 @@ export class CommunityController {
       throw new UnauthorizedException('User not found.');
     }
     return this.communityService.getUniqueMemberTypes(userId, communityId);
+  }
+
+  @Post(':id/members/types')
+  @UseGuards(ClerkAuthGuard)
+  @ApiBearerAuth('clerk-auth')
+  @ApiOperation({
+    summary: 'Create a member type label for a community',
+    description:
+      'Persists a custom member type tab label. Types appear even before members are assigned.',
+  })
+  @ApiBody({ type: CreateMemberTypeDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Member type created; returns updated type list',
+    type: [String],
+  })
+  @ApiResponse({ status: 400, description: 'Bad Request' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  async createMemberType(
+    @Param('id') communityId: string,
+    @Body() dto: CreateMemberTypeDto,
+    @Req() req: Request,
+  ) {
+    const userId = req.user?.id;
+    if (typeof userId !== 'string' || userId.trim().length === 0) {
+      throw new UnauthorizedException('User not found.');
+    }
+    return this.communityService.createMemberType(
+      userId,
+      communityId,
+      dto.role,
+    );
+  }
+
+  @Delete(':id/members/types')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(ClerkAuthGuard)
+  @ApiBearerAuth('clerk-auth')
+  @ApiOperation({
+    summary: 'Delete a stored member type label',
+    description:
+      'Removes a custom member type tab. Fails if members are still assigned to that type.',
+  })
+  @ApiBody({ type: CreateMemberTypeDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Member type deleted; returns updated type list',
+  })
+  @ApiResponse({ status: 400, description: 'Bad Request' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 404, description: 'Not Found' })
+  async deleteMemberType(
+    @Param('id') communityId: string,
+    @Body() dto: CreateMemberTypeDto,
+    @Req() req: Request,
+  ) {
+    const userId = req.user?.id;
+    if (typeof userId !== 'string' || userId.trim().length === 0) {
+      throw new UnauthorizedException('User not found.');
+    }
+    return this.communityService.deleteMemberType(
+      userId,
+      communityId,
+      dto.role,
+    );
   }
 
   @Patch(':id/members/:memberId/type')

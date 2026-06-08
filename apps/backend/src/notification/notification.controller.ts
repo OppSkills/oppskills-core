@@ -6,6 +6,7 @@ import {
   Get,
   Param,
   Post,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -93,6 +94,26 @@ export class NotificationController {
     const validHackathonId = assertNonEmptyId(hackathonId, 'hackathonId');
     return this.notificationService.listNotificationsForHackathon(
       validHackathonId,
+      userId,
+    );
+  }
+
+  @Get('community/:communityId/audience-count')
+  @ApiOperation({ summary: 'Count recipients for a community mail audience' })
+  @ApiResponse({ status: 200, description: 'Audience recipient count' })
+  async getCommunityAudienceCount(
+    @Param('communityId') communityId: string,
+    @Query('audience') audience: string | undefined,
+    @Req() req: Request,
+  ) {
+    const userId = req.user?.id;
+    if (!userId) {
+      throw new BadRequestException('User ID is required.');
+    }
+    const validCommunityId = assertNonEmptyId(communityId, 'communityId');
+    return this.notificationService.getCommunityAudienceCount(
+      validCommunityId,
+      audience,
       userId,
     );
   }

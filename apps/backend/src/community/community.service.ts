@@ -26,6 +26,17 @@ import {
   normalizeCommunityHandle,
 } from './community-handle.util';
 
+/** Union tab: followers + owner-added internal members */
+export const COMMUNITY_ROSTER_TAB = 'Community Roster';
+export const FOLLOWERS_TAB = 'Followers';
+
+const INTERNAL_MEMBER_ACCESS_ROLES: CommunityAccessControlRole[] = [
+  'ADMIN',
+  'MODERATOR',
+  'READ_ONLY',
+  'MEMBER',
+];
+
 @Injectable()
 export class CommunityService {
   private readonly logger = new Logger(CommunityService.name);
@@ -334,7 +345,7 @@ export class CommunityService {
 
     const [memberCount, originalPostCount, repostCount] = await Promise.all([
       prisma.communityMemberEntity.count({
-        where: { communityId: community.id },
+        where: this.followerWhere(community.id, community.ownerId),
       }),
       prisma.communityPostEntity.count({
         where: {
@@ -460,6 +471,69 @@ export class CommunityService {
     if (accessControlRole === 'MODERATOR') return 2;
     if (accessControlRole === 'READ_ONLY') return 1;
     return 0;
+  }
+
+  private followerWhere(
+    communityId: string,
+    ownerId: string,
+  ): Prisma.CommunityMemberEntityWhereInput {
+    return {
+      communityId,
+      accessControlRole: 'FOLLOWER',
+      userId: { not: ownerId },
+    };
+  }
+
+  private formatAssignedDate(date: Date): string {
+    return date
+      .toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      })
+      .replace(/\//g, '-');
+  }
+
+  private async getLastAssignedDatesByUser(
+    communityId: string,
+    userIds: string[],
+  ): Promise<Map<string, string>> {
+    const uniqueIds = [...new Set(userIds)];
+    if (uniqueIds.length === 0) {
+      return new Map();
+    }
+
+    const rows = await prisma.communityTaskEntity.groupBy({
+      by: ['toUserId'],
+      where: { communityId, toUserId: { in: uniqueIds } },
+      _max: { createdAt: true },
+    });
+
+    const dates = new Map<string, string>();
+    for (const row of rows) {
+      if (row._max.createdAt) {
+        dates.set(row.toUserId, this.formatAssignedDate(row._max.createdAt));
+      }
+    }
+    return dates;
+  }
+
+  /** Owner must never remain stored as a page follower. */
+  private async repairOwnerFollowerRecord(
+    communityId: string,
+    ownerId: string,
+  ): Promise<void> {
+    await prisma.communityMemberEntity.updateMany({
+      where: {
+        communityId,
+        userId: ownerId,
+        accessControlRole: 'FOLLOWER',
+      },
+      data: {
+        role: 'OWNER',
+        accessControlRole: 'ADMIN',
+      },
+    });
   }
 
   async checkCommunityReadPermission(userId: string, communityId: string) {
@@ -613,10 +687,18 @@ export class CommunityService {
       throw new NotFoundException('Community not found.');
     }
 
-    const isOwner = community.ownerId === currentUserId;
-    const isMember = community.members.length > 0;
+    await this.repairOwnerFollowerRecord(communityId, community.ownerId);
 
-    if (!isOwner && !isMember) {
+    const isOwner = community.ownerId === currentUserId;
+    const myMemberRecord = community.members[0];
+    const isDashboardEligible =
+      isOwner ||
+      (myMemberRecord &&
+        INTERNAL_MEMBER_ACCESS_ROLES.includes(
+          myMemberRecord.accessControlRole,
+        ));
+
+    if (!isDashboardEligible) {
       throw new ForbiddenException(
         'You do not have permission to view this community.',
       );
@@ -633,11 +715,20 @@ export class CommunityService {
       communityId,
     };
 
-    if (role && role !== 'All Members') {
-      where.role = {
-        equals: role,
-        mode: 'insensitive',
-      };
+    const isRosterTab = !role || role === COMMUNITY_ROSTER_TAB;
+
+    if (!isRosterTab) {
+      if (role === FOLLOWERS_TAB) {
+        where.accessControlRole = 'FOLLOWER';
+        // Owner must never appear as a page follower, even if stored incorrectly
+        where.userId = { not: community.ownerId };
+      } else {
+        where.role = {
+          equals: role,
+          mode: 'insensitive',
+        };
+        where.accessControlRole = { not: 'FOLLOWER' };
+      }
     }
 
     if (search) {
@@ -747,7 +838,7 @@ export class CommunityService {
       return { university, location, tags, registeredDate };
     };
 
-    if (isOwnerLegacy && community.owner) {
+    if (role !== FOLLOWERS_TAB && isOwnerLegacy && community.owner) {
       const owner = community.owner;
       const ownerDisplayName =
         [owner.firstName, owner.lastName].filter(Boolean).join(' ') ||
@@ -764,8 +855,8 @@ export class CommunityService {
       }
 
       let matchesRole = true;
-      if (role && role !== 'All Members') {
-        matchesRole = ownerRole.toLowerCase() === role.toLowerCase();
+      if (!isRosterTab) {
+        matchesRole = ownerRole.toLowerCase() === role!.toLowerCase();
       }
 
       if (matchesSearch && matchesRole) {
@@ -779,13 +870,7 @@ export class CommunityService {
           role: 'OWNER',
           accessControlRole: 'ADMIN',
           avatarUrl: owner.imageUrl || '/avatars/user.png',
-          lastAssignedDate: community.createdAt
-            .toLocaleDateString('en-GB', {
-              day: '2-digit',
-              month: '2-digit',
-              year: 'numeric',
-            })
-            .replace(/\//g, '-'),
+          lastAssignedDate: null,
           ...ownerProfileInfo,
         };
       }
@@ -851,32 +936,38 @@ export class CommunityService {
       });
     }
 
+    const taskAssigneeIds = members.map((m) => m.userId);
+    if (legacyOwnerMatches && community.owner) {
+      taskAssigneeIds.push(community.owner.id);
+    }
+    const lastAssignedByUser = await this.getLastAssignedDatesByUser(
+      communityId,
+      taskAssigneeIds,
+    );
+
     const mappedMembers = members.map((m) => {
       const displayName =
         [m.user.firstName, m.user.lastName].filter(Boolean).join(' ') ||
         m.user.email.split('@')[0];
       const isMemberOwner = m.userId === community.ownerId;
+      const showAsOwner = isMemberOwner && role !== FOLLOWERS_TAB;
       const profileInfo = mapProfileDetails(m.user, m.createdAt);
       return {
         id: m.id,
         userId: m.user.id,
         name: displayName,
         email: m.user.email,
-        role: isMemberOwner ? 'OWNER' : m.role,
-        accessControlRole: isMemberOwner ? 'ADMIN' : m.accessControlRole,
+        role: showAsOwner ? 'OWNER' : m.role,
+        accessControlRole: showAsOwner ? 'ADMIN' : m.accessControlRole,
         avatarUrl: m.user.imageUrl || '/avatars/user.png',
-        lastAssignedDate: m.createdAt
-          .toLocaleDateString('en-GB', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-          })
-          .replace(/\//g, '-'),
+        lastAssignedDate: lastAssignedByUser.get(m.user.id) ?? null,
         ...profileInfo,
       };
     });
 
     if (legacyOwnerMatches && page === 1) {
+      legacyOwnerRecord.lastAssignedDate =
+        lastAssignedByUser.get(community.owner!.id) ?? null;
       mappedMembers.unshift(legacyOwnerRecord);
     }
 
@@ -929,6 +1020,10 @@ export class CommunityService {
       const displayName =
         [owner.firstName, owner.lastName].filter(Boolean).join(' ') ||
         owner.email.split('@')[0];
+      const lastAssignedByUser = await this.getLastAssignedDatesByUser(
+        communityId,
+        [owner.id],
+      );
       return {
         id: `owner-${owner.id}`,
         userId: owner.id,
@@ -937,13 +1032,7 @@ export class CommunityService {
         role: 'OWNER',
         accessControlRole: 'ADMIN',
         avatarUrl: owner.imageUrl || '/avatars/user.png',
-        lastAssignedDate: community.createdAt
-          .toLocaleDateString('en-GB', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-          })
-          .replace(/\//g, '-'),
+        lastAssignedDate: lastAssignedByUser.get(owner.id) ?? null,
       };
     }
 
@@ -975,6 +1064,11 @@ export class CommunityService {
         .filter(Boolean)
         .join(' ') || fullMember.user.email.split('@')[0];
 
+    const lastAssignedByUser = await this.getLastAssignedDatesByUser(
+      communityId,
+      [fullMember.userId],
+    );
+
     return {
       id: fullMember.id,
       userId: fullMember.userId,
@@ -983,13 +1077,7 @@ export class CommunityService {
       role: isOwner ? 'OWNER' : fullMember.role,
       accessControlRole: isOwner ? 'ADMIN' : fullMember.accessControlRole,
       avatarUrl: fullMember.user.imageUrl || '/avatars/user.png',
-      lastAssignedDate: fullMember.createdAt
-        .toLocaleDateString('en-GB', {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric',
-        })
-        .replace(/\//g, '-'),
+      lastAssignedDate: lastAssignedByUser.get(fullMember.userId) ?? null,
     };
   }
 
@@ -1017,6 +1105,12 @@ export class CommunityService {
           'Moderators can only add members with READ_ONLY access.',
         );
       }
+    }
+
+    if (dto.accessControlRole === 'FOLLOWER') {
+      throw new BadRequestException(
+        'Follower access can only be obtained by following the community page.',
+      );
     }
 
     if (dto.userIds.includes(currentUserId)) {
@@ -1051,16 +1145,20 @@ export class CommunityService {
       );
     }
 
-    // Check if any of these users are already members
     const existingMembers = await prisma.communityMemberEntity.findMany({
       where: {
         communityId,
         userId: { in: dto.userIds },
       },
-      select: { userId: true },
     });
-    const existingUserIds = existingMembers.map((m) => m.userId);
-    if (existingUserIds.length > 0) {
+    const followersToUpgrade = existingMembers.filter(
+      (member) => member.accessControlRole === 'FOLLOWER',
+    );
+    const alreadyInternalMembers = existingMembers.filter(
+      (member) => member.accessControlRole !== 'FOLLOWER',
+    );
+    if (alreadyInternalMembers.length > 0) {
+      const existingUserIds = alreadyInternalMembers.map((m) => m.userId);
       this.logger.warn({
         action: 'COMMUNITY_ADD_MEMBERS_CONFLICT',
         communityId,
@@ -1072,15 +1170,31 @@ export class CommunityService {
       );
     }
 
-    // Bulk add members
-    await prisma.communityMemberEntity.createMany({
-      data: dto.userIds.map((uid) => ({
-        communityId,
-        userId: uid,
-        role: dto.role,
-        accessControlRole: dto.accessControlRole,
-      })),
-    });
+    if (followersToUpgrade.length > 0) {
+      await prisma.communityMemberEntity.updateMany({
+        where: {
+          id: { in: followersToUpgrade.map((member) => member.id) },
+        },
+        data: {
+          role: dto.role,
+          accessControlRole: dto.accessControlRole,
+        },
+      });
+    }
+
+    const upgradedUserIds = new Set(followersToUpgrade.map((m) => m.userId));
+    const newUserIds = dto.userIds.filter((uid) => !upgradedUserIds.has(uid));
+
+    if (newUserIds.length > 0) {
+      await prisma.communityMemberEntity.createMany({
+        data: newUserIds.map((uid) => ({
+          communityId,
+          userId: uid,
+          role: dto.role,
+          accessControlRole: dto.accessControlRole,
+        })),
+      });
+    }
 
     this.logger.info({
       action: 'COMMUNITY_MEMBERS_BULK_ADDED',
@@ -1104,19 +1218,207 @@ export class CommunityService {
     return { success: true, count: dto.userIds.length };
   }
 
+  private static readonly RESERVED_MEMBER_TYPE_NAMES = new Set([
+    'FOLLOWER',
+    'FOLLOWERS',
+    'OWNER',
+    'MEMBER',
+    'COMMUNITY ROSTER',
+    'INTERNAL MEMBERS',
+  ]);
+
+  private mergeMemberTypeLabels(
+    storedLabels: string[],
+    assignedRoles: string[],
+  ): string[] {
+    const seen = new Set<string>();
+    const merged: string[] = [];
+
+    for (const label of [...storedLabels, ...assignedRoles]) {
+      const trimmed = label.trim();
+      if (!trimmed) continue;
+      if (trimmed.toUpperCase() === 'FOLLOWER') continue;
+      if (CommunityService.RESERVED_MEMBER_TYPE_NAMES.has(trimmed.toUpperCase())) {
+        continue;
+      }
+      const key = trimmed.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      merged.push(trimmed);
+    }
+
+    return merged.sort((a, b) => a.localeCompare(b));
+  }
+
+  private filterStoredMemberTypeLabels(labels: string[]): string[] {
+    return labels.filter((label) => {
+      const trimmed = label.trim();
+      if (!trimmed) return false;
+      return !CommunityService.RESERVED_MEMBER_TYPE_NAMES.has(
+        trimmed.toUpperCase(),
+      );
+    });
+  }
+
+  private async buildMemberTypesResponse(
+    communityId: string,
+  ): Promise<{ types: string[]; storedLabels: string[] }> {
+    const [community, uniqueRoles] = await Promise.all([
+      prisma.communityEntity.findUniqueOrThrow({
+        where: { id: communityId },
+        select: { memberTypeLabels: true },
+      }),
+      prisma.communityMemberEntity.findMany({
+        where: {
+          communityId,
+          accessControlRole: { not: 'FOLLOWER' },
+          role: { not: 'FOLLOWER' },
+        },
+        select: { role: true },
+        distinct: ['role'],
+      }),
+    ]);
+
+    const storedLabels = this.filterStoredMemberTypeLabels(
+      community.memberTypeLabels,
+    );
+
+    return {
+      types: this.mergeMemberTypeLabels(
+        storedLabels,
+        uniqueRoles.map((r) => r.role),
+      ),
+      storedLabels,
+    };
+  }
+
+  private memberTypeExists(
+    name: string,
+    storedLabels: string[],
+    assignedRoles: string[],
+  ): boolean {
+    const normalized = name.trim().toLowerCase();
+    if (!normalized) return false;
+
+    return (
+      storedLabels.some((label) => label.trim().toLowerCase() === normalized) ||
+      assignedRoles.some((role) => role.trim().toLowerCase() === normalized)
+    );
+  }
+
   async getUniqueMemberTypes(
     currentUserId: string,
     communityId: string,
-  ): Promise<string[]> {
+  ): Promise<{ types: string[]; storedLabels: string[] }> {
     await this.checkCommunityReadPermission(currentUserId, communityId);
+    return this.buildMemberTypesResponse(communityId);
+  }
 
-    const uniqueRoles = await prisma.communityMemberEntity.findMany({
-      where: { communityId },
-      select: { role: true },
-      distinct: ['role'],
+  async createMemberType(
+    currentUserId: string,
+    communityId: string,
+    role: string,
+  ): Promise<{ types: string[]; storedLabels: string[] }> {
+    await this.checkCommunityWritePermission(currentUserId, communityId);
+
+    const trimmed = role.trim();
+    if (!trimmed) {
+      throw new BadRequestException('Member type name is required.');
+    }
+
+    if (
+      CommunityService.RESERVED_MEMBER_TYPE_NAMES.has(trimmed.toUpperCase())
+    ) {
+      throw new BadRequestException(
+        `"${trimmed}" is a reserved name and cannot be used.`,
+      );
+    }
+
+    const [community, assignedRoles] = await Promise.all([
+      prisma.communityEntity.findUniqueOrThrow({
+        where: { id: communityId },
+        select: { memberTypeLabels: true },
+      }),
+      prisma.communityMemberEntity.findMany({
+        where: {
+          communityId,
+          accessControlRole: { not: 'FOLLOWER' },
+          role: { not: 'FOLLOWER' },
+        },
+        select: { role: true },
+        distinct: ['role'],
+      }),
+    ]);
+
+    const storedLabels = this.filterStoredMemberTypeLabels(
+      community.memberTypeLabels,
+    );
+    const assignedRoleNames = assignedRoles.map((r) => r.role);
+
+    if (this.memberTypeExists(trimmed, storedLabels, assignedRoleNames)) {
+      throw new BadRequestException(`"${trimmed}" already exists.`);
+    }
+
+    await prisma.communityEntity.update({
+      where: { id: communityId },
+      data: {
+        memberTypeLabels: [...community.memberTypeLabels, trimmed],
+      },
     });
 
-    return uniqueRoles.map((r) => r.role);
+    return this.getUniqueMemberTypes(currentUserId, communityId);
+  }
+
+  async deleteMemberType(
+    currentUserId: string,
+    communityId: string,
+    role: string,
+  ): Promise<{ types: string[]; storedLabels: string[] }> {
+    await this.checkCommunityWritePermission(currentUserId, communityId);
+
+    const trimmed = role.trim();
+    if (!trimmed) {
+      throw new BadRequestException('Member type name is required.');
+    }
+
+    const community = await prisma.communityEntity.findUniqueOrThrow({
+      where: { id: communityId },
+      select: { memberTypeLabels: true },
+    });
+
+    const normalized = trimmed.toLowerCase();
+    const labelIndex = community.memberTypeLabels.findIndex(
+      (label) => label.trim().toLowerCase() === normalized,
+    );
+
+    if (labelIndex === -1) {
+      throw new NotFoundException(`Member type "${trimmed}" not found.`);
+    }
+
+    const assignedCount = await prisma.communityMemberEntity.count({
+      where: {
+        communityId,
+        accessControlRole: { not: 'FOLLOWER' },
+        role: { equals: trimmed, mode: 'insensitive' },
+      },
+    });
+
+    if (assignedCount > 0) {
+      throw new BadRequestException(
+        `Cannot delete "${trimmed}": ${assignedCount} member(s) are still assigned to this type. Reassign them first.`,
+      );
+    }
+
+    await prisma.communityEntity.update({
+      where: { id: communityId },
+      data: {
+        memberTypeLabels: community.memberTypeLabels.filter(
+          (_, index) => index !== labelIndex,
+        ),
+      },
+    });
+
+    return this.getUniqueMemberTypes(currentUserId, communityId);
   }
 
   private validateHierarchyAction(
@@ -1321,10 +1623,18 @@ export class CommunityService {
       communityId,
     );
 
+    await this.repairOwnerFollowerRecord(communityId, community.ownerId);
+
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+    const internalMemberWhere: Prisma.CommunityMemberEntityWhereInput = {
+      communityId,
+      accessControlRole: { not: 'FOLLOWER' },
+    };
 
     const [
       totalMembersDb,
+      followerCount,
       newMembers30DaysDb,
       adminCountDb,
       moderatorCount,
@@ -1333,11 +1643,14 @@ export class CommunityService {
       livePageViews,
     ] = await Promise.all([
       prisma.communityMemberEntity.count({
-        where: { communityId },
+        where: internalMemberWhere,
+      }),
+      prisma.communityMemberEntity.count({
+        where: this.followerWhere(communityId, community.ownerId),
       }),
       prisma.communityMemberEntity.count({
         where: {
-          communityId,
+          ...internalMemberWhere,
           createdAt: { gte: thirtyDaysAgo },
         },
       }),
@@ -1396,6 +1709,8 @@ export class CommunityService {
 
     return {
       totalMembers,
+      followerCount,
+      rosterCount: totalMembers + followerCount,
       newMembers30Days,
       pageImpressions,
       postImpressions,
@@ -1558,7 +1873,7 @@ export class CommunityService {
 
     if (community.ownerId === userId) {
       const memberCount = await prisma.communityMemberEntity.count({
-        where: { communityId },
+        where: this.followerWhere(communityId, community.ownerId),
       });
       return { following: true, memberCount };
     }
@@ -1567,8 +1882,13 @@ export class CommunityService {
       where: { communityId_userId: { communityId, userId } },
     });
     if (existing) {
+      if (existing.accessControlRole !== 'FOLLOWER') {
+        throw new BadRequestException(
+          'You are already an internal member of this community.',
+        );
+      }
       const memberCount = await prisma.communityMemberEntity.count({
-        where: { communityId },
+        where: this.followerWhere(communityId, community.ownerId),
       });
       return { following: true, memberCount };
     }
@@ -1577,13 +1897,13 @@ export class CommunityService {
       data: {
         communityId,
         userId,
-        role: 'MEMBER',
-        accessControlRole: 'READ_ONLY',
+        role: 'FOLLOWER',
+        accessControlRole: 'FOLLOWER',
       },
     });
 
     const memberCount = await prisma.communityMemberEntity.count({
-      where: { communityId },
+      where: this.followerWhere(communityId, community.ownerId),
     });
     return { following: true, memberCount };
   }
@@ -1611,14 +1931,14 @@ export class CommunityService {
     });
     if (!member) {
       const memberCount = await prisma.communityMemberEntity.count({
-        where: { communityId },
+        where: this.followerWhere(communityId, community.ownerId),
       });
       return { following: false, memberCount };
     }
 
-    if (member.accessControlRole !== 'READ_ONLY') {
+    if (member.accessControlRole !== 'FOLLOWER') {
       throw new ForbiddenException(
-        'You cannot unfollow a community where you have a management role.',
+        'You cannot unfollow a community where you are an internal member.',
       );
     }
 
@@ -1627,7 +1947,7 @@ export class CommunityService {
     });
 
     const memberCount = await prisma.communityMemberEntity.count({
-      where: { communityId },
+      where: this.followerWhere(communityId, community.ownerId),
     });
     return { following: false, memberCount };
   }

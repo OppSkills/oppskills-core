@@ -38,4 +38,7 @@ export class MeetPreviewResponseDto {
 
   @ApiProperty({ enum: MEET_AUDIENCE_SCOPE_VALUES })
   audienceScope: MeetAudienceScope;
+
+  @ApiPropertyOptional({ nullable: true })
+  audienceFilter: string | null;
 }

@@ -196,6 +196,9 @@ describe('CommunityService', () => {
           if (where.userId === 'user1') {
             return 1; // hasOwnerInMembers is true
           }
+          if (where.accessControlRole === 'FOLLOWER') {
+            return 4;
+          }
           if (where.accessControlRole === 'ADMIN') {
             return 2;
           }
@@ -205,16 +208,19 @@ describe('CommunityService', () => {
           if (where.createdAt) {
             return 5; // new members in last 30 days
           }
-          return 10; // total members
+          return 10; // total internal members
         },
       );
 
       const stats = await service.getCommunityStats('user1', 'comm1');
       expect(stats).toEqual({
         totalMembers: 10,
+        followerCount: 4,
+        rosterCount: 14,
         newMembers30Days: 5,
         pageImpressions: 0,
         postImpressions: 0,
+        postViews: 0,
         adminCount: 2,
         moderatorCount: 3,
       });
@@ -234,6 +240,9 @@ describe('CommunityService', () => {
           if (where.userId === 'user1') {
             return 0; // hasOwnerInMembers is false
           }
+          if (where.accessControlRole === 'FOLLOWER') {
+            return 2;
+          }
           if (where.accessControlRole === 'ADMIN') {
             return 1;
           }
@@ -243,16 +252,19 @@ describe('CommunityService', () => {
           if (where.createdAt) {
             return 3; // new members in last 30 days
           }
-          return 5; // total members (excluding owner)
+          return 5; // total internal members (excluding owner)
         },
       );
 
       const stats = await service.getCommunityStats('user1', 'comm1');
       expect(stats).toEqual({
         totalMembers: 6, // totalMembersDb + 1
+        followerCount: 2,
+        rosterCount: 8,
         newMembers30Days: 4, // newMembers30DaysDb + 1
         pageImpressions: 0,
         postImpressions: 0,
+        postViews: 0,
         adminCount: 2, // adminCountDb + 1
         moderatorCount: 2,
       });

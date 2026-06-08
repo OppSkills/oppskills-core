@@ -20,6 +20,7 @@ export interface SendBulkEmailPayload {
   hackathonId?: string;
   hackathonSlug?: string;
   communityId?: string;
+  communityAudience?: string;
   htmlBody: string;
   scheduledAt?: string;
 }
@@ -61,6 +62,7 @@ export async function sendBulkEmail(
     hackathonId: payload.hackathonId || undefined,
     hackathonSlug: payload.hackathonSlug || undefined,
     communityId: payload.communityId || undefined,
+    communityAudience: payload.communityAudience || undefined,
     content: payload.htmlBody,
     scheduleType: payload.scheduledAt ? "CUSTOM" : "IMMEDIATELY",
     scheduledAt: payload.scheduledAt

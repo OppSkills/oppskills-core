@@ -28,14 +28,6 @@ import {
   updateGroupConversation,
 } from "@/lib/api/chatApi";
 import {
-  connectChatSocket,
-  disconnectChatSocket,
-  emitAckDelivered,
-  emitSendMessage,
-  joinConversation,
-  leaveConversation,
-} from "@/lib/chat/chatSocket";
-import {
   appendMessageToChat,
   applyInboxConversationUpdate,
   mapConversationToUi,
@@ -48,30 +40,11 @@ import {
   patchMessageUploadProgress,
   replaceOptimisticMessage,
 } from "@/lib/chat/chatMappers";
-import { preloadImageUrl } from "@/lib/chat/preloadImage";
-import {
-  attachmentSendBody,
-  createOptimisticMessage,
-  createOptimisticPreviewUrl,
-  optimisticMessageId,
-} from "@/lib/chat/optimisticMessage";
 import type { Chat, Message, SearchUserHit } from "@/lib/chat/types";
-import { presignDocumentUpload, presignImageUpload } from "@/lib/api/mediaApi";
 import {
   type PendingAttachment,
   type PendingAttachmentKind,
 } from "@/lib/chat/attachmentTypes";
-import {
-  fileForChatUpload,
-  resolveChatUploadMime,
-} from "@/lib/chat/uploadMime";
-import { downloadChatMessageAttachment } from "@/lib/chat/downloadAttachment";
-import {
-  uploadDocumentToS3WithProgress,
-  uploadImageToS3WithProgress,
-} from "@/lib/chat/uploadWithProgress";
-import { getMe } from "@/lib/api/usersApi";
-
 const MESSAGE_PAGE_SIZE = 30;
 
 // Simple in-memory global cache persisting across page mounts
@@ -82,7 +55,7 @@ let globalLoadingCache = true;
 let globalCurrentUserIdCache: string | null = null;
 
 export function useChatsPage(selectedChatId: string | null) {
-  const { getToken, isLoaded } = useAuth();
+  const { getToken, isLoaded, userId: clerkUserId } = useAuth();
   const { user } = useUser();
   const router = useRouter();
 
@@ -202,15 +175,13 @@ export function useChatsPage(selectedChatId: string | null) {
   }, [getTokenSafe]);
 
   useEffect(() => {
-    if (!isLoaded) return;
+    if (!isLoaded || !clerkUserId) return;
     let cancelled = false;
 
-    (async () => {
+    setCurrentUserId(clerkUserId);
+
+    void (async () => {
       try {
-        const token = await getTokenSafe();
-        const me = await getMe(token);
-        if (cancelled) return;
-        setCurrentUserId(me.id);
         await refreshConversations();
       } catch (e) {
         console.error(e);
@@ -222,18 +193,21 @@ export function useChatsPage(selectedChatId: string | null) {
     return () => {
       cancelled = true;
     };
-  }, [isLoaded, getTokenSafe, refreshConversations]);
+  }, [isLoaded, clerkUserId, refreshConversations]);
 
   useEffect(() => {
     if (!currentUserId || !isLoaded) return;
 
     let cancelled = false;
+    let socketModule: typeof import("@/lib/chat/chatSocket") | null = null;
 
     void (async () => {
+      const chatSocket = await import("@/lib/chat/chatSocket");
+      socketModule = chatSocket;
       const token = await getTokenSafe();
       if (cancelled) return;
 
-      connectChatSocket(token, {
+      chatSocket.connectChatSocket(token, {
         onMessageCreated: ({ conversationId, message }) => {
           const uiMsg = mapMessageToUi(message, currentUserId);
           const isActiveChat = selectedChatIdRef.current === conversationId;
@@ -266,7 +240,7 @@ export function useChatsPage(selectedChatId: string | null) {
 
           if (isActiveChat) {
             if (!uiMsg.isYou) {
-              emitAckDelivered(conversationId, [message.id]);
+              chatSocket.emitAckDelivered(conversationId, [message.id]);
             }
             void markActiveConversationRead(conversationId);
           }
@@ -320,7 +294,7 @@ export function useChatsPage(selectedChatId: string | null) {
 
     return () => {
       cancelled = true;
-      disconnectChatSocket();
+      socketModule?.disconnectChatSocket();
     };
   }, [currentUserId, isLoaded, getTokenSafe, router]);
 
@@ -364,6 +338,7 @@ export function useChatsPage(selectedChatId: string | null) {
           .filter((m) => m.senderId !== currentUserId)
           .map((m) => m.id);
         if (ids.length > 0) {
+          const { emitAckDelivered } = await import("@/lib/chat/chatSocket");
           emitAckDelivered(conversationId, ids);
         }
       } finally {
@@ -377,20 +352,28 @@ export function useChatsPage(selectedChatId: string | null) {
     if (!selectedChatId || !currentUserId) return;
 
     if (prevChatIdRef.current) {
-      leaveConversation(prevChatIdRef.current);
+      const previousChatId = prevChatIdRef.current;
+      void import("@/lib/chat/chatSocket").then(({ leaveConversation }) =>
+        leaveConversation(previousChatId),
+      );
     }
     prevChatIdRef.current = selectedChatId;
 
     clearUnreadForConversation(selectedChatId);
 
     void (async () => {
+      const { joinConversation } = await import("@/lib/chat/chatSocket");
       await joinConversation(selectedChatId);
       await loadMessages(selectedChatId);
     })();
     void markActiveConversationRead(selectedChatId);
 
     return () => {
-      if (selectedChatId) leaveConversation(selectedChatId);
+      if (selectedChatId) {
+        void import("@/lib/chat/chatSocket").then(({ leaveConversation }) =>
+          leaveConversation(selectedChatId),
+        );
+      }
     };
   }, [
     selectedChatId,
@@ -403,7 +386,7 @@ export function useChatsPage(selectedChatId: string | null) {
 
   useEffect(() => {
     if (!selectedChatId || loading) return;
-    if (chats.some((c) => c.id === selectedChatId)) return;
+    if (chatsRef.current.some((c) => c.id === selectedChatId)) return;
 
     void (async () => {
       try {
@@ -430,7 +413,7 @@ export function useChatsPage(selectedChatId: string | null) {
         router.replace("/dashboard/chats");
       }
     })();
-  }, [selectedChatId, chats, loading, router, getTokenSafe]);
+  }, [selectedChatId, loading, router, getTokenSafe]);
 
   const loadOlderMessages = useCallback(async () => {
     if (!selectedChatId || !olderCursor || !currentUserId) return;
@@ -566,6 +549,9 @@ export function useChatsPage(selectedChatId: string | null) {
   const sendTextMessage = useCallback(
     async (conversationId: string, text: string, replyToMessageId?: string) => {
       if (!currentUserId) return;
+      const { emitSendMessage, joinConversation } = await import(
+        "@/lib/chat/chatSocket"
+      );
 
       const payload = {
         type: "TEXT" as const,
@@ -594,6 +580,16 @@ export function useChatsPage(selectedChatId: string | null) {
       kind: PendingAttachmentKind,
       onProgress?: (percent: number) => void,
     ) => {
+      const [
+        { presignDocumentUpload, presignImageUpload },
+        { fileForChatUpload, resolveChatUploadMime },
+        { uploadDocumentToS3WithProgress, uploadImageToS3WithProgress },
+      ] = await Promise.all([
+        import("@/lib/api/mediaApi"),
+        import("@/lib/chat/uploadMime"),
+        import("@/lib/chat/uploadWithProgress"),
+      ]);
+
       const mime = resolveChatUploadMime(file, kind);
       const uploadFile = fileForChatUpload(file, mime);
       onProgress?.(5);
@@ -651,9 +647,18 @@ export function useChatsPage(selectedChatId: string | null) {
       caption: string,
     ) => {
       if (!currentUserId) return;
+      const { emitSendMessage, joinConversation } = await import(
+        "@/lib/chat/chatSocket"
+      );
 
       const token = await getTokenSafe();
       await joinConversation(conversationId);
+      const {
+        attachmentSendBody,
+        createOptimisticMessage,
+        createOptimisticPreviewUrl,
+        optimisticMessageId,
+      } = await import("@/lib/chat/optimisticMessage");
 
       const optimisticMsgs = items.map((item, i) => {
         const previewUrl = createOptimisticPreviewUrl(item);
@@ -726,6 +731,9 @@ export function useChatsPage(selectedChatId: string | null) {
           if (saved) {
             const uiMsg = mapMessageToUi(saved, currentUserId);
             if (uiMsg.imageUrl) {
+              const { preloadImageUrl } = await import(
+                "@/lib/chat/preloadImage"
+              );
               await preloadImageUrl(uiMsg.imageUrl);
             }
             setChats((prev) =>
@@ -842,6 +850,9 @@ export function useChatsPage(selectedChatId: string | null) {
       }
 
       const token = await getTokenSafe();
+      const { downloadChatMessageAttachment } = await import(
+        "@/lib/chat/downloadAttachment"
+      );
       await downloadChatMessageAttachment(
         token,
         conversationId,
@@ -883,6 +894,11 @@ export function useChatsPage(selectedChatId: string | null) {
       if (!mime.startsWith("image/")) {
         throw new Error("Only image files are supported");
       }
+      const [{ presignImageUpload }, { uploadImageToS3WithProgress }] =
+        await Promise.all([
+          import("@/lib/api/mediaApi"),
+          import("@/lib/chat/uploadWithProgress"),
+        ]);
       const presign = await presignImageUpload(token, {
         purpose: "CHAT_ATTACHMENT",
         mimeType: mime,

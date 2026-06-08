@@ -10,6 +10,8 @@ import {
   ChevronDown,
   MoreVertical,
   Edit,
+  Plus,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -22,10 +24,15 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import type { CommunityMember as Member } from "@oppskills/types";
+import {
+  COMMUNITY_ROSTER_TAB,
+  FOLLOWERS_TAB,
+} from "@/lib/api/communityApi";
 
 interface MembersDirectoryProps {
   onAssignTask?: (memberName: string) => void;
   customTabs?: string[];
+  deletableCustomTabs?: string[];
   onViewDetails?: (member: any) => void;
   members?: Member[];
   onDeleteMember?: (id: string, name: string) => void;
@@ -36,7 +43,10 @@ interface MembersDirectoryProps {
   currentUserMember?: Member;
   page?: number;
   totalPages?: number;
-  totalMembers?: number;
+  rosterTotal?: number;
+  followerCount?: number;
+  onAddCustomType?: () => void;
+  onDeleteCustomType?: (typeName: string) => void;
   onPageChange?: (page: number) => void;
   searchQuery?: string;
   onSearchChange?: (val: string) => void;
@@ -59,6 +69,7 @@ interface TabItem {
 export default function MembersDirectory({
   onAssignTask,
   customTabs = EMPTY_TABS,
+  deletableCustomTabs = EMPTY_TABS,
   onViewDetails,
   members = [],
   onDeleteMember,
@@ -68,11 +79,14 @@ export default function MembersDirectory({
   currentUserMember,
   page = 1,
   totalPages = 1,
-  totalMembers = 0,
+  rosterTotal = 0,
+  followerCount = 0,
+  onAddCustomType,
+  onDeleteCustomType,
   onPageChange,
   searchQuery = "",
   onSearchChange,
-  activeTab = "All Members",
+  activeTab = COMMUNITY_ROSTER_TAB,
   onTabChange,
   sortDirection = null,
   onSortChange,
@@ -85,7 +99,12 @@ export default function MembersDirectory({
     return 1; // READ_ONLY or fallback
   };
 
+  const isFollower = (targetMember: Member) =>
+    targetMember.accessControlRole === "FOLLOWER" ||
+    targetMember.role.toUpperCase() === "FOLLOWER";
+
   const canEditMember = (targetMember: Member) => {
+    if (isFollower(targetMember)) return false;
     if (!currentUserMember) return false;
     if (!isEligibleToModify) return false;
 
@@ -143,21 +162,35 @@ export default function MembersDirectory({
   const tabs: TabItem[] = useMemo(() => {
     const base: TabItem[] = [
       {
-        label: "All Members",
+        label: COMMUNITY_ROSTER_TAB,
         showCount: true,
-        totalCount: totalMembers,
+        totalCount: rosterTotal,
         hasInfo: false,
       },
     ];
 
-    const custom: TabItem[] = customTabs.map((label) => ({
-      label,
-      showCount: false,
-      hasInfo: true,
-    }));
+    const followerTabs: TabItem[] =
+      followerCount > 0
+        ? [
+            {
+              label: FOLLOWERS_TAB,
+              showCount: true,
+              totalCount: followerCount,
+              hasInfo: false,
+            },
+          ]
+        : [];
 
-    return [...base, ...custom];
-  }, [customTabs, totalMembers]);
+    const custom: TabItem[] = customTabs
+      .filter((label) => label.toUpperCase() !== "FOLLOWER")
+      .map((label) => ({
+        label,
+        showCount: false,
+        hasInfo: true,
+      }));
+
+    return [...base, ...followerTabs, ...custom];
+  }, [customTabs, rosterTotal, followerCount]);
 
   // Toggle selection for individual row
   const handleToggleRow = (id: string) => {
@@ -215,6 +248,9 @@ export default function MembersDirectory({
 
   // Get elegant badge styles based on member role
   const getRoleBadgeStyles = (role: string) => {
+    if (role.toUpperCase() === "FOLLOWER") {
+      return "bg-[#E8EAF6] text-[#3949AB] border border-[#C5CAE9]/40";
+    }
     if (role.startsWith("Alumini")) {
       return "bg-[#FCE4EC] text-[#C2185B] border border-[#F8BBD0]/30";
     }
@@ -231,33 +267,70 @@ export default function MembersDirectory({
         <div className="flex items-center gap-1.5 flex-wrap overflow-x-auto scrollbar-none">
           {tabs.map((tab) => {
             const isActive = activeTab === tab.label;
+            const canDeleteType =
+              tab.hasInfo &&
+              isEligibleToModify &&
+              onDeleteCustomType &&
+              deletableCustomTabs.some(
+                (type) => type.toLowerCase() === tab.label.toLowerCase(),
+              );
+
             return (
-              <button
+              <div
                 key={tab.label}
-                onClick={() => onTabChange?.(tab.label)}
-                className={`relative flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold transition-all duration-300 cursor-pointer whitespace-nowrap pb-3 ${
-                  isActive
-                    ? "text-[#423072]"
-                    : "text-neutral-500 hover:text-neutral-800"
+                className={`relative flex items-center gap-0.5 pb-3 group ${
+                  isActive ? "text-[#423072]" : "text-neutral-500"
                 }`}
               >
-                <span>
-                  {tab.label}
-                  {tab.showCount && ` (${tab.totalCount})`}
-                </span>
-
-                {tab.hasInfo && (
-                  <span className="text-neutral-400 hover:text-neutral-600">
-                    <Info className="w-3.5 h-3.5" />
+                <button
+                  type="button"
+                  onClick={() => onTabChange?.(tab.label)}
+                  className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold transition-all duration-300 cursor-pointer whitespace-nowrap ${
+                    isActive
+                      ? "text-[#423072]"
+                      : "text-neutral-500 hover:text-neutral-800"
+                  }`}
+                >
+                  <span>
+                    {tab.label}
+                    {tab.showCount && ` (${tab.totalCount})`}
                   </span>
+
+                  {tab.hasInfo && (
+                    <span className="text-neutral-400 hover:text-neutral-600">
+                      <Info className="w-3.5 h-3.5" />
+                    </span>
+                  )}
+                </button>
+
+                {canDeleteType && (
+                  <button
+                    type="button"
+                    onClick={() => onDeleteCustomType(tab.label)}
+                    title={`Delete "${tab.label}"`}
+                    className="mb-2 p-1 rounded-full text-neutral-400 hover:text-red-600 hover:bg-red-50 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-all cursor-pointer"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
                 )}
 
                 {isActive && (
                   <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#835BD5] animate-in fade-in slide-in-from-left-2 duration-300" />
                 )}
-              </button>
+              </div>
             );
           })}
+
+          {onAddCustomType && (
+            <button
+              type="button"
+              onClick={onAddCustomType}
+              title="Create member type"
+              className="flex items-center justify-center w-8 h-8 mb-1 rounded-full border border-[#C8AEFF]/60 bg-[#F3EEFF] text-[#835BD5] hover:bg-[#E8DEFF] hover:border-[#835BD5]/50 active:scale-95 transition-all cursor-pointer shrink-0"
+            >
+              <Plus className="w-4 h-4 stroke-[2.5]" />
+            </button>
+          )}
         </div>
 
         {/* Right side Rounded Search box */}
@@ -493,7 +566,7 @@ export default function MembersDirectory({
                       {/* Task Coordinator Actions */}
                       <td className="py-4 px-6 border-r border-neutral-100">
                         <div className="flex flex-col items-center justify-center gap-1.5">
-                          {isEligibleToModify ? (
+                          {isEligibleToModify && !isFollower(member) ? (
                             <button
                               onClick={() => {
                                 if (onAssignTask) {
@@ -505,22 +578,28 @@ export default function MembersDirectory({
                               <CheckSquare className="w-3.5 h-3.5 text-white" />
                               Assign Task
                             </button>
+                          ) : isFollower(member) ? (
+                            <span className="text-xs text-neutral-500 font-medium select-none">
+                              Follower
+                            </span>
                           ) : (
                             <span className="text-xs text-neutral-500 font-medium select-none">
                               No Actions
                             </span>
                           )}
 
-                          <button
-                            onClick={() => {
-                              toast.info(
-                                `Task assignment history open for ${member.name}`,
-                              );
-                            }}
-                            className="text-[#5c6bc0] hover:text-[#3f51b5] underline font-medium text-xs text-center cursor-pointer transition-colors block mt-0.5 select-none"
-                          >
-                            Last assigned on {member.lastAssignedDate}
-                          </button>
+                          {member.lastAssignedDate && (
+                            <button
+                              onClick={() => {
+                                toast.info(
+                                  `Task assignment history open for ${member.name}`,
+                                );
+                              }}
+                              className="text-[#5c6bc0] hover:text-[#3f51b5] underline font-medium text-xs text-center cursor-pointer transition-colors block mt-0.5 select-none"
+                            >
+                              Last assigned on {member.lastAssignedDate}
+                            </button>
+                          )}
                         </div>
                       </td>
 
