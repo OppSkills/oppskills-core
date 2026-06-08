@@ -31,19 +31,12 @@ export function CommunityCard({
       >
         {/* Banner Area */}
         <div className="relative h-[110px] w-full overflow-hidden shrink-0 bg-muted">
-          {bannerUrl ? (
-            <Image
-              src={normalizeUrl(bannerUrl)}
-              alt={`${title} banner`}
-              fill
-              className="object-cover transition-transform duration-500 group-hover:scale-105"
-            />
-          ) : (
-            // Modern, minimal, and premium abstract dark gradient background
-            <div className="w-full h-full bg-gradient-to-tr from-[#1E1233] via-[#2A1B4E] to-[#4A328C]">
-              <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_top_right,var(--color-primary-400)_0%,transparent_60%)]" />
-            </div>
-          )}
+          <Image
+            src={normalizeUrl(bannerUrl || "/illustrations/community/community_banner_placeholder.png")}
+            alt={`${title} banner`}
+            fill
+            className="object-cover transition-transform duration-500 group-hover:scale-105"
+          />
         </div>
 
         {/* Floating Logo Area overlapping banner and content */}

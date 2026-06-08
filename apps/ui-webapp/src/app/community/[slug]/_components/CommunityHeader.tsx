@@ -50,20 +50,12 @@ export default function CommunityHeader({
   return (
     <div className="w-full bg-white sm:rounded-3xl sm:border border-neutral-200 overflow-hidden shadow-xs relative">
       <div className="relative w-full h-44 sm:h-56 bg-gradient-to-r from-[#FDFBF7] to-[#F5F2EB] flex items-center justify-center overflow-hidden border-b border-neutral-100 group">
-        {details.bannerUrl ? (
-          <Image
-            src={details.bannerUrl}
-            alt="Community Banner"
-            fill
-            className={cn("object-cover", isCoverUploading && "opacity-50")}
-          />
-        ) : (
-          <div className="flex flex-col items-center justify-center p-6 text-center select-none">
-            <h1 className="text-3xl sm:text-5xl font-serif text-[#2B1B17] tracking-tight font-medium">
-              {details.name}
-            </h1>
-          </div>
-        )}
+        <Image
+          src={details.bannerUrl || "/illustrations/community/community_banner_placeholder.png"}
+          alt="Community Banner"
+          fill
+          className={cn("object-cover", isCoverUploading && "opacity-50")}
+        />
 
         {isCoverUploading && (
           <div className="absolute inset-0 bg-black/35 flex items-center justify-center z-10">
