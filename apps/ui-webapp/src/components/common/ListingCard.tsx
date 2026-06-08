@@ -8,6 +8,7 @@ import { HackathonCard } from "../landingpage/_components/HackathonCard";
 import { EventCard } from "../landingpage/_components/EventCard";
 import { formatCount } from "@/lib/tools";
 import { format } from "date-fns";
+import { CommunityCard } from "./CommunityCard";
 
 export interface ListingItem {
   id: string;
@@ -158,32 +159,14 @@ export function ListingCard({ item }: ListingCardProps) {
   }
 
   if (pathname === "/community") {
-    const footerContent = (
-      <div className="flex items-between justify-between mt-auto pt-2 w-full">
-        <div className="flex flex-col gap-2">
-          <span className="text-xs text-neutral-600">Members</span>
-          <span className="text-neutral-700 font-medium">
-            {formatCount(item.registrationCount ?? 0)}
-          </span>
-        </div>
-        <div className="flex flex-col gap-1 text-right">
-          <span className="text-neutral-500 text-xs">Posts</span>
-          <span className="text-neutral-700 text-sm font-medium">
-            {formatCount(item.opportunityCount ?? 0)}
-          </span>
-        </div>
-      </div>
-    );
-
     return (
-      <HackathonCard
+      <CommunityCard
         href={`/${item.routePrefix}/${item.slug}`}
-        imageSrc={item.avatarUrl || item.bannerUrl || null}
         title={item.title}
-        organizationName={item.status}
-        isFree={true}
-        mode="Community"
-        footerContent={footerContent}
+        genre={item.status || "Other"}
+        memberCount={item.registrationCount ?? 0}
+        bannerUrl={item.bannerUrl}
+        avatarUrl={item.avatarUrl}
       />
     );
   }
