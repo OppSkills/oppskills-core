@@ -519,16 +519,22 @@ export class CommunityService {
   }
 
   /** Owner must never remain stored as a page follower. */
-  private async repairOwnerFollowerRecord(
+  private async repairOwnerFollowerRecordIfNeeded(
     communityId: string,
     ownerId: string,
   ): Promise<void> {
-    await prisma.communityMemberEntity.updateMany({
+    const badRecord = await prisma.communityMemberEntity.findFirst({
       where: {
         communityId,
         userId: ownerId,
         accessControlRole: 'FOLLOWER',
       },
+      select: { id: true },
+    });
+    if (!badRecord) return;
+
+    await prisma.communityMemberEntity.update({
+      where: { id: badRecord.id },
       data: {
         role: 'OWNER',
         accessControlRole: 'ADMIN',
@@ -686,8 +692,6 @@ export class CommunityService {
     if (!community) {
       throw new NotFoundException('Community not found.');
     }
-
-    await this.repairOwnerFollowerRecord(communityId, community.ownerId);
 
     const isOwner = community.ownerId === currentUserId;
     const myMemberRecord = community.members[0];
@@ -1362,7 +1366,9 @@ export class CommunityService {
     await prisma.communityEntity.update({
       where: { id: communityId },
       data: {
-        memberTypeLabels: [...community.memberTypeLabels, trimmed],
+        memberTypeLabels: {
+          push: trimmed,
+        },
       },
     });
 
@@ -1623,8 +1629,6 @@ export class CommunityService {
       communityId,
     );
 
-    await this.repairOwnerFollowerRecord(communityId, community.ownerId);
-
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
     const internalMemberWhere: Prisma.CommunityMemberEntityWhereInput = {
@@ -1872,6 +1876,7 @@ export class CommunityService {
     }
 
     if (community.ownerId === userId) {
+      await this.repairOwnerFollowerRecordIfNeeded(communityId, community.ownerId);
       const memberCount = await prisma.communityMemberEntity.count({
         where: this.followerWhere(communityId, community.ownerId),
       });

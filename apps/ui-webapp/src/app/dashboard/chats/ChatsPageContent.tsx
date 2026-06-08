@@ -407,17 +407,16 @@ export default function ChatsPageContent() {
     }
   }, [activeChat, chats]);
 
-  const galleryItems =
-    sidebarMedia.length > 0
-      ? sidebarMedia
-      : activeChat
-        ? activeChat.messages
-          .filter((m) => m.imageUrl && !m.id.startsWith("optimistic-"))
-          .map((m) => ({
-            messageId: m.id,
-            fileName: messageDownloadName(m),
-          }))
-        : [];
+  const galleryItems = useMemo(() => {
+    if (sidebarMedia.length > 0) return sidebarMedia;
+    if (!activeChat) return [];
+    return activeChat.messages
+      .filter((m) => m.imageUrl && !m.id.startsWith("optimistic-"))
+      .map((m) => ({
+        messageId: m.id,
+        fileName: messageDownloadName(m),
+      }));
+  }, [sidebarMedia, activeChat]);
 
   useEffect(() => {
     if (!showRightSidebar || !selectedChatId || !activeChat) return;

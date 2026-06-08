@@ -1,56 +1,28 @@
 "use client";
 
 import Link from "next/link";
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 import { Home } from "@solar-icons/react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@clerk/nextjs";
-import { globalChatsCache } from "@/hooks/useChatsPage";
+import { useQueryClient } from "@tanstack/react-query";
+import { chatQueryKeys } from "@/hooks/chat/chatQueryKeys";
+import { useChatConversation } from "@/hooks/chat/useChatConversation";
+import type { Chat } from "@/lib/chat/types";
 
 function ChatBreadcrumbLabel({ chatId }: { chatId: string }) {
-  const [label, setLabel] = useState<string>("Loading...");
-  const { getToken, isSignedIn } = useAuth();
+  const { isSignedIn } = useAuth();
+  const queryClient = useQueryClient();
+  const cachedConversation = queryClient
+    .getQueryData<Chat[]>(chatQueryKeys.conversations())
+    ?.find((chat) => chat.id === chatId);
+  const { data, isLoading } = useChatConversation(chatId, {
+    enabled: isSignedIn && !cachedConversation,
+  });
 
-  useEffect(() => {
-    let active = true;
-
-    // Check in-memory cache first
-    const cached = globalChatsCache?.find((c) => c.id === chatId);
-    if (cached) {
-      setLabel(cached.name);
-      return;
-    }
-
-    if (!isSignedIn) {
-      setLabel("Chat");
-      return;
-    }
-
-    async function fetchChat() {
-      try {
-        const token = await getToken();
-        if (!token) {
-          if (active) setLabel("Chat");
-          return;
-        }
-        const { getConversation } = await import("@/lib/api/chatApi");
-        const detail = await getConversation(token, chatId);
-        if (active) {
-          setLabel(detail.name);
-        }
-      } catch (err) {
-        console.error("Failed to fetch chat for breadcrumb:", err);
-        if (active) setLabel("Chat");
-      }
-    }
-
-    void fetchChat();
-    return () => {
-      active = false;
-    };
-  }, [chatId, isSignedIn, getToken]);
+  const label = cachedConversation?.name ?? data?.name ?? (isLoading ? "Loading..." : "Chat");
 
   return (
     <span className="truncate max-w-[150px] sm:max-w-[240px]">{label}</span>

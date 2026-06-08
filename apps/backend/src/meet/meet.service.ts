@@ -181,18 +181,6 @@ export class MeetService {
       return;
     }
 
-    const isRoster =
-      !meet.audienceFilter?.trim() ||
-      meet.audienceFilter.trim() === COMMUNITY_NOTIFICATION_ROSTER;
-    if (isRoster && userId === community.ownerId) {
-      const ownerInMembers = await prisma.communityMemberEntity.count({
-        where: { communityId: meet.communityId, userId: community.ownerId },
-      });
-      if (ownerInMembers === 0) {
-        return;
-      }
-    }
-
     throw new ForbiddenException(
       `You do not have permission to join this meeting. Access is limited to: ${audience}.`,
     );
