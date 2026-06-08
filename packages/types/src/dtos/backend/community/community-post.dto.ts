@@ -108,6 +108,7 @@ export type CommunityMyRole =
   | "ADMIN"
   | "MODERATOR"
   | "READ_ONLY"
+  | "FOLLOWER"
   | null;
 
 export interface PublicCommunityProfile {

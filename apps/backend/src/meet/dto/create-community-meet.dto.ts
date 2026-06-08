@@ -39,8 +39,18 @@ export class CreateCommunityMeetDto {
   @IsISO8601()
   scheduledStartAt?: string;
 
-  @ApiPropertyOptional({ enum: MEET_AUDIENCE_SCOPE_VALUES, default: 'ALL' })
+  @ApiPropertyOptional({ enum: MEET_AUDIENCE_SCOPE_VALUES, default: 'MEMBER_TYPES' })
   @IsOptional()
   @IsIn(MEET_AUDIENCE_SCOPE_VALUES)
   audienceScope?: MeetAudienceScope;
+
+  @ApiPropertyOptional({
+    description:
+      'When audienceScope is MEMBER_TYPES: Community Roster, Internal Members, Followers, or a custom member role',
+    example: 'Internal Members',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  audienceFilter?: string;
 }

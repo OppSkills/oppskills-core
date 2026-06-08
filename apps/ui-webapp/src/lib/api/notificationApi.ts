@@ -16,6 +16,7 @@ export interface NotificationRecord {
   eventId?: string;
   hackathonId?: string;
   communityId?: string;
+  communityAudience?: string | null;
   content: string;
   scheduleType: "IMMEDIATELY" | "CUSTOM";
   scheduledAt?: string;
@@ -63,6 +64,18 @@ export async function getNotificationsForCommunity(
 ): Promise<NotificationRecord[]> {
   const res = await API.get(`/community/${communityId}`, {
     headers: buildAuthHeaders(token),
+  });
+  return res.data;
+}
+
+export async function getCommunityNotificationAudienceCount(
+  token: string | null,
+  communityId: string,
+  audience: string,
+): Promise<{ audience: string; count: number }> {
+  const res = await API.get(`/community/${communityId}/audience-count`, {
+    headers: buildAuthHeaders(token),
+    params: { audience },
   });
   return res.data;
 }

@@ -125,7 +125,7 @@ export default function CommunityDashboard({
   const commentMutation = useCreateFeedPostComment(profile?.id ?? "", handle);
 
   const canManage = canManageCommunity(profile?.myRole);
-  const isFollowing = profile?.myRole === "READ_ONLY";
+  const isFollowing = profile?.myRole === "FOLLOWER";
 
   const details: CommunityDetails | null = useMemo(() => {
     if (!profile) return null;

@@ -19,8 +19,14 @@ import {
   getNotificationsForEvent,
   getNotificationsForHackathon,
   getNotificationsForCommunity,
+  getCommunityNotificationAudienceCount,
   NotificationRecord,
 } from "@/lib/api/notificationApi";
+import {
+  getUniqueMemberTypes,
+  COMMUNITY_ROSTER_TAB,
+  FOLLOWERS_TAB,
+} from "@/lib/api/communityApi";
 import {
   Select,
   SelectContent,
@@ -73,6 +79,20 @@ export function SendNotification({
   const [lastScheduledTime, setLastScheduledTime] = useState<string | null>(
     null,
   );
+  const [communityMemberTypes, setCommunityMemberTypes] = useState<string[]>(
+    [],
+  );
+  const [mailAudience, setMailAudience] = useState(COMMUNITY_ROSTER_TAB);
+  const [audienceCount, setAudienceCount] = useState<number | null>(null);
+  const [loadingAudienceCount, setLoadingAudienceCount] = useState(false);
+
+  const communityAudienceOptions = React.useMemo(() => {
+    const reserved = new Set(["FOLLOWER", "OWNER", "MEMBER", "FOLLOWERS"]);
+    const customTypes = communityMemberTypes.filter(
+      (typeName) => !reserved.has(typeName.toUpperCase()),
+    );
+    return [COMMUNITY_ROSTER_TAB, FOLLOWERS_TAB, ...customTypes];
+  }, [communityMemberTypes]);
 
   const fetchHistory = useCallback(async () => {
     const slugOrId = slug || id;
@@ -99,6 +119,64 @@ export function SendNotification({
   useEffect(() => {
     fetchHistory();
   }, [fetchHistory]);
+
+  useEffect(() => {
+    if (type !== "community" || !id) return;
+
+    let cancelled = false;
+    async function loadMemberTypes() {
+      try {
+        const token = await getToken();
+        if (!token || cancelled) return;
+        const memberTypes = await getUniqueMemberTypes(token, id!);
+        if (!cancelled) {
+          setCommunityMemberTypes(memberTypes.types);
+        }
+      } catch (error) {
+        console.error("Failed to load community member types", error);
+      }
+    }
+
+    void loadMemberTypes();
+    return () => {
+      cancelled = true;
+    };
+  }, [type, id, getToken]);
+
+  useEffect(() => {
+    if (type !== "community" || !id) return;
+
+    let cancelled = false;
+    async function loadAudienceCount() {
+      try {
+        setLoadingAudienceCount(true);
+        const token = await getToken();
+        if (!token || cancelled) return;
+        const result = await getCommunityNotificationAudienceCount(
+          token,
+          id!,
+          mailAudience,
+        );
+        if (!cancelled) {
+          setAudienceCount(result.count);
+        }
+      } catch (error) {
+        console.error("Failed to load audience count", error);
+        if (!cancelled) {
+          setAudienceCount(null);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingAudienceCount(false);
+        }
+      }
+    }
+
+    void loadAudienceCount();
+    return () => {
+      cancelled = true;
+    };
+  }, [type, id, mailAudience, getToken]);
 
   // Poll for updates if there are any processing or queued notifications
   useEffect(() => {
@@ -157,6 +235,11 @@ export function SendNotification({
       return;
     }
 
+    if (type === "community" && audienceCount === 0) {
+      toast.error("No recipients match the selected audience.");
+      return;
+    }
+
     try {
       setLoading(true);
       const token = await getToken();
@@ -166,6 +249,8 @@ export function SendNotification({
         hackathonId: type === "hackathon" ? id || undefined : undefined,
         hackathonSlug: type === "hackathon" ? slug || undefined : undefined,
         communityId: type === "community" ? id || undefined : undefined,
+        communityAudience:
+          type === "community" ? mailAudience : undefined,
         htmlBody: message,
         scheduledAt: whenToSend === "Custom Time" ? customDateTime : undefined,
       });
@@ -436,6 +521,8 @@ export function SendNotification({
               </div>
             )}
 
+
+
             {/* FLEXIBLE TWO COLUMN SCHEDULE AREA */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-2">
               <div className="flex flex-col gap-1.5">
@@ -493,6 +580,50 @@ export function SendNotification({
                   </div>
                 </div>
               )}
+
+{type === "community" && (
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs text-neutral-400 font-medium tracking-wide">
+                  Send to
+                </label>
+                <Select
+                  value={mailAudience}
+                  onValueChange={setMailAudience}
+                  disabled={isReadOnly}
+                >
+                  <SelectTrigger className="rounded-full">
+                    <SelectValue placeholder="Community Roster" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl border border-neutral-200 bg-white shadow-md max-h-72">
+                    {communityAudienceOptions.map((option) => (
+                      <SelectItem
+                        key={option}
+                        value={option}
+                        className="rounded-lg text-sm text-neutral-700"
+                      >
+                        {option}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <div className="flex items-center gap-1.5 text-[11px] text-neutral-500 mt-1 font-medium">
+                  {loadingAudienceCount ? (
+                    <>
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      <span>Calculating recipients...</span>
+                    </>
+                  ) : audienceCount !== null ? (
+                    <>
+                      <Info className="h-3.5 w-3.5" />
+                      <span>
+                        {audienceCount.toLocaleString()} recipient
+                        {audienceCount === 1 ? "" : "s"} will receive this mail
+                      </span>
+                    </>
+                  ) : null}
+                </div>
+              </div>
+            )}
             </div>
 
             {/* MAIN BODY */}
@@ -591,6 +722,11 @@ export function SendNotification({
                   >
                     <div className="flex justify-between items-start">
                       <span className="text-sm text-neutral-500">
+                        {notif.communityAudience && (
+                          <span className="block text-xs font-semibold text-[#423072] mb-0.5">
+                            To: {notif.communityAudience}
+                          </span>
+                        )}
                         Sent on{" "}
                         {new Date(notif.createdAt).toLocaleString("en-GB", {
                           day: "2-digit",
@@ -649,6 +785,11 @@ export function SendNotification({
                       Broadcast Details
                     </SheetTitle>
                     <SheetDescription className="text-xs mt-1">
+                      {selectedNotif.communityAudience && (
+                        <span className="block font-semibold text-[#423072] mb-1">
+                          Audience: {selectedNotif.communityAudience}
+                        </span>
+                      )}
                       Initiated on{" "}
                       {new Date(selectedNotif.createdAt).toLocaleString()}
                     </SheetDescription>

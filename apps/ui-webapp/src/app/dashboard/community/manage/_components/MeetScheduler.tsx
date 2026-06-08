@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   ChevronLeft,
   Video,
@@ -30,8 +30,15 @@ import {
   createCommunityMeet,
   toCommunityMeetUi,
 } from "@/lib/api/communityMeetApi";
+import {
+  getUniqueMemberTypes,
+  COMMUNITY_ROSTER_TAB,
+  FOLLOWERS_TAB,
+} from "@/lib/api/communityApi";
 
 import type { CommunityMeet as Meet } from "@oppskills/types";
+
+type MeetAccessMode = "restricted" | "open";
 
 type MeetFlow = "instant" | "open-link" | "scheduled";
 
@@ -70,8 +77,43 @@ export default function MeetScheduler({
   const [meetDate, setMeetDate] = useState("");
   const [meetTime, setMeetTime] = useState("");
   const [description, setDescription] = useState("");
-  const [audienceScope, setAudienceScope] = useState<"ALL">("ALL");
+  const [accessMode, setAccessMode] = useState<MeetAccessMode>("restricted");
+  const [audienceFilter, setAudienceFilter] = useState(COMMUNITY_ROSTER_TAB);
+  const [communityMemberTypes, setCommunityMemberTypes] = useState<string[]>(
+    [],
+  );
   const [sendEmail, setSendEmail] = useState(true);
+
+  const audienceOptions = useMemo(() => {
+    const reserved = new Set(["FOLLOWER", "OWNER", "MEMBER", "FOLLOWERS"]);
+    const customTypes = communityMemberTypes.filter(
+      (typeName) => !reserved.has(typeName.toUpperCase()),
+    );
+    return [COMMUNITY_ROSTER_TAB, FOLLOWERS_TAB, ...customTypes];
+  }, [communityMemberTypes]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    let cancelled = false;
+    async function loadMemberTypes() {
+      try {
+        const token = await getToken();
+        if (!token || cancelled) return;
+        const memberTypes = await getUniqueMemberTypes(token, communityId);
+        if (!cancelled) {
+          setCommunityMemberTypes(memberTypes.types);
+        }
+      } catch (error) {
+        console.error("Failed to load community member types", error);
+      }
+    }
+
+    void loadMemberTypes();
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, communityId, getToken]);
 
   const [linkDialog, setLinkDialog] = useState<{
     open: boolean;
@@ -87,7 +129,8 @@ export default function MeetScheduler({
     setDescription("");
     setMeetDate("");
     setMeetTime("");
-    setAudienceScope("ALL");
+    setAccessMode("restricted");
+    setAudienceFilter(COMMUNITY_ROSTER_TAB);
   };
 
   const handleCreate = async (
@@ -127,7 +170,9 @@ export default function MeetScheduler({
         title,
         description: description.trim() || undefined,
         scheduledStartAt,
-        audienceScope,
+        audienceScope: accessMode === "open" ? "ALL" : "MEMBER_TYPES",
+        audienceFilter:
+          accessMode === "restricted" ? audienceFilter : undefined,
       });
 
       if (sendEmail && kind === "SCHEDULED") {
@@ -254,6 +299,13 @@ export default function MeetScheduler({
                       className="h-12 px-5 border border-neutral-200 rounded-full"
                     />
                   </div>
+                  <MeetAudienceControls
+                    accessMode={accessMode}
+                    onAccessModeChange={setAccessMode}
+                    audienceFilter={audienceFilter}
+                    onAudienceFilterChange={setAudienceFilter}
+                    audienceOptions={audienceOptions}
+                  />
                   <Button
                     type="button"
                     disabled={isSubmitting}
@@ -288,25 +340,13 @@ export default function MeetScheduler({
                       className="h-12 px-5 border border-neutral-200 rounded-full"
                     />
                   </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-semibold text-neutral-450 uppercase tracking-wide">
-                      Who can join?
-                    </label>
-                    <Select
-                      value={audienceScope}
-                      onValueChange={() => undefined}
-                    >
-                      <SelectTrigger className="h-12 px-5 border border-neutral-200 rounded-full">
-                        <SelectValue placeholder="Open to all members" />
-                      </SelectTrigger>
-                      <SelectContent className="rounded-2xl">
-                        <SelectItem value="ALL">Open to all members</SelectItem>
-                        <SelectItem value="MEMBER_TYPES" disabled>
-                          Specific member types (coming soon)
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  <MeetAudienceControls
+                    accessMode={accessMode}
+                    onAccessModeChange={setAccessMode}
+                    audienceFilter={audienceFilter}
+                    onAudienceFilterChange={setAudienceFilter}
+                    audienceOptions={audienceOptions}
+                  />
                   <div className="flex flex-col gap-1.5">
                     <label className="text-xs font-semibold text-neutral-450 uppercase tracking-wide">
                       Description (optional)
@@ -371,6 +411,13 @@ export default function MeetScheduler({
                       />
                     </div>
                   </div>
+                  <MeetAudienceControls
+                    accessMode={accessMode}
+                    onAccessModeChange={setAccessMode}
+                    audienceFilter={audienceFilter}
+                    onAudienceFilterChange={setAudienceFilter}
+                    audienceOptions={audienceOptions}
+                  />
                   <div className="flex flex-col gap-1.5">
                     <label className="text-xs font-semibold text-neutral-450 uppercase tracking-wide">
                       Description (optional)
@@ -520,5 +567,66 @@ export default function MeetScheduler({
         autoOpen={linkDialog.autoOpen}
       />
     </>
+  );
+}
+
+function MeetAudienceControls({
+  accessMode,
+  onAccessModeChange,
+  audienceFilter,
+  onAudienceFilterChange,
+  audienceOptions,
+}: {
+  accessMode: MeetAccessMode;
+  onAccessModeChange: (mode: MeetAccessMode) => void;
+  audienceFilter: string;
+  onAudienceFilterChange: (value: string) => void;
+  audienceOptions: string[];
+}) {
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1.5">
+        <label className="text-xs font-semibold text-neutral-450 uppercase tracking-wide">
+          Who can join?
+        </label>
+        <Select
+          value={accessMode}
+          onValueChange={(value) =>
+            onAccessModeChange(value as MeetAccessMode)
+          }
+        >
+          <SelectTrigger className="h-12 px-5 border border-neutral-200 rounded-full">
+            <SelectValue placeholder="Community members only" />
+          </SelectTrigger>
+          <SelectContent className="rounded-2xl">
+            <SelectItem value="restricted">Community members only</SelectItem>
+            <SelectItem value="open">Open to all (anyone with the link)</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      {accessMode === "restricted" && (
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-semibold text-neutral-450 uppercase tracking-wide">
+            Member audience
+          </label>
+          <Select value={audienceFilter} onValueChange={onAudienceFilterChange}>
+            <SelectTrigger className="h-12 px-5 border border-neutral-200 rounded-full">
+              <SelectValue placeholder="Select member audience" />
+            </SelectTrigger>
+            <SelectContent className="rounded-2xl">
+              {audienceOptions.map((option) => (
+                <SelectItem key={option} value={option}>
+                  {option}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-neutral-400">
+            Only people in this audience can join. Host and community owner can
+            always join.
+          </p>
+        </div>
+      )}
+    </div>
   );
 }
