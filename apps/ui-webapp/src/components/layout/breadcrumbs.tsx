@@ -8,15 +8,13 @@ import { Home } from "@solar-icons/react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@clerk/nextjs";
 import { useQueryClient } from "@tanstack/react-query";
-import { chatQueryKeys } from "@/hooks/chat/chatQueryKeys";
-import { useChatConversation } from "@/hooks/chat/useChatConversation";
-import type { Chat } from "@/lib/chat/types";
+import { chatQueryKeys, useChatConversation } from "@/features/chat";
 
 function ChatBreadcrumbLabel({ chatId }: { chatId: string }) {
   const { isSignedIn } = useAuth();
   const queryClient = useQueryClient();
   const cachedConversation = queryClient
-    .getQueryData<Chat[]>(chatQueryKeys.conversations())
+    .getQueryData<{ id: string; name: string }[]>(chatQueryKeys.conversations())
     ?.find((chat) => chat.id === chatId);
   const { data, isLoading } = useChatConversation(chatId, {
     enabled: isSignedIn && !cachedConversation,

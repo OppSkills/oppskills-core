@@ -20,7 +20,7 @@ import FestivalPreview from "./_components/FestivalPreview";
 import AdditionalInfo from "./_components/AdditionalInfo";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { useFestivalBySlug } from "@/hooks/useFestivalBySlug";
+import { useFestivalBySlug } from "@/hooks/festivals/useFestivalBySlug";
 import { updateFestival, updateFestivalStatus } from "@/lib/api/festivalApi";
 import { useAuth } from "@clerk/nextjs";
 import { useMutation, useQueryClient } from "@tanstack/react-query";

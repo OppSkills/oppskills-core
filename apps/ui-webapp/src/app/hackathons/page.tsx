@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { usePublicHackathonsPaged } from "@/hooks/usePublicHackathons";
+import { usePublicHackathonsPaged } from "@/hooks/hackathons/usePublicHackathons";
 import { GenericListingPage } from "@/components/common/GenericListingPage";
 import { FilterState } from "@/components/common/GenericFilterSidebar";
 import { ListingItem } from "@/components/common/ListingCard";

@@ -6,7 +6,7 @@ import { ProfileInput } from "./profile-input";
 import { useAuth } from "@clerk/nextjs";
 import { updateEducation } from "@/lib/api/usersApi";
 import { searchColleges } from "@/lib/api/collegesApi";
-import { useDebounce } from "@/hooks/use-debounce";
+import { useDebounce } from "@/hooks/ui/use-debounce";
 import { toast } from "sonner";
 import {
   DropdownMenu,

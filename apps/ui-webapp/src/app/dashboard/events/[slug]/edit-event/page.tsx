@@ -28,7 +28,7 @@ import AdditionalInfo from "./_components/AdditionalInfo";
 import Prizes from "./_components/Prizes";
 import PassSettings from "./_components/PassSettings";
 import { useQueryState } from "nuqs";
-import { useEventBySlug } from "@/hooks/useEventBySlug";
+import { useEventBySlug } from "@/hooks/events/useEventBySlug";
 import { useAuth } from "@clerk/nextjs";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";

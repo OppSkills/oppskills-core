@@ -8,7 +8,7 @@ import { Loader2, ArrowLeft } from "lucide-react";
 import { useAuth } from "@clerk/nextjs";
 import { useQuery } from "@tanstack/react-query";
 import { getPublicCommunityByHandle } from "@/lib/api/communityApi";
-import { useUserFeed } from "@/hooks/useCommunityPosts";
+import { useUserFeed } from "@/hooks/community/useCommunityPosts";
 import PostContent from "../_components/PostContent";
 import QuotedPostCard from "../_components/QuotedPostCard";
 import {

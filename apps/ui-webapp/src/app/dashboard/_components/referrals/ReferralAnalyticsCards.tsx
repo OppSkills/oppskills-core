@@ -6,13 +6,13 @@ import {
   MotionContainer,
   MotionItem,
 } from "@/components/ui/derived/MotionWrapper";
-import { useReferralAnalytics } from "@/hooks/useReferrals";
+import { useReferralAnalytics } from "@/hooks/referrals/useReferrals";
 import type { ReferralEntityType } from "@/lib/api/referralApi";
 import { BoneyardSkeleton } from "@/components/boneyard/boneyard-skeleton";
 import { StatsGridFallback } from "@/components/boneyard/loading-fallbacks";
 import PublicLinkQrCard from "@/app/dashboard/_components/PublicLinkQrCard";
 import { useUser } from "@clerk/nextjs";
-import { useReferrals } from "@/hooks/useReferrals";
+import { useReferrals } from "@/hooks/referrals/useReferrals";
 
 export const ReferralAnalyticsCards = memo(function ReferralAnalyticsCards({
   entityType,

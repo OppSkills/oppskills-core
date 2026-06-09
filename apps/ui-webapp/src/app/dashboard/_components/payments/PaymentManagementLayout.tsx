@@ -15,7 +15,7 @@ import {
   useHackathonTicketTiers,
   useDeleteEventTicketTier,
   useDeleteHackathonTicketTier,
-} from "@/hooks/usePayments";
+} from "@/hooks/payments/usePayments";
 import TicketTierDialog from "./TicketTierDialog";
 
 export type FeeBearer = "ORGANISER" | "PARTICIPANT";

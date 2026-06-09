@@ -14,7 +14,7 @@ import { isValidUrl, cn } from "@/lib/utils";
 import { MapPoint } from "@solar-icons/react";
 import InputBlock from "@/components/ui/derived/InputBlock";
 import { useAuth } from "@clerk/nextjs";
-import { useDebounce } from "@/hooks/use-debounce";
+import { useDebounce } from "@/hooks/ui/use-debounce";
 import { autocompleteLocation } from "@/lib/api/recommendationApi";
 import type { LocationSuggestionDto } from "@oppskills/types";
 

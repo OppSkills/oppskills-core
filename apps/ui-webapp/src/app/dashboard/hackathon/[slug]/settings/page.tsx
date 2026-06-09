@@ -44,7 +44,7 @@ import { toast } from "sonner";
 import {
   useHackathonBySlug,
   getHackathonBySlugQueryKey,
-} from "@/hooks/useHackathonBySlug";
+} from "@/hooks/hackathons/useHackathonBySlug";
 import { getApiErrorMessage } from "@/lib/utils";
 import {
   submitHackathonForApproval,

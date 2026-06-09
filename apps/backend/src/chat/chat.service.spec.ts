@@ -1,5 +1,12 @@
 import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { ChatService } from './chat.service';
+import { ChatAttachmentsService } from './services/chat-attachments.service';
+import { ChatAuthorizationService } from './services/chat-authorization.service';
+import { ChatMapper } from './services/chat.mapper';
+import { ChatSearchService } from './services/chat-search.service';
+import { ConversationsService } from './services/conversations.service';
+import { GroupsService } from './services/groups.service';
+import { MessagesService } from './services/messages.service';
 
 jest.mock('@oppskills/db', () => ({
   ConversationType: {
@@ -23,6 +30,7 @@ jest.mock('@oppskills/db', () => ({
       findUnique: jest.fn(),
       findMany: jest.fn(),
       update: jest.fn(),
+      updateMany: jest.fn(),
     },
     conversationEntity: {
       findMany: jest.fn(),
@@ -59,6 +67,9 @@ jest.mock('@oppskills/db', () => ({
         messageEntity: {
           create: jest.fn(),
         },
+        conversationParticipantEntity: {
+          updateMany: jest.fn(),
+        },
       }),
     ),
   },
@@ -68,6 +79,7 @@ const { prisma } = jest.requireMock('@oppskills/db');
 
 describe('ChatService', () => {
   let service: ChatService;
+  let messagesService: MessagesService;
 
   const mediaService = {
     resolveObjectKeyFromStoredUrl: jest.fn(),
@@ -82,7 +94,29 @@ describe('ChatService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    service = new ChatService(mediaService as never, presenceService as never);
+    const mapper = new ChatMapper();
+    const auth = new ChatAuthorizationService();
+    const conversations = new ConversationsService(
+      mapper,
+      auth,
+      presenceService as never,
+    );
+    messagesService = new MessagesService(mapper, auth);
+    const groups = new GroupsService(mapper, auth, conversations);
+    const search = new ChatSearchService(mapper, conversations);
+    const attachments = new ChatAttachmentsService(
+      auth,
+      mediaService as never,
+    );
+    service = new ChatService(
+      mapper,
+      auth,
+      conversations,
+      messagesService,
+      groups,
+      search,
+      attachments,
+    );
   });
 
   describe('assertParticipant', () => {
@@ -174,7 +208,7 @@ describe('ChatService', () => {
       ]);
       prisma.messageDeliveryEntity.count.mockResolvedValue(1);
 
-      const status = await service['computeDeliveryStatus'](
+      const status = await messagesService['computeDeliveryStatus'](
         'm1',
         'user-1',
         'conv-1',
@@ -190,7 +224,7 @@ describe('ChatService', () => {
       ]);
       prisma.messageDeliveryEntity.count.mockResolvedValue(0);
 
-      const status = await service['computeDeliveryStatus'](
+      const status = await messagesService['computeDeliveryStatus'](
         'm1',
         'user-1',
         'conv-1',
@@ -203,7 +237,7 @@ describe('ChatService', () => {
     it('uses precomputed active participants without querying participants', async () => {
       prisma.messageDeliveryEntity.count.mockResolvedValue(1);
 
-      const status = await service['computeDeliveryStatus'](
+      const status = await messagesService['computeDeliveryStatus'](
         'm1',
         'user-1',
         'conv-1',

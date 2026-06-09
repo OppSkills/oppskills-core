@@ -1,7 +1,7 @@
 "use client";
 
 import { memo } from "react";
-import { useReferralById } from "@/hooks/useReferrals";
+import { useReferralById } from "@/hooks/referrals/useReferrals";
 
 export const ReferrerName = memo(function ReferrerName({
   referId,

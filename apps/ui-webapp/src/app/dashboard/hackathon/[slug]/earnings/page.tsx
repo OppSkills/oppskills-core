@@ -42,7 +42,7 @@ import {
   useHackathonEarnings,
   useHackathonPayments,
   useRequestRefund,
-} from "@/hooks/usePayments";
+} from "@/hooks/payments/usePayments";
 import { toast } from "sonner";
 import { useState } from "react";
 import { BoneyardSkeleton } from "@/components/boneyard/boneyard-skeleton";

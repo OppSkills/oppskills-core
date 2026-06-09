@@ -7,12 +7,12 @@ import {
   type RoleUser,
 } from "@/app/dashboard/_components/roles/ManageRolesLayout";
 import { AddRoleModal } from "@/app/dashboard/_components/roles/AddRoleModal";
-import { useHackathonBySlug } from "@/hooks/useHackathonBySlug";
+import { useHackathonBySlug } from "@/hooks/hackathons/useHackathonBySlug";
 import {
   useHackathonRoles,
   useAddHackathonRoleMutation,
   useRemoveHackathonRoleMutation,
-} from "@/hooks/useHackathonRoles";
+} from "@/hooks/hackathons/useHackathonRoles";
 import type { HackathonUserRoleValue } from "@oppskills/types";
 import { RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";

@@ -41,7 +41,7 @@ import { toast } from "sonner";
 import {
   useFestivalBySlug,
   getFestivalBySlugQueryKey,
-} from "@/hooks/useFestivalBySlug";
+} from "@/hooks/festivals/useFestivalBySlug";
 import { updateFestivalStatus, deleteFestival } from "@/lib/api/festivalApi";
 import Link from "next/link";
 import { BoneyardSkeleton } from "@/components/boneyard/boneyard-skeleton";

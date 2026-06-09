@@ -143,3 +143,12 @@ export type SendChatMessageDto = Readonly<{
 export type AckDeliveredDto = Readonly<{
   messageIds: string[];
 }>;
+
+export type {
+  ChatMessageCreatedEvent,
+  ChatConversationUpdatedEvent,
+  ChatMessagesDeliveredEvent,
+  ChatConversationRemovedEvent,
+  ChatPresenceUpdatedEvent,
+  ChatSocketServerEvent,
+} from "./events";

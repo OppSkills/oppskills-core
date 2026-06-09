@@ -10,7 +10,7 @@ import PostContent from "./PostContent";
 import PostEngagementBar from "./PostEngagementBar";
 import PostImagesGrid from "./PostImagesGrid";
 import QuotedPostCard from "./QuotedPostCard";
-import { usePostImpression } from "@/hooks/usePostImpression";
+import { usePostImpression } from "@/hooks/community/usePostImpression";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 

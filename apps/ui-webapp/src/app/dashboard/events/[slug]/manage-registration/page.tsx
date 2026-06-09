@@ -26,7 +26,7 @@ import {
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useEventRegistrationsBySlug } from "@/hooks/useEventRegistrationsBySlug";
+import { useEventRegistrationsBySlug } from "@/hooks/events/useEventRegistrationsBySlug";
 import {
   getParticipantRegistrationAnswers,
   getBulkParticipantRegistrationAnswers,
@@ -35,7 +35,7 @@ import {
   bulkApproveParticipants,
   markParticipantAttendance,
 } from "@/lib/api/eventApi";
-import { useEventTicketTiers } from "@/hooks/usePayments";
+import { useEventTicketTiers } from "@/hooks/payments/usePayments";
 import { useAuth } from "@clerk/nextjs";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import SendParticipantEmailModal from "./_components/SendParticipantEmailModal";

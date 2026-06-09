@@ -15,7 +15,7 @@ import {
   useUpdateHackathonTicketTier,
   useCreateEventTicketTier,
   useUpdateEventTicketTier,
-} from "@/hooks/usePayments";
+} from "@/hooks/payments/usePayments";
 
 interface TicketTierDialogProps {
   isOpen: boolean;

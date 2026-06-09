@@ -2,7 +2,7 @@
 
 import React, { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useSearch } from "@/hooks/useSearch";
+import { useSearch } from "@/hooks/search/useSearch";
 import OpportunityCard from "./OpportunityCard";
 import OpportunityCardSkeleton from "./_components/OpportunityCardSkeleton";
 import EventCardSkeleton from "./_components/EventCardSkeleton";

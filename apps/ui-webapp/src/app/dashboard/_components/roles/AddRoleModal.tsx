@@ -30,7 +30,7 @@ import {
   Magnifer,
   UserCircle,
 } from "@solar-icons/react";
-import { looksLikeCompleteEmail, useUserSearch } from "@/hooks/useUserSearch";
+import { looksLikeCompleteEmail, useUserSearch } from "@/hooks/users/useUserSearch";
 import { type UserSearchResult } from "@/lib/api/usersApi";
 import { cn } from "@/lib/utils";
 import Image from "next/image";

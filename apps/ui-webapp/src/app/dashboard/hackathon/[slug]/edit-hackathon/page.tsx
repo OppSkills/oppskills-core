@@ -20,7 +20,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useQueryState } from "nuqs";
 import { cn, normalizeUrl, isValidUrl } from "@/lib/utils";
 import { useParams } from "next/navigation";
-import { useHackathonBySlug } from "@/hooks/useHackathonBySlug";
+import { useHackathonBySlug } from "@/hooks/hackathons/useHackathonBySlug";
 import { useAuth } from "@clerk/nextjs";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";

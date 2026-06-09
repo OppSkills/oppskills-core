@@ -23,7 +23,6 @@ import {
 } from '@nestjs/swagger';
 import type { Request } from 'express';
 import { ClerkAuthGuard } from '../common/clerk-auth.guard';
-import { ChatService } from './chat.service';
 import { ChatGateway } from './chat.gateway';
 import {
   AckDeliveredDto,
@@ -32,6 +31,11 @@ import {
   SendChatMessageDto,
   UpdateGroupConversationDto,
 } from './dto/chat.dto';
+import { ChatAttachmentsService } from './services/chat-attachments.service';
+import { ChatSearchService } from './services/chat-search.service';
+import { ConversationsService } from './services/conversations.service';
+import { GroupsService } from './services/groups.service';
+import { MessagesService } from './services/messages.service';
 
 @ApiTags('Chats')
 @ApiBearerAuth('clerk-auth')
@@ -39,7 +43,11 @@ import {
 @UseGuards(ClerkAuthGuard)
 export class ChatController {
   constructor(
-    private readonly chatService: ChatService,
+    private readonly conversations: ConversationsService,
+    private readonly messages: MessagesService,
+    private readonly groups: GroupsService,
+    private readonly chatSearch: ChatSearchService,
+    private readonly attachments: ChatAttachmentsService,
     private readonly chatGateway: ChatGateway,
   ) {}
 
@@ -60,13 +68,17 @@ export class ChatController {
     @Query('limit', new DefaultValuePipe(30), ParseIntPipe) limit: number,
     @Query('cursor') cursor?: string,
   ) {
-    return this.chatService.listConversations(this.userId(req), limit, cursor);
+    return this.conversations.listConversations(
+      this.userId(req),
+      limit,
+      cursor,
+    );
   }
 
   @Get('search')
   @ApiOperation({ summary: 'Search conversations then platform users' })
   search(@Req() req: Request, @Query('q') q?: string) {
-    return this.chatService.search(
+    return this.chatSearch.search(
       this.userId(req),
       typeof q === 'string' ? q : '',
     );
@@ -75,7 +87,7 @@ export class ChatController {
   @Get('users/search')
   @ApiOperation({ summary: 'Search users to add to a group (all members)' })
   searchUsersForGroup(@Req() req: Request, @Query('q') q?: string) {
-    return this.chatService.searchUsersForGroup(
+    return this.chatSearch.searchUsersForGroup(
       this.userId(req),
       typeof q === 'string' ? q : '',
     );
@@ -84,7 +96,7 @@ export class ChatController {
   @Post('conversations/direct')
   @ApiOperation({ summary: 'Get or create a direct conversation' })
   createDirect(@Req() req: Request, @Body() dto: CreateDirectConversationDto) {
-    return this.chatService.getOrCreateDirect(
+    return this.conversations.getOrCreateDirect(
       this.userId(req),
       dto.otherUserId,
     );
@@ -93,7 +105,7 @@ export class ChatController {
   @Post('conversations/group')
   @ApiOperation({ summary: 'Create a group conversation' })
   createGroup(@Req() req: Request, @Body() dto: CreateGroupConversationDto) {
-    return this.chatService.createGroup(this.userId(req), {
+    return this.groups.createGroup(this.userId(req), {
       name: dto.name,
       handle: dto.handle,
       memberIds: dto.memberIds,
@@ -103,7 +115,7 @@ export class ChatController {
   @Get('conversations/:id')
   @ApiOperation({ summary: 'Get conversation metadata' })
   getConversation(@Req() req: Request, @Param('id') id: string) {
-    return this.chatService.getConversation(this.userId(req), id);
+    return this.conversations.getConversation(this.userId(req), id);
   }
 
   @Get('conversations/:id/messages')
@@ -120,7 +132,7 @@ export class ChatController {
     @Query('before') before?: string,
     @Query('after') after?: string,
   ) {
-    return this.chatService.listMessages(
+    return this.messages.listMessages(
       this.userId(req),
       id,
       limit,
@@ -136,13 +148,13 @@ export class ChatController {
     @Param('id') id: string,
     @Body() dto: SendChatMessageDto,
   ) {
-    return this.chatService.sendMessage(this.userId(req), id, dto);
+    return this.messages.sendMessage(this.userId(req), id, dto);
   }
 
   @Post('conversations/:id/read')
   @ApiOperation({ summary: 'Mark conversation as read' })
   markRead(@Req() req: Request, @Param('id') id: string) {
-    return this.chatService.markRead(this.userId(req), id);
+    return this.conversations.markRead(this.userId(req), id);
   }
 
   @Post('conversations/:id/delivered')
@@ -152,7 +164,7 @@ export class ChatController {
     @Param('id') id: string,
     @Body() dto: AckDeliveredDto,
   ) {
-    return this.chatService.ackDelivered(this.userId(req), id, dto.messageIds);
+    return this.messages.ackDelivered(this.userId(req), id, dto.messageIds);
   }
 
   @Get('conversations/:conversationId/messages/:messageId/attachment')
@@ -173,7 +185,7 @@ export class ChatController {
     @Query('disposition', new DefaultValuePipe('attachment'))
     disposition: 'inline' | 'attachment',
   ) {
-    const file = await this.chatService.openMessageAttachment(
+    const file = await this.attachments.openMessageAttachment(
       this.userId(req),
       conversationId,
       messageId,
@@ -207,7 +219,7 @@ export class ChatController {
     @Query('limit', new DefaultValuePipe(30), ParseIntPipe) limit: number,
     @Query('cursor') cursor?: string,
   ) {
-    return this.chatService.listAttachments(
+    return this.attachments.listAttachments(
       this.userId(req),
       id,
       tab,
@@ -223,7 +235,7 @@ export class ChatController {
     @Param('id') id: string,
     @Param('userId') memberUserId: string,
   ) {
-    return this.chatService.getMemberProfile(
+    return this.attachments.getMemberProfile(
       this.userId(req),
       id,
       memberUserId,
@@ -237,7 +249,7 @@ export class ChatController {
     @Param('id') id: string,
     @Body() dto: UpdateGroupConversationDto,
   ) {
-    const detail = await this.chatService.updateGroupImage(
+    const detail = await this.groups.updateGroupImage(
       this.userId(req),
       id,
       dto.imageUrl,
@@ -253,7 +265,7 @@ export class ChatController {
     @Param('id') id: string,
     @Param('userId') memberUserId: string,
   ) {
-    const detail = await this.chatService.removeGroupMember(
+    const detail = await this.groups.removeGroupMember(
       this.userId(req),
       id,
       memberUserId,
@@ -267,7 +279,7 @@ export class ChatController {
   @ApiOperation({ summary: 'Delete/hide chat from your inbox (DM or group)' })
   async deleteChat(@Req() req: Request, @Param('id') id: string) {
     const userId = this.userId(req);
-    await this.chatService.deleteChatForUser(userId, id);
+    await this.conversations.deleteChatForUser(userId, id);
     await this.chatGateway.broadcastConversationRemoved(id, [userId]);
     return { ok: true };
   }
@@ -276,7 +288,7 @@ export class ChatController {
   @ApiOperation({ summary: 'Leave a group' })
   async leaveGroup(@Req() req: Request, @Param('id') id: string) {
     const userId = this.userId(req);
-    await this.chatService.leaveGroup(userId, id);
+    await this.conversations.leaveGroup(userId, id);
     await this.chatGateway.broadcastConversationUpdated(id);
     await this.chatGateway.broadcastConversationRemoved(id, [userId]);
     return { ok: true };
@@ -285,7 +297,7 @@ export class ChatController {
   @Delete('conversations/:id/group')
   @ApiOperation({ summary: 'Delete group for everyone (admin only)' })
   async deleteGroup(@Req() req: Request, @Param('id') id: string) {
-    const userIds = await this.chatService.deleteGroup(this.userId(req), id);
+    const userIds = await this.groups.deleteGroup(this.userId(req), id);
     await this.chatGateway.broadcastConversationRemoved(id, userIds);
     return { ok: true };
   }

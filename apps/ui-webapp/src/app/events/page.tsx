@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { usePublicEventsPaged } from "@/hooks/useEvents";
+import { usePublicEventsPaged } from "@/hooks/events/useEvents";
 import { GenericListingPage } from "@/components/common/GenericListingPage";
 import { ListingItem } from "@/components/common/ListingCard";
 

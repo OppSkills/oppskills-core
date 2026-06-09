@@ -7,12 +7,12 @@ import {
   type RoleUser,
 } from "@/app/dashboard/_components/roles/ManageRolesLayout";
 import { AddRoleModal } from "@/app/dashboard/_components/roles/AddRoleModal";
-import { useEventBySlug } from "@/hooks/useEventBySlug";
+import { useEventBySlug } from "@/hooks/events/useEventBySlug";
 import {
   useEventRoles,
   useAddEventRoleMutation,
   useRemoveEventRoleMutation,
-} from "@/hooks/useEventRoles";
+} from "@/hooks/events/useEventRoles";
 import type { EventUserRoleValue } from "@oppskills/types";
 import { RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";

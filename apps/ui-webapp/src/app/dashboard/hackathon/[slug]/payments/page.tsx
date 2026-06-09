@@ -14,8 +14,8 @@ import {
   usePayoutDetails,
   useUpsertPayoutDetails,
   useHackathonEarnings,
-} from "@/hooks/usePayments";
-import { useHackathonBySlug } from "@/hooks/useHackathonBySlug";
+} from "@/hooks/payments/usePayments";
+import { useHackathonBySlug } from "@/hooks/hackathons/useHackathonBySlug";
 import { useAuth } from "@clerk/nextjs";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";

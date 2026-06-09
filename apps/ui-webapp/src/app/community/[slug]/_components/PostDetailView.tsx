@@ -17,8 +17,10 @@ import RepostModal from "./RepostModal";
 import { ShareModal } from "@/components/common/ShareModal";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { getSafeToken } from "@/lib/auth-utils";
-import { queuePostImpression } from "@/hooks/usePostImpression";
+import {
+  queuePostImpression,
+  useTrackPostImpressionsMutation,
+} from "@/hooks/community/usePostImpression";
 import {
   useCommunityPost,
   usePostComments,
@@ -26,7 +28,7 @@ import {
   useToggleCommunityPostLike,
   useRepostPost,
   useUndoRepost,
-} from "@/hooks/useCommunityPosts";
+} from "@/hooks/community/useCommunityPosts";
 import {
   formatAuthorName,
   getAuthorInitials,
@@ -138,12 +140,14 @@ export default function PostDetailView({
     return () => observer.disconnect();
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
+  useTrackPostImpressionsMutation();
+
   useEffect(() => {
     if (post && isSignedIn && !trackedRef.current) {
       trackedRef.current = true;
-      queuePostImpression(post.id, () => getSafeToken(getToken));
+      queuePostImpression(post.id);
     }
-  }, [post, isSignedIn, getToken]);
+  }, [post, isSignedIn]);
 
   const shareLink =
     typeof window !== "undefined"

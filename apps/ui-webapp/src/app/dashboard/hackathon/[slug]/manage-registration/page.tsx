@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import { useParams } from "next/navigation";
 import Stages from "./_components/Stages";
 import Participants, { Participant } from "./_components/Participants";
-import { useHackathonRegistrationsBySlug } from "@/hooks/useHackathonRegistrations";
+import { useHackathonRegistrationsBySlug } from "@/hooks/hackathons/useHackathonRegistrations";
 import { getApiErrorMessage } from "@/lib/utils";
 import { BoneyardSkeleton } from "@/components/boneyard/boneyard-skeleton";
 import { TableBlockFallback } from "@/components/boneyard/loading-fallbacks";

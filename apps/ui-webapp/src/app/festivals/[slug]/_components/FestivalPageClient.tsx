@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useMemo } from "react";
-import { useFestivalBySlug } from "@/hooks/useFestivalBySlug";
-import { usePublicHackathons } from "@/hooks/usePublicHackathons";
-import { useEvents } from "@/hooks/useEvents";
+import { useFestivalBySlug } from "@/hooks/festivals/useFestivalBySlug";
+import { usePublicHackathons } from "@/hooks/hackathons/usePublicHackathons";
+import { useEvents } from "@/hooks/events/useEvents";
 import { AlertCircle } from "lucide-react";
 import { BoneyardSkeleton } from "@/components/boneyard/boneyard-skeleton";
 import { HackathonDetailFallback } from "@/components/boneyard/loading-fallbacks";

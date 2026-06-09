@@ -21,11 +21,11 @@ import {
   IndianRupee,
 } from "lucide-react";
 import PayoutDetailsForm from "@/components/ui/payment-side/PayoutDetailsForm";
-import { usePayoutDetails, useUpsertPayoutDetails } from "@/hooks/usePayments";
+import { usePayoutDetails, useUpsertPayoutDetails } from "@/hooks/payments/usePayments";
 import {
   useEventEarnings,
   useUpdateEventPricing,
-} from "@/hooks/useEventPayments";
+} from "@/hooks/events/useEventPayments";
 import { useAuth } from "@clerk/nextjs";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
