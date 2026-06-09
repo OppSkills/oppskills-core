@@ -661,10 +661,15 @@ function mapHackathonToFormData(hackathon: Record<string, unknown>): FormData {
         "name",
         "email",
         "phone no.",
+        "phone number",
+        "mobile number",
         "gender",
         "school name",
+        "school class",
         "college name",
         "company name",
+        "current college / organization",
+        "user type",
       ].includes(label.toLowerCase().trim());
 
       return {

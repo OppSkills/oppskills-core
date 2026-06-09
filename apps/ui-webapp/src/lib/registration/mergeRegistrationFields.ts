@@ -146,6 +146,23 @@ const IDENTITY_FIELD_LABELS = new Set([
   "company name",
 ]);
 
+/** Labels handled by RegistrationOnboardingFields when includeOnboardingBlock is set. */
+const ONBOARDING_BLOCK_FIELD_LABELS = new Set([
+  ...IDENTITY_FIELD_LABELS,
+  "gender",
+  "user type",
+  "current college / organization",
+]);
+
+const CORE_CONTACT_FIELD_LABELS = new Set([
+  "name",
+  "email",
+  "phone no.",
+  "phone number",
+  "mobile number",
+  "phone",
+]);
+
 /**
  * Merge category-specific defaults with organizer fields; strip duplicate identity columns.
  */
@@ -163,11 +180,16 @@ export function mergeDefaultAndCustomFields(
 
   const defaultLabels = new Set(defaults.map((f) => f.label.toLowerCase()));
 
-  const filteredCustoms = customs.filter(
-    (f) =>
-      !defaultLabels.has(f.label.toLowerCase()) &&
-      !IDENTITY_FIELD_LABELS.has(f.label.toLowerCase()),
-  );
+  const filteredCustoms = customs.filter((f) => {
+    const labelLower = f.label.toLowerCase();
+    if (defaultLabels.has(labelLower)) return false;
+    if (IDENTITY_FIELD_LABELS.has(labelLower)) return false;
+    if (options?.includeOnboardingBlock) {
+      if (ONBOARDING_BLOCK_FIELD_LABELS.has(labelLower)) return false;
+      if (CORE_CONTACT_FIELD_LABELS.has(labelLower)) return false;
+    }
+    return true;
+  });
 
   return [...defaults, ...filteredCustoms].sort((a, b) => a.order - b.order);
 }

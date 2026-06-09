@@ -1156,10 +1156,19 @@ export class TeamService {
 
     const registrationFields = updatedRegForm?.fields ?? [];
 
-    const providedAnswers = rawAnswers.map((a) => ({
+    const mappedAnswers = rawAnswers.map((a) => ({
       fieldId: frontendIdToDbId.get(a.fieldId) ?? a.fieldId,
       value: a.value,
     }));
+
+    const dedupedByFieldId = new Map<
+      string,
+      { fieldId: string; value: string | number | string[] }
+    >();
+    for (const answer of mappedAnswers) {
+      dedupedByFieldId.set(answer.fieldId, answer);
+    }
+    const providedAnswers = Array.from(dedupedByFieldId.values());
 
     this.validateRegistrationAnswers(
       providedAnswers,

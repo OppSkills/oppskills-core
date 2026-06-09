@@ -261,7 +261,7 @@ export function RegistrationModal({
     onboardingValues,
     onOnboardingChange: handleOnboardingChange,
     onboardingErrors,
-    showTeamPreference: type === "HACKATHON",
+    showTeamPreference: false,
   };
 
   // Reset form when modal opens/closes
