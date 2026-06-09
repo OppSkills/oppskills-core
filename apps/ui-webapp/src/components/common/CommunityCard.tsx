@@ -26,13 +26,16 @@ export function CommunityCard({
     <Link href={href} prefetch={false} className="h-full block">
       <div
         className={cn(
-          "group h-[280px] flex flex-col overflow-hidden border border-neutral-200/50 bg-white hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 rounded-3xl relative"
+          "group h-[280px] flex flex-col overflow-hidden border border-neutral-200/50 bg-white hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 rounded-3xl relative",
         )}
       >
         {/* Banner Area */}
         <div className="relative h-[110px] w-full overflow-hidden shrink-0 bg-muted">
           <Image
-            src={normalizeUrl(bannerUrl || "/illustrations/community/community_banner_placeholder.png")}
+            src={normalizeUrl(
+              bannerUrl ||
+                "/illustrations/community/community_banner_placeholder.png",
+            )}
             alt={`${title} banner`}
             fill
             className="object-cover transition-transform duration-500 group-hover:scale-105"
@@ -72,7 +75,9 @@ export function CommunityCard({
 
           <div className="flex items-center gap-1.5 text-neutral-500 font-medium text-xs mt-auto pt-3 border-t border-neutral-100/60">
             <Users className="w-4 h-4 text-neutral-400" />
-            <span className="text-neutral-700 font-bold">{formatCount(memberCount)}</span>
+            <span className="text-neutral-700 font-bold">
+              {formatCount(memberCount)}
+            </span>
             <span>Members</span>
           </div>
         </div>

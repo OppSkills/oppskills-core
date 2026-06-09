@@ -61,3 +61,23 @@ export interface PaginatedCommunityMembers {
   take: number;
   totalPages: number;
 }
+
+export interface PublicCommunityMember {
+  id: string;
+  userId: string;
+  name: string;
+  avatarUrl: string | null;
+  role: string;
+  skills: string[];
+  interests: string[];
+  subtitle?: string;
+  userCategory?: string;
+}
+
+export interface PaginatedPublicCommunityMembers {
+  items: PublicCommunityMember[];
+  total: number;
+  page: number;
+  take: number;
+  totalPages: number;
+}

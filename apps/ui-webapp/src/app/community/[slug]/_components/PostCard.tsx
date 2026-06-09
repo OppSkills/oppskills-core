@@ -13,10 +13,14 @@ import QuotedPostCard from "./QuotedPostCard";
 import { usePostImpression } from "@/hooks/usePostImpression";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import CommentThread from "./CommentThread";
+import { usePostComments } from "@/hooks/useCommunityPosts";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface PostCardProps {
   post: Post;
   communityHandle: string;
+  communityId?: string;
   onLike: (postId: string) => void;
   onDelete: (postId: string) => void;
   onRepost: (postId: string) => void;
@@ -28,6 +32,7 @@ interface PostCardProps {
 export default function PostCard({
   post,
   communityHandle,
+  communityId,
   onLike,
   onDelete,
   onRepost,
@@ -45,6 +50,19 @@ export default function PostCard({
   const commentInputRef = useRef<HTMLTextAreaElement>(null);
   const impressionRef = usePostImpression(post.id);
 
+  const {
+    data: commentsData,
+    isLoading: commentsLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = usePostComments(communityHandle, post.id, {
+    enabled: showCommentBox,
+    take: 5,
+  });
+
+  const comments = commentsData?.pages.flatMap((p) => p.items) ?? [];
+
   const handleImageClick = (index: number) => {
     setLightboxIndex(index);
     setIsLightboxOpen(true);
@@ -58,9 +76,12 @@ export default function PostCard({
   const postHref = `/community/${communityHandle}/posts/${post.id}`;
 
   const handleCommentClick = () => {
-    setShowCommentBox(true);
-    // Focus input after state update
-    setTimeout(() => commentInputRef.current?.focus(), 50);
+    const nextShow = !showCommentBox;
+    setShowCommentBox(nextShow);
+    if (nextShow) {
+      // Focus input after state update
+      setTimeout(() => commentInputRef.current?.focus(), 50);
+    }
   };
 
   const handleCommentSubmit = async (e: React.FormEvent) => {
@@ -74,9 +95,6 @@ export default function PostCard({
         await onComment(post.id, trimmed);
       }
       setCommentText("");
-      setShowCommentBox(false);
-      // Navigate to post detail to see the new comment
-      router.push(postHref);
     } catch (err) {
       toast.error(
         err instanceof Error ? err.message : "Failed to add comment.",
@@ -243,6 +261,54 @@ export default function PostCard({
             </button>
           </div>
         </form>
+      )}
+
+      {/* Inline Comments List */}
+      {showCommentBox && (
+        <div className="flex flex-col gap-4 mt-1 pt-4 border-t border-neutral-100">
+          {commentsLoading ? (
+            <div className="flex flex-col gap-4 animate-pulse">
+              {Array.from({ length: 2 }).map((_, i) => (
+                <div key={i} className="flex gap-3 items-start">
+                  <Skeleton className="w-9 h-9 rounded-full bg-neutral-200 shrink-0" />
+                  <div className="flex flex-col gap-1.5 flex-1 min-w-0">
+                    <Skeleton className="h-3.5 w-24 rounded bg-neutral-200" />
+                    <Skeleton className="h-3 w-5/6 rounded bg-neutral-200" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : comments.length > 0 ? (
+            <div className="flex flex-col gap-5">
+              {comments.map((comment) => (
+                <CommentThread
+                  key={comment.id}
+                  comment={comment}
+                  handle={communityHandle}
+                  communityId={communityId || ""}
+                  postId={post.id}
+                />
+              ))}
+
+              {hasNextPage && (
+                <button
+                  type="button"
+                  onClick={() => void fetchNextPage()}
+                  disabled={isFetchingNextPage}
+                  className="text-xs font-extrabold text-[#5D3EBB] hover:underline w-fit self-start pl-11 active:scale-95 transition-transform"
+                >
+                  {isFetchingNextPage
+                    ? "Loading more comments..."
+                    : "Show more comments"}
+                </button>
+              )}
+            </div>
+          ) : (
+            <p className="text-xs text-neutral-400 font-semibold text-center py-2">
+              No comments yet. Be the first to comment!
+            </p>
+          )}
+        </div>
       )}
 
       <ImageLightbox

@@ -15,6 +15,9 @@ jest.mock('@oppskills/db', () => ({
       createMany: jest.fn(),
       count: jest.fn(),
     },
+    communityPostEntity: {
+      aggregate: jest.fn(),
+    },
   },
 }));
 
@@ -25,6 +28,7 @@ describe('CommunityService', () => {
   };
   const mockAnalyticsService = {
     trackCommunityView: jest.fn(),
+    getLiveCommunityPageViews: jest.fn(),
   };
 
   beforeEach(() => {
@@ -181,6 +185,10 @@ describe('CommunityService', () => {
   describe('getCommunityStats', () => {
     beforeEach(() => {
       jest.clearAllMocks();
+      mockAnalyticsService.getLiveCommunityPageViews.mockResolvedValue(0);
+      (prisma.communityPostEntity.aggregate as jest.Mock).mockResolvedValue({
+        _sum: { impressions: 0, views: 0 },
+      });
     });
 
     it('returns community statistics correctly', async () => {
@@ -215,6 +223,7 @@ describe('CommunityService', () => {
         newMembers30Days: 5,
         pageImpressions: 0,
         postImpressions: 0,
+        postViews: 0,
         adminCount: 2,
         moderatorCount: 3,
       });
@@ -253,9 +262,54 @@ describe('CommunityService', () => {
         newMembers30Days: 4, // newMembers30DaysDb + 1
         pageImpressions: 0,
         postImpressions: 0,
+        postViews: 0,
         adminCount: 2, // adminCountDb + 1
         moderatorCount: 2,
       });
+    });
+  });
+
+  describe('listPublicMembers', () => {
+    it('returns public community members successfully', async () => {
+      (prisma.communityEntity.findUnique as jest.Mock).mockResolvedValue({
+        id: 'comm1',
+        ownerId: 'user1',
+        createdAt: new Date(),
+      });
+
+      (prisma.communityMemberEntity.count as jest.Mock).mockResolvedValue(1);
+      (prisma.communityMemberEntity.findMany as jest.Mock).mockResolvedValue([
+        {
+          id: 'mem1',
+          userId: 'user1',
+          role: 'OWNER',
+          createdAt: new Date(),
+          user: {
+            id: 'user1',
+            firstName: 'John',
+            lastName: 'Doe',
+            imageUrl: 'avatar.jpg',
+            onboardingProfile: {
+              skills: ['Coding'],
+              interests: ['Tech'],
+              userCategory: 'COLLEGE_STUDENT',
+              jobTitle: 'Developer',
+              companyName: 'ACME',
+              college: { name: 'Harvard' },
+            },
+          },
+        },
+      ]);
+
+      const result = await service.listPublicMembers('test-handle', {
+        page: 1,
+        take: 10,
+      });
+      expect(result.items.length).toBe(1);
+      expect(result.items[0].name).toBe('John Doe');
+      expect(result.items[0].role).toBe('OWNER');
+      expect(result.items[0].skills).toEqual(['Coding']);
+      expect(result.items[0].interests).toEqual(['Tech']);
     });
   });
 });

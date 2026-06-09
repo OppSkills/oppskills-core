@@ -198,12 +198,14 @@ function ChatTimelineFallback() {
             className={`flex ${isYou ? "justify-end" : "justify-start"} w-full animate-pulse`}
           >
             <div
-              className={`flex items-end gap-2 max-w-[70%] ${isYou ? "flex-row-reverse" : "flex-row"
-                }`}
+              className={`flex items-end gap-2 max-w-[70%] ${
+                isYou ? "flex-row-reverse" : "flex-row"
+              }`}
             >
               <div
-                className={`h-16 w-48 md:w-64 rounded-2xl bg-neutral-200 ${isYou ? "rounded-br-none" : "rounded-bl-none"
-                  }`}
+                className={`h-16 w-48 md:w-64 rounded-2xl bg-neutral-200 ${
+                  isYou ? "rounded-br-none" : "rounded-bl-none"
+                }`}
               />
             </div>
           </div>
@@ -555,11 +557,11 @@ export default function ChatsPage() {
       ? sidebarMedia
       : activeChat
         ? activeChat.messages
-          .filter((m) => m.imageUrl && !m.id.startsWith("optimistic-"))
-          .map((m) => ({
-            messageId: m.id,
-            fileName: messageDownloadName(m),
-          }))
+            .filter((m) => m.imageUrl && !m.id.startsWith("optimistic-"))
+            .map((m) => ({
+              messageId: m.id,
+              fileName: messageDownloadName(m),
+            }))
         : [];
 
   useEffect(() => {
@@ -990,9 +992,10 @@ export default function ChatsPage() {
               onClick={() => setActiveTab(tab)}
               className={`
                 shrink-0 px-3 text-center py-3 text-xs font-semibold tracking-wide transition-all border-b-2 relative uppercase whitespace-nowrap
-                ${activeTab === tab
-                  ? "text-primary-600 border-primary-500"
-                  : "text-neutral-500 border-transparent hover:text-neutral-700"
+                ${
+                  activeTab === tab
+                    ? "text-primary-600 border-primary-500"
+                    : "text-neutral-500 border-transparent hover:text-neutral-700"
                 }
               `}
             >
@@ -1074,15 +1077,15 @@ export default function ChatsPage() {
                           (lastPreview.type === "DOCUMENT" ||
                             lastPreview.type === "IMAGE" ||
                             lastPreview.type === "VIDEO"))) && (
-                          <div className="mt-1 flex items-center gap-1.5 py-0.5 px-2 rounded-full bg-neutral-100 border border-neutral-300 text-[10px] w-fit font-medium text-neutral-700">
-                            <FileText className="w-3.5 h-3.5 text-primary-500" />
-                            <span className="truncate max-w-[130px]">
-                              {lastMsg?.attachment?.name ??
-                                lastPreview?.body ??
-                                "Attachment"}
-                            </span>
-                          </div>
-                        )}
+                        <div className="mt-1 flex items-center gap-1.5 py-0.5 px-2 rounded-full bg-neutral-100 border border-neutral-300 text-[10px] w-fit font-medium text-neutral-700">
+                          <FileText className="w-3.5 h-3.5 text-primary-500" />
+                          <span className="truncate max-w-[130px]">
+                            {lastMsg?.attachment?.name ??
+                              lastPreview?.body ??
+                              "Attachment"}
+                          </span>
+                        </div>
+                      )}
                     </div>
 
                     {/* Unread badge & state */}
@@ -1184,11 +1187,12 @@ export default function ChatsPage() {
                       {activeChat.name}
                     </h3>
                     <p
-                      className={`text-[10px] md:text-xs truncate ${!activeChat.isGroup &&
+                      className={`text-[10px] md:text-xs truncate ${
+                        !activeChat.isGroup &&
                         isDmPeerOnline(activeChat, currentUserId)
-                        ? "text-emerald-600"
-                        : "text-neutral-500"
-                        }`}
+                          ? "text-emerald-600"
+                          : "text-neutral-500"
+                      }`}
                     >
                       {chatPresenceSubtitle}
                     </p>
@@ -1612,13 +1616,14 @@ export default function ChatsPage() {
                                       className={`
                                         p-3 md:p-4 rounded-2xl shadow-sm text-sm font-normal relative leading-relaxed min-w-[80px] cursor-grab active:cursor-grabbing select-none z-10
                                         bg-primary-600 text-white rounded-br-none transition-[box-shadow,border-color,background-color] duration-300
-                                        ${highlightedMessageId === message.id ||
+                                        ${
+                                          highlightedMessageId === message.id ||
                                           (isSearchingMessages &&
                                             matchingMessageIds[
-                                            currentMatchIndex
+                                              currentMatchIndex
                                             ] === message.id)
-                                          ? "ring-4 ring-yellow-400 ring-offset-2 scale-[1.02]"
-                                          : ""
+                                            ? "ring-4 ring-yellow-400 ring-offset-2 scale-[1.02]"
+                                            : ""
                                         }
                                       `}
                                     >
@@ -1775,13 +1780,14 @@ export default function ChatsPage() {
                                       className={`
                                         p-3 md:p-4 rounded-2xl shadow-sm text-sm font-normal relative leading-relaxed min-w-[80px] cursor-grab active:cursor-grabbing select-none z-10
                                         bg-white text-neutral-900 rounded-bl-none border border-neutral-200 transition-[box-shadow,border-color,background-color] duration-300
-                                        ${highlightedMessageId === message.id ||
+                                        ${
+                                          highlightedMessageId === message.id ||
                                           (isSearchingMessages &&
                                             matchingMessageIds[
-                                            currentMatchIndex
+                                              currentMatchIndex
                                             ] === message.id)
-                                          ? "ring-4 ring-yellow-400 ring-offset-2 scale-[1.02]"
-                                          : ""
+                                            ? "ring-4 ring-yellow-400 ring-offset-2 scale-[1.02]"
+                                            : ""
                                         }
                                       `}
                                     >
@@ -2027,9 +2033,10 @@ export default function ChatsPage() {
                       disabled={!inputMessage.trim()}
                       className={`
                         p-3 rounded-full text-white transition-all shrink-0 shadow-md hover:shadow-lg mb-0.5
-                        ${inputMessage.trim()
-                          ? "bg-primary-600 hover:bg-primary-700 cursor-pointer scale-100 active:scale-95"
-                          : "bg-neutral-300 cursor-not-allowed opacity-80"
+                        ${
+                          inputMessage.trim()
+                            ? "bg-primary-600 hover:bg-primary-700 cursor-pointer scale-100 active:scale-95"
+                            : "bg-neutral-300 cursor-not-allowed opacity-80"
                         }
                       `}
                     >
@@ -2158,9 +2165,10 @@ export default function ChatsPage() {
                           onClick={() => setActiveRightSidebarTab(tab)}
                           className={`
                             flex-1 text-center py-3 text-xs font-semibold tracking-wide transition-all border-b-2 relative uppercase cursor-pointer
-                            ${activeRightSidebarTab === tab
-                              ? "text-primary-600 border-primary-500 font-bold"
-                              : "text-neutral-500 border-transparent hover:text-neutral-700 font-medium"
+                            ${
+                              activeRightSidebarTab === tab
+                                ? "text-primary-600 border-primary-500 font-bold"
+                                : "text-neutral-500 border-transparent hover:text-neutral-700 font-medium"
                             }
                           `}
                         >
@@ -2172,7 +2180,7 @@ export default function ChatsPage() {
                     {/* Scrollable list content */}
                     <div className="flex-1 overflow-y-auto p-4 scrollbar bg-white">
                       {activeRightSidebarTab === "Members" &&
-                        activeChat.isGroup ? (
+                      activeChat.isGroup ? (
                         <div className="space-y-2">
                           <h4 className="text-[10px] font-bold text-neutral-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                             <Users className="w-3.5 h-3.5" />
@@ -2449,10 +2457,11 @@ export default function ChatsPage() {
                                 <div
                                   className={`
                               w-5 h-5 rounded-full border flex items-center justify-center transition-colors shrink-0
-                              ${isSelected
-                                      ? "bg-primary-600 border-primary-600 text-white"
-                                      : "border-neutral-400 bg-white"
-                                    }
+                              ${
+                                isSelected
+                                  ? "bg-primary-600 border-primary-600 text-white"
+                                  : "border-neutral-400 bg-white"
+                              }
                             `}
                                 >
                                   {isSelected && (
@@ -2483,9 +2492,10 @@ export default function ChatsPage() {
                     }
                     className={`
                       py-2.5 px-5 text-xs font-bold text-white rounded-full transition-all uppercase tracking-wider font-aeonicPro shadow-md
-                      ${newGroupName.trim() && selectedMembers.length > 0
-                        ? "bg-primary-600 hover:bg-primary-700 cursor-pointer"
-                        : "bg-neutral-300 cursor-not-allowed"
+                      ${
+                        newGroupName.trim() && selectedMembers.length > 0
+                          ? "bg-primary-600 hover:bg-primary-700 cursor-pointer"
+                          : "bg-neutral-300 cursor-not-allowed"
                       }
                     `}
                   >
