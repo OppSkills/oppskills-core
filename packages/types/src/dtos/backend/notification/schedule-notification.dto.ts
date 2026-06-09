@@ -48,6 +48,14 @@ export class CreateNotificationDto {
   @IsOptional()
   communityId?: string;
 
+  @ApiPropertyOptional({
+    description:
+      "Community mail audience: Community Roster, Followers, Internal Members, or a custom member role",
+  })
+  @IsString()
+  @IsOptional()
+  communityAudience?: string;
+
   @ApiProperty({ description: "The content message for the notification" })
   @IsString()
   @IsNotEmpty()

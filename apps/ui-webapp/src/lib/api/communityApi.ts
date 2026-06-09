@@ -7,6 +7,7 @@ import {
 } from "./apiClient";
 import type { CommunityIndustryValue } from "@oppskills/types/enums";
 import type {
+  CommunityMemberTypesResponse,
   PaginatedCommunityMembers,
   CommunityMember,
   PublicCommunityListResponse,
@@ -40,7 +41,16 @@ export type CommunityResponse = Readonly<{
   createdAt: string;
 }>;
 
-export type CommunityMyRole = "OWNER" | "ADMIN" | "MODERATOR" | "READ_ONLY";
+export type CommunityMyRole =
+  | "OWNER"
+  | "ADMIN"
+  | "MODERATOR"
+  | "READ_ONLY"
+  | "FOLLOWER";
+
+export const COMMUNITY_ROSTER_TAB = "Community Roster";
+export const FOLLOWERS_TAB = "Followers";
+export const INTERNAL_MEMBERS_TAB = "Internal Members";
 
 export type MyCommunityListItem = Readonly<{
   id: string;
@@ -55,6 +65,8 @@ export type MyCommunityListItem = Readonly<{
 
 export type CommunityStatsResponse = Readonly<{
   totalMembers: number;
+  followerCount: number;
+  rosterCount: number;
   newMembers30Days: number;
   pageImpressions: number;
   postImpressions: number;
@@ -220,14 +232,55 @@ export async function suggestCommunityHandles(
 // Members
 // ---------------------------------------------------------------------------
 
+function parseMemberTypesResponse(
+  data: unknown,
+): CommunityMemberTypesResponse {
+  if (
+    typeof data === "object" &&
+    data !== null &&
+    Array.isArray((data as CommunityMemberTypesResponse).types) &&
+    Array.isArray((data as CommunityMemberTypesResponse).storedLabels)
+  ) {
+    return data as CommunityMemberTypesResponse;
+  }
+  throw new Error('Invalid response: expected member types object.');
+}
+
 export async function getUniqueMemberTypes(
   token: string,
   communityId: string,
-): Promise<string[]> {
+): Promise<CommunityMemberTypesResponse> {
   const res = await API.get(`/${communityId}/members/types`, {
     headers: buildAuthHeaders(token),
   });
-  return res.data as string[];
+  return parseMemberTypesResponse(res.data);
+}
+
+export async function createMemberType(
+  token: string,
+  communityId: string,
+  role: string,
+): Promise<CommunityMemberTypesResponse> {
+  const res = await API.post(
+    `/${communityId}/members/types`,
+    { role },
+    {
+      headers: buildAuthHeaders(token),
+    },
+  );
+  return parseMemberTypesResponse(res.data);
+}
+
+export async function deleteMemberType(
+  token: string,
+  communityId: string,
+  role: string,
+): Promise<CommunityMemberTypesResponse> {
+  const res = await API.delete(`/${communityId}/members/types`, {
+    headers: buildAuthHeaders(token),
+    data: { role },
+  });
+  return parseMemberTypesResponse(res.data);
 }
 
 export async function addCommunityMembers(
@@ -335,6 +388,13 @@ export async function getCommunityStats(
 
   return {
     totalMembers: typeof raw.totalMembers === "number" ? raw.totalMembers : 0,
+    followerCount:
+      typeof raw.followerCount === "number" ? raw.followerCount : 0,
+    rosterCount:
+      typeof raw.rosterCount === "number"
+        ? raw.rosterCount
+        : (typeof raw.totalMembers === "number" ? raw.totalMembers : 0) +
+          (typeof raw.followerCount === "number" ? raw.followerCount : 0),
     newMembers30Days:
       typeof raw.newMembers30Days === "number" ? raw.newMembers30Days : 0,
     pageImpressions:

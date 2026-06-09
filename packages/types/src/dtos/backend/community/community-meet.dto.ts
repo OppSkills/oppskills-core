@@ -13,6 +13,8 @@ export interface CreateCommunityMeetDto {
   description?: string;
   scheduledStartAt?: string;
   audienceScope?: MeetAudienceScope;
+  /** When audienceScope is MEMBER_TYPES: Community Roster, Internal Members, Followers, or a custom role */
+  audienceFilter?: string;
 }
 
 export interface CommunityMeetResponse {
@@ -24,6 +26,7 @@ export interface CommunityMeetResponse {
   description: string | null;
   scheduledStartAt: string | null;
   audienceScope: MeetAudienceScope;
+  audienceFilter: string | null;
   hostUserId: string;
   hostName: string;
   status: MeetStatus;
@@ -42,6 +45,7 @@ export interface MeetPreviewResponse {
   hostName: string;
   hostUserId: string;
   audienceScope: MeetAudienceScope;
+  audienceFilter: string | null;
 }
 
 export interface MeetJoinTokenResponse {

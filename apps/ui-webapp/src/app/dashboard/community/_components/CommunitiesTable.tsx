@@ -36,6 +36,7 @@ const ROLE_LABEL: Record<MyCommunityListItem["myRole"], string> = {
   ADMIN: "Admin",
   MODERATOR: "Moderator",
   READ_ONLY: "Read Only",
+  FOLLOWER: "Follower",
 };
 
 function industryLabel(value: CommunityIndustryValue): string {

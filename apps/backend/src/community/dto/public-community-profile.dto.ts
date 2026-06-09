@@ -39,8 +39,8 @@ export class PublicCommunityProfileDto {
   createdAt: Date;
 
   @ApiPropertyOptional({
-    enum: ['OWNER', 'ADMIN', 'MODERATOR', 'READ_ONLY'],
+    enum: ['OWNER', 'ADMIN', 'MODERATOR', 'READ_ONLY', 'FOLLOWER'],
     nullable: true,
   })
-  myRole: 'OWNER' | 'ADMIN' | 'MODERATOR' | 'READ_ONLY' | null;
+  myRole: 'OWNER' | 'ADMIN' | 'MODERATOR' | 'READ_ONLY' | 'FOLLOWER' | null;
 }

@@ -9,6 +9,7 @@ model CommunityEntity {
   coverImage            String?                 @map("cover_image")
   avatarImage           String?                 @map("avatar_image")
   ownerId               String                  @map("owner_id")
+  memberTypeLabels      String[]                @default([]) @map("member_type_labels")
   createdAt             DateTime                @default(now()) @map("created_at")
   updatedAt             DateTime                @updatedAt @map("updated_at")
   owner                 UserEntity              @relation("UserCommunities", fields: [ownerId], references: [id])
@@ -100,7 +101,8 @@ model CommunityMeetEntity {
   title            String
   description      String?
   scheduledStartAt DateTime?         @map("scheduled_start_at")
-  audienceScope    MeetAudienceScope @default(ALL) @map("audience_scope")
+  audienceScope    MeetAudienceScope @default(MEMBER_TYPES) @map("audience_scope")
+  audienceFilter   String?           @map("audience_filter")
   hostUserId       String            @map("host_user_id")
   livekitRoomName  String            @unique @map("livekit_room_name")
   status           MeetStatus        @default(ACTIVE)
@@ -140,6 +142,7 @@ enum CommunityAccessControlRole {
   MODERATOR
   READ_ONLY
   MEMBER
+  FOLLOWER
 
   @@map("CommunityAccessControlRole")
   @@schema("community")

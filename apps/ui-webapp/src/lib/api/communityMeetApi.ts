@@ -35,6 +35,7 @@ function parseMeetResponse(
       raw,
       "audienceScope",
     ) as CommunityMeetResponse["audienceScope"],
+    audienceFilter: optionalString(raw, "audienceFilter"),
     hostUserId: requireString(raw, "hostUserId"),
     hostName: requireString(raw, "hostName"),
     status: requireString(raw, "status") as CommunityMeetResponse["status"],
@@ -112,6 +113,7 @@ export async function getMeetPreview(
       raw,
       "audienceScope",
     ) as MeetPreviewResponse["audienceScope"],
+    audienceFilter: optionalString(raw, "audienceFilter"),
   };
 }
 
@@ -165,6 +167,7 @@ export function toCommunityMeetUi(
     description: meet.description ?? undefined,
     kind: meet.kind,
     audienceScope: meet.audienceScope,
+    audienceFilter: meet.audienceFilter,
     status: meet.status,
     hostName: meet.hostName,
   };

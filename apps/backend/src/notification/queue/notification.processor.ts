@@ -8,6 +8,7 @@ import {
   CommunityNotificationEmail,
 } from '@oppskills/emails';
 import { Logger } from 'src/_utils/logger';
+import { buildCommunityAudienceWhere } from '../community-audience.util';
 
 const logger = new Logger('NotificationProcessor');
 
@@ -121,9 +122,17 @@ export async function processNotification(notificationId: string) {
         }
         lastIdThisBatch = submissions[submissions.length - 1].id;
       } else if (notification.communityId) {
+        const community = await prisma.communityEntity.findUnique({
+          where: { id: notification.communityId },
+          select: { ownerId: true },
+        });
         const members = await prisma.communityMemberEntity.findMany({
           where: {
-            communityId: notification.communityId,
+            ...buildCommunityAudienceWhere(
+              notification.communityId,
+              community?.ownerId ?? '',
+              notification.communityAudience,
+            ),
             ...(lastProcessedId ? { id: { gt: lastProcessedId } } : {}),
           },
           take: 100,

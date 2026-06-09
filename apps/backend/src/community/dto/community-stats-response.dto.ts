@@ -5,6 +5,12 @@ export class CommunityStatsResponseDto implements CommunityStatsResponse {
   @ApiProperty({ example: 12300 })
   totalMembers: number;
 
+  @ApiProperty({ example: 450 })
+  followerCount: number;
+
+  @ApiProperty({ example: 12750 })
+  rosterCount: number;
+
   @ApiProperty({ example: 1200 })
   newMembers30Days: number;
 

@@ -1,528 +1,269 @@
 "use client";
 
 import { useAuth, useUser } from "@clerk/nextjs";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type {
   ChatConversationDetailDto,
   ChatConversationListItemDto,
-  ChatMemberDto,
-  ChatMessageDto,
 } from "@oppskills/types";
 import {
   createDirectConversation,
   createGroupConversation,
-  getChatMemberProfile,
-  getConversation,
-  listConversationAttachments,
-  listConversations,
-  listMessages,
+  deleteChat as deleteChatApi,
+  deleteGroup as deleteGroupApi,
+  leaveGroup as leaveGroupApi,
   markConversationRead,
   removeGroupMember as removeGroupMemberApi,
-  deleteChat as deleteChatApi,
-  leaveGroup as leaveGroupApi,
-  deleteGroup as deleteGroupApi,
-  searchChats,
-  searchUsersForGroup,
   sendMessage as sendMessageApi,
   updateGroupConversation,
 } from "@/lib/api/chatApi";
-import {
-  connectChatSocket,
-  disconnectChatSocket,
-  emitAckDelivered,
-  emitSendMessage,
-  joinConversation,
-  leaveConversation,
-} from "@/lib/chat/chatSocket";
-import {
-  appendMessageToChat,
-  applyInboxConversationUpdate,
-  mapConversationToUi,
-  mapMessageToUi,
-  markOptimisticMessageFailed,
-  memberDisplayName,
-  mergeChatFromDetail,
-  patchMemberPresence,
-  patchMessageDelivery,
-  patchMessageUploadProgress,
-  replaceOptimisticMessage,
-} from "@/lib/chat/chatMappers";
-import { preloadImageUrl } from "@/lib/chat/preloadImage";
-import {
-  attachmentSendBody,
-  createOptimisticMessage,
-  createOptimisticPreviewUrl,
-  optimisticMessageId,
-} from "@/lib/chat/optimisticMessage";
-import type { Chat, Message, SearchUserHit } from "@/lib/chat/types";
-import { presignDocumentUpload, presignImageUpload } from "@/lib/api/mediaApi";
+import { mapMessageToUi } from "@/lib/chat/chatMappers";
+import type { Chat, SearchUserHit } from "@/lib/chat/types";
 import {
   type PendingAttachment,
   type PendingAttachmentKind,
 } from "@/lib/chat/attachmentTypes";
+import { useDebounce } from "@/hooks/use-debounce";
 import {
-  fileForChatUpload,
-  resolveChatUploadMime,
-} from "@/lib/chat/uploadMime";
-import { downloadChatMessageAttachment } from "@/lib/chat/downloadAttachment";
+  applyConversationDetailToCache,
+  applyServerMessageToCaches,
+  appendMessageToCaches,
+  clearUnreadInCache,
+  markOptimisticFailedInCaches,
+  patchUploadProgressInCaches,
+  removeConversationFromCache,
+  replaceOptimisticMessageInCaches,
+  setConversationsCache,
+  upsertConversationInCache,
+} from "@/hooks/chat/chatCacheUpdates";
+import { chatQueryKeys } from "@/hooks/chat/chatQueryKeys";
 import {
-  uploadDocumentToS3WithProgress,
-  uploadImageToS3WithProgress,
-} from "@/lib/chat/uploadWithProgress";
-import { getMe } from "@/lib/api/usersApi";
-
-const MESSAGE_PAGE_SIZE = 30;
-
-// Simple in-memory global cache persisting across page mounts
-export let globalChatsCache: Chat[] = [];
-let globalSearchUsersCache: SearchUserHit[] = [];
-let globalGroupSearchUsersCache: SearchUserHit[] = [];
-let globalLoadingCache = true;
-let globalCurrentUserIdCache: string | null = null;
+  mergeConversationsWithMessageCaches,
+  requireChatToken,
+  type ChatMessagesPage,
+} from "@/hooks/chat/chatQueryUtils";
+import { useChatConversation } from "@/hooks/chat/useChatConversation";
+import { useChatConversations } from "@/hooks/chat/useChatConversations";
+import { useChatGroupMemberSearch } from "@/hooks/chat/useChatGroupMemberSearch";
+import { useChatMessages } from "@/hooks/chat/useChatMessages";
+import { useChatSearch } from "@/hooks/chat/useChatSearch";
+import {
+  useChatMemberProfile,
+  useChatSidebarAttachments,
+} from "@/hooks/chat/useChatSidebarData";
+import { useChatSocketModule } from "@/hooks/chat/useChatSocketModule";
+import { useChatSocketSync } from "@/hooks/chat/useChatSocketSync";
 
 export function useChatsPage(selectedChatId: string | null) {
-  const { getToken, isLoaded } = useAuth();
+  const { getToken, isLoaded, userId: clerkUserId } = useAuth();
   const { user } = useUser();
   const router = useRouter();
+  const queryClient = useQueryClient();
 
-  const [currentUserId, setCurrentUserIdState] = useState<string | null>(
-    globalCurrentUserIdCache,
-  );
-  const [chats, setChatsState] = useState<Chat[]>(globalChatsCache);
-  const [searchUsers, setSearchUsersState] = useState<SearchUserHit[]>(
-    globalSearchUsersCache,
-  );
-  const [groupSearchUsers, setGroupSearchUsersState] = useState<
-    SearchUserHit[]
-  >(globalGroupSearchUsersCache);
-  const [loading, setLoadingState] = useState(
-    globalChatsCache.length > 0 ? false : globalLoadingCache,
-  );
+  const currentUserId = clerkUserId ?? null;
 
-  const setCurrentUserId = (val: string | null) => {
-    globalCurrentUserIdCache = val;
-    setCurrentUserIdState(val);
-  };
+  const [inboxSearchInput, setInboxSearchInput] = useState("");
+  const [groupSearchInput, setGroupSearchInput] = useState("");
+  const debouncedInboxSearch = useDebounce(inboxSearchInput, 300);
+  const debouncedGroupSearch = useDebounce(groupSearchInput, 300);
 
-  const setChats = (val: Chat[] | ((prev: Chat[]) => Chat[])) => {
-    setChatsState((prev) => {
-      const next = typeof val === "function" ? val(prev) : val;
-      globalChatsCache = next;
-      return next;
-    });
-  };
-
-  const setSearchUsers = (
-    val: SearchUserHit[] | ((prev: SearchUserHit[]) => SearchUserHit[]),
-  ) => {
-    setSearchUsersState((prev) => {
-      const next = typeof val === "function" ? val(prev) : val;
-      globalSearchUsersCache = next;
-      return next;
-    });
-  };
-
-  const setGroupSearchUsers = (
-    val: SearchUserHit[] | ((prev: SearchUserHit[]) => SearchUserHit[]),
-  ) => {
-    setGroupSearchUsersState((prev) => {
-      const next = typeof val === "function" ? val(prev) : val;
-      globalGroupSearchUsersCache = next;
-      return next;
-    });
-  };
-
-  const setLoading = (val: boolean) => {
-    globalLoadingCache = val;
-    setLoadingState(val);
-  };
-
-  const [messagesLoading, setMessagesLoading] = useState(false);
-  const [hasOlderMessages, setHasOlderMessages] = useState(false);
-  const [olderCursor, setOlderCursor] = useState<string | null>(null);
-  const [memberProfile, setMemberProfile] = useState<{
-    bio?: string;
-    skills: string[];
-    collegeName: string | null;
+  const [sidebarRequest, setSidebarRequest] = useState<{
+    conversationId: string;
+    otherMemberId?: string;
   } | null>(null);
-  const [sidebarMedia, setSidebarMedia] = useState<
-    { messageId: string; fileName: string }[]
-  >([]);
-  const [sidebarDocs, setSidebarDocs] = useState<
-    { messageId: string; name: string; size?: string }[]
-  >([]);
+
+  const conversationsQuery = useChatConversations();
+  const inboxSearchQuery = useChatSearch(debouncedInboxSearch);
+  const groupMemberSearchQuery = useChatGroupMemberSearch(
+    debouncedGroupSearch,
+    currentUserId,
+  );
+  const messagesQuery = useChatMessages(selectedChatId, currentUserId);
+
+  const sidebarAttachmentsQuery = useChatSidebarAttachments(
+    sidebarRequest?.conversationId ?? null,
+    { enabled: !!sidebarRequest },
+  );
+  const memberProfileQuery = useChatMemberProfile(
+    sidebarRequest?.conversationId ?? null,
+    sidebarRequest?.otherMemberId,
+    { enabled: !!sidebarRequest?.otherMemberId },
+  );
+
+  const socketModule = useChatSocketModule();
+
+  useChatSocketSync({
+    socketModule,
+    currentUserId,
+    selectedChatId,
+    isAuthLoaded: isLoaded,
+    getToken,
+    queryClient,
+  });
 
   const prevChatIdRef = useRef<string | null>(null);
+  const roomGenerationRef = useRef(0);
   const selectedChatIdRef = useRef<string | null>(selectedChatId);
-  const chatsRef = useRef<Chat[]>(chats);
-  chatsRef.current = chats;
-  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const groupSearchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(
-    null,
-  );
-
   selectedChatIdRef.current = selectedChatId;
 
-  const clearUnreadForConversation = useCallback((conversationId: string) => {
-    setChats((prev) =>
-      prev.map((c) => (c.id === conversationId ? { ...c, unreadCount: 0 } : c)),
-    );
-  }, []);
-
-  const getTokenSafe = useCallback(async () => {
-    const t = await getToken();
-    if (!t) throw new Error("Not authenticated");
-    return t;
-  }, [getToken]);
-
-  const markActiveConversationRead = useCallback(
-    async (conversationId: string) => {
-      if (selectedChatIdRef.current !== conversationId) return;
-      try {
-        const token = await getTokenSafe();
-        await markConversationRead(token, conversationId);
-        clearUnreadForConversation(conversationId);
-      } catch (e) {
-        console.error(e);
-      }
-    },
-    [getTokenSafe, clearUnreadForConversation],
+  const baseConversations = conversationsQuery.data ?? [];
+  const conversationInList = useMemo(
+    () =>
+      selectedChatId
+        ? baseConversations.some((chat) => chat.id === selectedChatId)
+        : false,
+    [baseConversations, selectedChatId],
   );
 
-  const refreshConversations = useCallback(async () => {
-    const token = await getTokenSafe();
-    const page = await listConversations(token, { limit: 50 });
-    setChats((prev) => {
-      const msgMap = new Map(prev.map((c) => [c.id, c.messages]));
-      return page.data.map((c) =>
-        mapConversationToUi(c, msgMap.get(c.id) ?? []),
-      );
+  const missingConversationQuery = useChatConversation(selectedChatId ?? "", {
+    enabled:
+      !!selectedChatId &&
+      !conversationsQuery.isLoading &&
+      !conversationInList &&
+      debouncedInboxSearch.length === 0,
+  });
+
+  useEffect(() => {
+    const detail = missingConversationQuery.data;
+    if (!detail) return;
+    upsertConversationInCache(queryClient, {
+      id: detail.id,
+      type: detail.type,
+      name: detail.name,
+      imageUrl: detail.imageUrl,
+      handle: detail.handle,
+      isGroup: detail.isGroup,
+      createdById: detail.createdById,
+      unreadCount: 0,
+      lastMessage: null,
+      members: detail.members,
     });
-  }, [getTokenSafe]);
+  }, [missingConversationQuery.data, queryClient]);
 
   useEffect(() => {
-    if (!isLoaded) return;
-    let cancelled = false;
-
-    (async () => {
-      try {
-        const token = await getTokenSafe();
-        const me = await getMe(token);
-        if (cancelled) return;
-        setCurrentUserId(me.id);
-        await refreshConversations();
-      } catch (e) {
-        console.error(e);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [isLoaded, getTokenSafe, refreshConversations]);
-
-  useEffect(() => {
-    if (!currentUserId || !isLoaded) return;
-
-    let cancelled = false;
-
-    void (async () => {
-      const token = await getTokenSafe();
-      if (cancelled) return;
-
-      connectChatSocket(token, {
-        onMessageCreated: ({ conversationId, message }) => {
-          const uiMsg = mapMessageToUi(message, currentUserId);
-          const isActiveChat = selectedChatIdRef.current === conversationId;
-
-          setChats((prev) =>
-            prev.map((c) => {
-              if (c.id !== conversationId) return c;
-              if (c.messages.some((m) => m.id === uiMsg.id)) {
-                return isActiveChat ? { ...c, unreadCount: 0 } : c;
-              }
-              if (uiMsg.isYou) {
-                const pending = c.messages.find(
-                  (m) =>
-                    m.sendState === "pending" && m.id.startsWith("optimistic-"),
-                );
-                if (pending) {
-                  const next = replaceOptimisticMessage(
-                    c,
-                    pending.id,
-                    uiMsg,
-                    pending.stableKey,
-                  );
-                  return isActiveChat ? { ...next, unreadCount: 0 } : next;
-                }
-              }
-              const next = appendMessageToChat(c, uiMsg);
-              return isActiveChat ? { ...next, unreadCount: 0 } : next;
-            }),
-          );
-
-          if (isActiveChat) {
-            if (!uiMsg.isYou) {
-              emitAckDelivered(conversationId, [message.id]);
-            }
-            void markActiveConversationRead(conversationId);
-          }
-        },
-        onConversationUpdated: ({ conversation }) => {
-          const isActiveChat = selectedChatIdRef.current === conversation.id;
-
-          setChats((prev) => {
-            const existing = prev.find((c) => c.id === conversation.id);
-            const messages = existing?.messages ?? [];
-            return applyInboxConversationUpdate(prev, conversation, messages, {
-              isActiveChat,
-            });
-          });
-
-          if (isActiveChat) {
-            void markActiveConversationRead(conversation.id);
-          }
-        },
-        onMessagesDelivered: ({ messageId, deliveryStatus }) => {
-          setChats((prev) =>
-            prev.map((c) => ({
-              ...c,
-              messages: patchMessageDelivery(
-                c.messages,
-                messageId,
-                deliveryStatus,
-              ),
-            })),
-          );
-        },
-        onConversationRemoved: ({ conversationId }) => {
-          setChats((prev) => prev.filter((c) => c.id !== conversationId));
-          if (selectedChatIdRef.current === conversationId) {
-            router.replace("/dashboard/chats");
-          }
-        },
-        onPresenceUpdated: ({ userId, isOnline, lastSeenAt }) => {
-          setChats((prev) =>
-            prev.map((c) => ({
-              ...c,
-              members: patchMemberPresence(c.members, userId, {
-                isOnline,
-                lastSeenAt,
-              }),
-            })),
-          );
-        },
-      });
-    })();
-
-    return () => {
-      cancelled = true;
-      disconnectChatSocket();
-    };
-  }, [currentUserId, isLoaded, getTokenSafe, router]);
-
-  const refreshConversationMeta = useCallback(
-    async (conversationId: string) => {
-      const token = await getTokenSafe();
-      const detail = await getConversation(token, conversationId);
-      setChats((prev) =>
-        prev.map((c) =>
-          c.id === conversationId ? mergeChatFromDetail(c, detail) : c,
-        ),
-      );
-    },
-    [getTokenSafe],
-  );
-
-  const loadMessages = useCallback(
-    async (conversationId: string) => {
-      const token = await getTokenSafe();
-      const cached = chatsRef.current.find((c) => c.id === conversationId);
-      const hasCachedMessages = (cached?.messages.length ?? 0) > 0;
-      if (!hasCachedMessages) {
-        setMessagesLoading(true);
-      }
-      try {
-        const page = await listMessages(token, conversationId, {
-          limit: MESSAGE_PAGE_SIZE,
-        });
-        if (!currentUserId) return;
-        const uiMessages = page.data.map((m) =>
-          mapMessageToUi(m, currentUserId),
-        );
-        setHasOlderMessages(page.hasMore);
-        setOlderCursor(page.nextCursor);
-        setChats((prev) =>
-          prev.map((c) =>
-            c.id === conversationId ? { ...c, messages: uiMessages } : c,
-          ),
-        );
-        const ids = page.data
-          .filter((m) => m.senderId !== currentUserId)
-          .map((m) => m.id);
-        if (ids.length > 0) {
-          emitAckDelivered(conversationId, ids);
-        }
-      } finally {
-        setMessagesLoading(false);
-      }
-    },
-    [getTokenSafe, currentUserId],
-  );
-
-  useEffect(() => {
-    if (!selectedChatId || !currentUserId) return;
-
-    if (prevChatIdRef.current) {
-      leaveConversation(prevChatIdRef.current);
+    if (missingConversationQuery.isError) {
+      router.replace("/dashboard/chats");
     }
-    prevChatIdRef.current = selectedChatId;
+  }, [missingConversationQuery.isError, router]);
 
-    clearUnreadForConversation(selectedChatId);
-
-    void (async () => {
-      await joinConversation(selectedChatId);
-      await loadMessages(selectedChatId);
-    })();
-    void markActiveConversationRead(selectedChatId);
-
-    return () => {
-      if (selectedChatId) leaveConversation(selectedChatId);
-    };
+  const chats = useMemo(() => {
+    const source = debouncedInboxSearch
+      ? (inboxSearchQuery.data?.conversations ?? [])
+      : baseConversations;
+    return mergeConversationsWithMessageCaches(source, queryClient);
   }, [
-    selectedChatId,
-    currentUserId,
-    loadMessages,
-    refreshConversationMeta,
-    markActiveConversationRead,
-    clearUnreadForConversation,
+    debouncedInboxSearch,
+    inboxSearchQuery.data,
+    baseConversations,
+    queryClient,
+    messagesQuery.data,
   ]);
 
-  useEffect(() => {
-    if (!selectedChatId || loading) return;
-    if (chats.some((c) => c.id === selectedChatId)) return;
+  const searchUsers: SearchUserHit[] = debouncedInboxSearch
+    ? (inboxSearchQuery.data?.users ?? [])
+    : [];
 
-    void (async () => {
-      try {
-        const token = await getTokenSafe();
-        const { getConversation } = await import("@/lib/api/chatApi");
-        const detail = await getConversation(token, selectedChatId);
-        const listItem: ChatConversationListItemDto = {
-          id: detail.id,
-          type: detail.type,
-          name: detail.name,
-          imageUrl: detail.imageUrl,
-          handle: detail.handle,
-          isGroup: detail.isGroup,
-          createdById: detail.createdById,
-          unreadCount: 0,
-          lastMessage: null,
-          members: detail.members,
-        };
-        setChats((prev) => {
-          if (prev.some((c) => c.id === listItem.id)) return prev;
-          return [mapConversationToUi(listItem, []), ...prev];
-        });
-      } catch {
-        router.replace("/dashboard/chats");
-      }
-    })();
-  }, [selectedChatId, chats, loading, router, getTokenSafe]);
+  const groupSearchUsers: SearchUserHit[] = debouncedGroupSearch
+    ? (groupMemberSearchQuery.data ?? [])
+    : [];
+
+  const loading = conversationsQuery.isLoading;
+  const messagesLoading =
+    messagesQuery.isLoading ||
+    (messagesQuery.isFetching && !messagesQuery.data);
+  const hasOlderMessages = messagesQuery.hasNextPage ?? false;
+
+  const getTokenSafe = useCallback(async () => {
+    return requireChatToken(await getToken());
+  }, [getToken]);
+
+  const refreshConversations = useCallback(async () => {
+    await queryClient.invalidateQueries({
+      queryKey: chatQueryKeys.conversations(),
+    });
+  }, [queryClient]);
+
+  const setChats = useCallback(
+    (val: Chat[] | ((prev: Chat[]) => Chat[])) => {
+      setConversationsCache(queryClient, (prev) => {
+        const current = mergeConversationsWithMessageCaches(prev, queryClient);
+        const next = typeof val === "function" ? val(current) : val;
+        return next.map((chat) => ({ ...chat, messages: [] }));
+      });
+    },
+    [queryClient],
+  );
+
+  const runSearch = useCallback((query: string) => {
+    setInboxSearchInput(query);
+    if (query.trim().length === 0) {
+      void queryClient.invalidateQueries({
+        queryKey: chatQueryKeys.conversations(),
+      });
+    }
+  }, [queryClient]);
+
+  const runGroupMemberSearch = useCallback((query: string) => {
+    setGroupSearchInput(query);
+  }, []);
+
+  useEffect(() => {
+    if (!selectedChatId || !currentUserId || !socketModule) {
+      if (!selectedChatId) prevChatIdRef.current = null;
+      return;
+    }
+
+    const generation = ++roomGenerationRef.current;
+    const chatId = selectedChatId;
+    const previousChatId = prevChatIdRef.current;
+
+    if (previousChatId && previousChatId !== chatId) {
+      socketModule.leaveConversation(previousChatId);
+    }
+    prevChatIdRef.current = chatId;
+
+    clearUnreadInCache(queryClient, chatId);
+
+    void socketModule.joinConversation(chatId).then(() => {
+      if (generation !== roomGenerationRef.current) return;
+      void (async () => {
+        try {
+          const token = requireChatToken(await getToken());
+          if (generation !== roomGenerationRef.current) return;
+          await markConversationRead(token, chatId);
+        } catch (e) {
+          console.error(e);
+        }
+      })();
+    });
+
+    return () => {
+      if (generation !== roomGenerationRef.current) return;
+      socketModule.leaveConversation(chatId);
+      roomGenerationRef.current += 1;
+    };
+  }, [selectedChatId, currentUserId, queryClient, getToken, socketModule]);
+
+  useEffect(() => {
+    if (!messagesQuery.data || !selectedChatId || !currentUserId || !socketModule) {
+      return;
+    }
+    const lastPage =
+      messagesQuery.data.pages[messagesQuery.data.pages.length - 1];
+    if (!lastPage) return;
+
+    const ids = lastPage.messages.filter((m) => !m.isYou).map((m) => m.id);
+    if (ids.length === 0) return;
+
+    socketModule.emitAckDelivered(selectedChatId, ids);
+  }, [messagesQuery.data, selectedChatId, currentUserId, socketModule]);
 
   const loadOlderMessages = useCallback(async () => {
-    if (!selectedChatId || !olderCursor || !currentUserId) return;
-    const token = await getTokenSafe();
-    const page = await listMessages(token, selectedChatId, {
-      limit: MESSAGE_PAGE_SIZE,
-      before: olderCursor,
-    });
-    const uiMessages = page.data.map((m) => mapMessageToUi(m, currentUserId));
-    setHasOlderMessages(page.hasMore);
-    setOlderCursor(page.nextCursor);
-    setChats((prev) =>
-      prev.map((c) =>
-        c.id === selectedChatId
-          ? { ...c, messages: [...uiMessages, ...c.messages] }
-          : c,
-      ),
-    );
-  }, [selectedChatId, olderCursor, currentUserId, getTokenSafe]);
-
-  const runSearch = useCallback(
-    (query: string) => {
-      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
-      const q = query.trim();
-      if (q.length === 0) {
-        setSearchUsers([]);
-        void refreshConversations();
-        return;
-      }
-      searchDebounceRef.current = setTimeout(() => {
-        void (async () => {
-          try {
-            const token = await getTokenSafe();
-            const result = await searchChats(token, q);
-            setChats(
-              result.conversations.map((c) => mapConversationToUi(c, [])),
-            );
-            setSearchUsers(
-              result.users.map((u) => ({
-                id: u.id,
-                name: memberDisplayName(u),
-                email: u.email,
-                avatar:
-                  u.imageUrl ??
-                  "https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?auto=format&fit=crop&w=150&h=150&q=80",
-              })),
-            );
-          } catch (e) {
-            console.error(e);
-          }
-        })();
-      }, 300);
-    },
-    [getTokenSafe, refreshConversations],
-  );
-
-  const runGroupMemberSearch = useCallback(
-    (query: string) => {
-      if (groupSearchDebounceRef.current) {
-        clearTimeout(groupSearchDebounceRef.current);
-      }
-      const q = query.trim();
-      if (q.length === 0) {
-        setGroupSearchUsers([]);
-        return;
-      }
-      groupSearchDebounceRef.current = setTimeout(() => {
-        void (async () => {
-          try {
-            const token = await getTokenSafe();
-            const users = await searchUsersForGroup(token, q);
-            setGroupSearchUsers(
-              users
-                .filter((u) => u.id !== currentUserId)
-                .map((u) => ({
-                  id: u.id,
-                  name: memberDisplayName(u),
-                  email: u.email,
-                  avatar:
-                    u.imageUrl ??
-                    "https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?auto=format&fit=crop&w=150&h=150&q=80",
-                })),
-            );
-          } catch (e) {
-            console.error(e);
-            setGroupSearchUsers([]);
-          }
-        })();
-      }, 300);
-    },
-    [getTokenSafe, currentUserId],
-  );
+    if (!messagesQuery.hasNextPage || messagesQuery.isFetchingNextPage) return;
+    await messagesQuery.fetchNextPage();
+  }, [messagesQuery]);
 
   const openUserChat = useCallback(
     async (otherUserId: string) => {
@@ -540,32 +281,15 @@ export function useChatsPage(selectedChatId: string | null) {
         lastMessage: null,
         members: conv.members,
       };
-      const ui = mapConversationToUi(listItem, []);
-      setChats((prev) => {
-        if (prev.some((c) => c.id === ui.id)) return prev;
-        return [ui, ...prev];
-      });
+      upsertConversationInCache(queryClient, listItem);
       router.push(`/dashboard/chats/${conv.id}`);
     },
-    [getTokenSafe, router],
-  );
-
-  const applySentMessage = useCallback(
-    (conversationId: string, dto: ChatMessageDto) => {
-      if (!currentUserId) return;
-      const uiMsg = mapMessageToUi(dto, currentUserId);
-      setChats((prev) =>
-        prev.map((c) =>
-          c.id === conversationId ? appendMessageToChat(c, uiMsg) : c,
-        ),
-      );
-    },
-    [currentUserId],
+    [getTokenSafe, queryClient, router],
   );
 
   const sendTextMessage = useCallback(
     async (conversationId: string, text: string, replyToMessageId?: string) => {
-      if (!currentUserId) return;
+      if (!currentUserId || !socketModule) return;
 
       const payload = {
         type: "TEXT" as const,
@@ -573,18 +297,24 @@ export function useChatsPage(selectedChatId: string | null) {
         replyToMessageId,
       };
 
-      await joinConversation(conversationId);
+      await socketModule.joinConversation(conversationId);
 
-      let saved = await emitSendMessage(conversationId, payload);
+      let saved = await socketModule.emitSendMessage(conversationId, payload);
       if (!saved) {
         const token = await getTokenSafe();
         saved = await sendMessageApi(token, conversationId, payload);
       }
       if (saved) {
-        applySentMessage(conversationId, saved);
+        applyServerMessageToCaches(
+          queryClient,
+          conversationId,
+          saved,
+          currentUserId,
+          { isActiveChat: selectedChatIdRef.current === conversationId },
+        );
       }
     },
-    [currentUserId, getTokenSafe, applySentMessage],
+    [currentUserId, getTokenSafe, queryClient, socketModule],
   );
 
   const uploadChatFile = useCallback(
@@ -594,6 +324,16 @@ export function useChatsPage(selectedChatId: string | null) {
       kind: PendingAttachmentKind,
       onProgress?: (percent: number) => void,
     ) => {
+      const [
+        { presignDocumentUpload, presignImageUpload },
+        { fileForChatUpload, resolveChatUploadMime },
+        { uploadDocumentToS3WithProgress, uploadImageToS3WithProgress },
+      ] = await Promise.all([
+        import("@/lib/api/mediaApi"),
+        import("@/lib/chat/uploadMime"),
+        import("@/lib/chat/uploadWithProgress"),
+      ]);
+
       const mime = resolveChatUploadMime(file, kind);
       const uploadFile = fileForChatUpload(file, mime);
       onProgress?.(5);
@@ -650,10 +390,16 @@ export function useChatsPage(selectedChatId: string | null) {
       items: PendingAttachment[],
       caption: string,
     ) => {
-      if (!currentUserId) return;
+      if (!currentUserId || !socketModule) return;
 
       const token = await getTokenSafe();
-      await joinConversation(conversationId);
+      await socketModule.joinConversation(conversationId);
+      const {
+        attachmentSendBody,
+        createOptimisticMessage,
+        createOptimisticPreviewUrl,
+        optimisticMessageId,
+      } = await import("@/lib/chat/optimisticMessage");
 
       const optimisticMsgs = items.map((item, i) => {
         const previewUrl = createOptimisticPreviewUrl(item);
@@ -666,16 +412,9 @@ export function useChatsPage(selectedChatId: string | null) {
         );
       });
 
-      setChats((prev) =>
-        prev.map((c) => {
-          if (c.id !== conversationId) return c;
-          let next = c;
-          for (const m of optimisticMsgs) {
-            next = appendMessageToChat(next, m);
-          }
-          return next;
-        }),
-      );
+      for (const optimisticMsg of optimisticMsgs) {
+        appendMessageToCaches(queryClient, conversationId, optimisticMsg);
+      }
 
       for (let i = 0; i < items.length; i++) {
         const item = items[i]!;
@@ -687,26 +426,18 @@ export function useChatsPage(selectedChatId: string | null) {
             item.file,
             item.kind,
             (p) => {
-              setChats((prev) =>
-                prev.map((c) =>
-                  c.id === conversationId
-                    ? patchMessageUploadProgress(c, tempId, p)
-                    : c,
-                ),
+              patchUploadProgressInCaches(
+                queryClient,
+                conversationId,
+                tempId,
+                p,
               );
             },
           );
 
-          setChats((prev) =>
-            prev.map((c) =>
-              c.id === conversationId
-                ? patchMessageUploadProgress(c, tempId, 98)
-                : c,
-            ),
-          );
+          patchUploadProgressInCaches(queryClient, conversationId, tempId, 98);
 
           const body = attachmentSendBody(item, caption, i, type);
-
           const payload = {
             type,
             body,
@@ -719,43 +450,41 @@ export function useChatsPage(selectedChatId: string | null) {
             },
           };
 
-          let saved = await emitSendMessage(conversationId, payload);
+          let saved = await socketModule.emitSendMessage(conversationId, payload);
           if (!saved) {
             saved = await sendMessageApi(token, conversationId, payload);
           }
           if (saved) {
             const uiMsg = mapMessageToUi(saved, currentUserId);
             if (uiMsg.imageUrl) {
+              const { preloadImageUrl } = await import(
+                "@/lib/chat/preloadImage"
+              );
               await preloadImageUrl(uiMsg.imageUrl);
             }
-            setChats((prev) =>
-              prev.map((c) => {
-                if (c.id !== conversationId) return c;
-                if (c.messages.some((m) => m.id === uiMsg.id)) return c;
-                const pending = c.messages.find((m) => m.id === tempId);
-                if (!pending) return c;
-                return replaceOptimisticMessage(
-                  c,
-                  tempId,
-                  uiMsg,
-                  pending.stableKey,
-                );
-              }),
+
+            const messageData = queryClient.getQueryData<{
+              pages: ChatMessagesPage[];
+            }>(chatQueryKeys.messages(conversationId));
+            const pending = messageData?.pages
+              .flatMap((page) => page.messages)
+              .find((m) => m.id === tempId);
+
+            replaceOptimisticMessageInCaches(
+              queryClient,
+              conversationId,
+              tempId,
+              uiMsg,
+              pending?.stableKey,
             );
           }
         } catch (e) {
           console.error(e);
-          setChats((prev) =>
-            prev.map((c) =>
-              c.id === conversationId
-                ? markOptimisticMessageFailed(c, tempId)
-                : c,
-            ),
-          );
+          markOptimisticFailedInCaches(queryClient, conversationId, tempId);
         }
       }
     },
-    [currentUserId, getTokenSafe, uploadChatFile],
+    [currentUserId, getTokenSafe, queryClient, uploadChatFile, socketModule],
   );
 
   const createGroup = useCallback(
@@ -774,51 +503,17 @@ export function useChatsPage(selectedChatId: string | null) {
         lastMessage: null,
         members: conv.members,
       };
-      const ui = mapConversationToUi(listItem, []);
-      setChats((prev) => [ui, ...prev]);
+      upsertConversationInCache(queryClient, listItem);
       router.push(`/dashboard/chats/${conv.id}`);
     },
-    [getTokenSafe, router],
+    [getTokenSafe, queryClient, router],
   );
 
   const loadSidebarData = useCallback(
-    async (conversationId: string, otherMemberId?: string) => {
-      const token = await getTokenSafe();
-      const [mediaPage, docsPage] = await Promise.all([
-        listConversationAttachments(token, conversationId, {
-          tab: "media",
-          limit: 50,
-        }),
-        listConversationAttachments(token, conversationId, {
-          tab: "documents",
-          limit: 50,
-        }),
-      ]);
-      setSidebarMedia(
-        mediaPage.data.map((a) => ({
-          messageId: a.messageId,
-          fileName: a.fileName,
-        })),
-      );
-      setSidebarDocs(
-        docsPage.data.map((a) => ({
-          messageId: a.messageId,
-          name: a.fileName,
-        })),
-      );
-      if (otherMemberId) {
-        const profile = await getChatMemberProfile(
-          token,
-          conversationId,
-          otherMemberId,
-        );
-        setMemberProfile({
-          skills: profile.skills,
-          collegeName: profile.collegeName,
-        });
-      }
+    (conversationId: string, otherMemberId?: string) => {
+      setSidebarRequest({ conversationId, otherMemberId });
     },
-    [getTokenSafe],
+    [],
   );
 
   const downloadMessageAttachment = useCallback(
@@ -842,6 +537,9 @@ export function useChatsPage(selectedChatId: string | null) {
       }
 
       const token = await getTokenSafe();
+      const { downloadChatMessageAttachment } = await import(
+        "@/lib/chat/downloadAttachment"
+      );
       await downloadChatMessageAttachment(
         token,
         conversationId,
@@ -854,26 +552,16 @@ export function useChatsPage(selectedChatId: string | null) {
 
   const upsertConversation = useCallback(
     (item: ChatConversationListItemDto) => {
-      setChats((prev) => {
-        const existing = prev.find((c) => c.id === item.id);
-        const messages = existing?.messages ?? [];
-        const ui = mapConversationToUi(item, messages);
-        const rest = prev.filter((c) => c.id !== item.id);
-        return [ui, ...rest];
-      });
+      upsertConversationInCache(queryClient, item);
     },
-    [],
+    [queryClient],
   );
 
   const applyChatDetail = useCallback(
     (conversationId: string, detail: ChatConversationDetailDto) => {
-      setChats((prev) =>
-        prev.map((c) =>
-          c.id === conversationId ? mergeChatFromDetail(c, detail) : c,
-        ),
-      );
+      applyConversationDetailToCache(queryClient, conversationId, detail);
     },
-    [],
+    [queryClient],
   );
 
   const updateGroupPhoto = useCallback(
@@ -883,6 +571,11 @@ export function useChatsPage(selectedChatId: string | null) {
       if (!mime.startsWith("image/")) {
         throw new Error("Only image files are supported");
       }
+      const [{ presignImageUpload }, { uploadImageToS3WithProgress }] =
+        await Promise.all([
+          import("@/lib/api/mediaApi"),
+          import("@/lib/chat/uploadWithProgress"),
+        ]);
       const presign = await presignImageUpload(token, {
         purpose: "CHAT_ATTACHMENT",
         mimeType: mime,
@@ -906,20 +599,22 @@ export function useChatsPage(selectedChatId: string | null) {
       );
       applyChatDetail(conversationId, detail);
       if (selectedChatIdRef.current === conversationId) {
-        await loadMessages(conversationId);
+        await queryClient.invalidateQueries({
+          queryKey: chatQueryKeys.messages(conversationId),
+        });
       }
     },
-    [getTokenSafe, applyChatDetail, loadMessages],
+    [getTokenSafe, applyChatDetail, queryClient],
   );
 
   const removeChatFromInbox = useCallback(
     (conversationId: string) => {
-      setChats((prev) => prev.filter((c) => c.id !== conversationId));
+      removeConversationFromCache(queryClient, conversationId);
       if (selectedChatIdRef.current === conversationId) {
         router.replace("/dashboard/chats");
       }
     },
-    [router],
+    [queryClient, router],
   );
 
   const deleteChat = useCallback(
@@ -967,9 +662,9 @@ export function useChatsPage(selectedChatId: string | null) {
     downloadMessageAttachment,
     createGroup,
     loadSidebarData,
-    memberProfile,
-    sidebarMedia,
-    sidebarDocs,
+    memberProfile: memberProfileQuery.data ?? null,
+    sidebarMedia: sidebarAttachmentsQuery.data?.media ?? [],
+    sidebarDocs: sidebarAttachmentsQuery.data?.docs ?? [],
     refreshConversations,
     upsertConversation,
     updateGroupPhoto,

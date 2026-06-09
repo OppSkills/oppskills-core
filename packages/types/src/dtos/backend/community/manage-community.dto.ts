@@ -5,7 +5,7 @@ export interface CommunityMember {
   email: string;
   role: string;
   avatarUrl: string;
-  lastAssignedDate: string;
+  lastAssignedDate?: string | null;
   accessControlRole: string;
   university?: string;
   location?: string;
@@ -40,12 +40,15 @@ export interface CommunityMeet {
   description?: string;
   kind: MeetKind;
   audienceScope: MeetAudienceScope;
+  audienceFilter?: string | null;
   status: MeetStatus;
   hostName?: string;
 }
 
 export interface CommunityStatsResponse {
   totalMembers: number;
+  followerCount: number;
+  rosterCount: number;
   newMembers30Days: number;
   pageImpressions: number;
   postImpressions: number;
@@ -60,6 +63,13 @@ export interface PaginatedCommunityMembers {
   page: number;
   take: number;
   totalPages: number;
+}
+
+export interface CommunityMemberTypesResponse {
+  /** All member types (stored labels + roles assigned to members) */
+  types: string[];
+  /** Labels persisted on the community; these can be deleted when unused */
+  storedLabels: string[];
 }
 
 export interface PublicCommunityMember {

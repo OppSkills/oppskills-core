@@ -65,6 +65,7 @@ function parseMeetResponse(
       raw,
       "audienceScope",
     ) as CommunityMeetResponse["audienceScope"],
+    audienceFilter: optionalString(raw, "audienceFilter"),
     hostUserId: requireString(raw, "hostUserId"),
     hostName: requireString(raw, "hostName"),
     status: requireString(raw, "status") as CommunityMeetResponse["status"],
