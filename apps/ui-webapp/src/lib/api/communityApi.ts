@@ -13,6 +13,7 @@ import type {
   PublicCommunityListResponse,
   PublicCommunityProfile,
   UpdateCommunityDto,
+  PaginatedPublicCommunityMembers,
 } from "@oppskills/types";
 
 const API = createApiClient("/communities");
@@ -107,9 +108,14 @@ export async function createCommunity(
 
 export async function getMyCommunities(
   token: string,
+  includeFollowed?: boolean,
 ): Promise<ReadonlyArray<MyCommunityListItem>> {
   const res = await API.get("/my", {
     headers: buildAuthHeaders(token),
+    params:
+      includeFollowed !== undefined
+        ? { includeFollowed: String(includeFollowed) }
+        : undefined,
   });
 
   const raw = res.data as unknown;
@@ -231,9 +237,7 @@ export async function suggestCommunityHandles(
 // Members
 // ---------------------------------------------------------------------------
 
-function parseMemberTypesResponse(
-  data: unknown,
-): CommunityMemberTypesResponse {
+function parseMemberTypesResponse(data: unknown): CommunityMemberTypesResponse {
   if (
     typeof data === "object" &&
     data !== null &&
@@ -242,7 +246,7 @@ function parseMemberTypesResponse(
   ) {
     return data as CommunityMemberTypesResponse;
   }
-  throw new Error('Invalid response: expected member types object.');
+  throw new Error("Invalid response: expected member types object.");
 }
 
 export async function getUniqueMemberTypes(
@@ -475,4 +479,16 @@ export async function getPublicCommunityByHandle(
   const headers = token ? buildAuthHeaders(token) : undefined;
   const res = await API.get(`/public/${handle}`, { headers });
   return res.data as PublicCommunityProfile;
+}
+
+export async function getPublicCommunityMembers(
+  handle: string,
+  params?: {
+    page?: number;
+    take?: number;
+    search?: string;
+  },
+): Promise<PaginatedPublicCommunityMembers> {
+  const res = await API.get(`/public/${handle}/members`, { params });
+  return res.data as PaginatedPublicCommunityMembers;
 }

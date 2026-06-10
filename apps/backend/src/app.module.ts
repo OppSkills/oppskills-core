@@ -30,6 +30,7 @@ import { CommunityPostModule } from './community/post/community-post.module';
 import { MeetModule } from './meet/meet.module';
 import { ChatModule } from './chat/chat.module';
 import { CommunityTaskModule } from './community-task/community-task.module';
+import { SkillsModule } from './skills/skills.module';
 
 @Module({
   imports: [
@@ -63,6 +64,7 @@ import { CommunityTaskModule } from './community-task/community-task.module';
     MeetModule,
     ChatModule,
     CommunityTaskModule,
+    SkillsModule,
   ],
   controllers: [AppController],
   providers: [

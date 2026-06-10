@@ -36,6 +36,17 @@ export class CreateCommunityPostDto {
   @ArrayMaxSize(COMMUNITY_POST_IMAGES_MAX_COUNT)
   @IsUrl({}, { each: true })
   imageUrls?: string[];
+
+  @ApiPropertyOptional({
+    description: 'Associated skill IDs (max 5)',
+    type: [String],
+    maxItems: 5,
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(5)
+  @IsString({ each: true })
+  skillIds?: string[];
 }
 
 export class UpdateCommunityPostDto {

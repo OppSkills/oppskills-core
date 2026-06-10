@@ -7,10 +7,7 @@ import { BoneyardSkeleton } from "@/components/boneyard/boneyard-skeleton";
 import { formatLastMessagePreview } from "@/features/chat/domain/mappers";
 import { isDmPeerOnline } from "@/features/chat/lib/formatPresence";
 import type { Chat, SearchUserHit } from "@/features/chat/domain/types";
-import {
-  ChatSidebarFallback,
-  formatSidebarTimestamp,
-} from "../thread/chatDisplay";
+import { ChatSidebarFallback, formatSidebarTimestamp } from "../thread/chatDisplay";
 
 type ChatTab = "All" | "Unread" | "Groups" | "Individual";
 

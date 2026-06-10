@@ -431,7 +431,10 @@ export default function RegistrationSettings({
   );
 
   const allQuestions = React.useMemo(() => {
-    return [...defaultFixedQuestions, ...formData.registrationQuestions];
+    const customQuestions = formData.registrationQuestions.filter(
+      (q) => !q.fixed,
+    );
+    return [...defaultFixedQuestions, ...customQuestions];
   }, [formData.registrationQuestions, defaultFixedQuestions]);
 
   return (

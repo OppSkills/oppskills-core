@@ -5,7 +5,8 @@ export type CommunityMyRoleValue =
   | 'OWNER'
   | 'ADMIN'
   | 'MODERATOR'
-  | 'READ_ONLY';
+  | 'READ_ONLY'
+  | 'FOLLOWER';
 
 export class CommunityListItemDto {
   @ApiProperty()
@@ -23,7 +24,9 @@ export class CommunityListItemDto {
   @ApiProperty()
   industry: CommunityIndustryValue;
 
-  @ApiProperty({ enum: ['OWNER', 'ADMIN', 'MODERATOR', 'READ_ONLY'] })
+  @ApiProperty({
+    enum: ['OWNER', 'ADMIN', 'MODERATOR', 'READ_ONLY', 'FOLLOWER'],
+  })
   myRole: CommunityMyRoleValue;
 
   @ApiProperty()

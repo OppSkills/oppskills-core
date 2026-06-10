@@ -49,7 +49,19 @@ export class CommunityService {
   /**
    * Communities the user can open in the manage dashboard: owned, or member with ADMIN/EDITOR.
    */
-  async listMyCommunities(userId: string): Promise<CommunityListItemDto[]> {
+  async listMyCommunities(
+    userId: string,
+    includeFollowed = false,
+  ): Promise<CommunityListItemDto[]> {
+    const roles: CommunityAccessControlRole[] = [
+      'ADMIN',
+      'MODERATOR',
+      'READ_ONLY',
+    ];
+    if (includeFollowed) {
+      roles.push('FOLLOWER');
+    }
+
     const rows = await prisma.communityEntity.findMany({
       where: {
         OR: [
@@ -59,7 +71,7 @@ export class CommunityService {
               some: {
                 userId,
                 accessControlRole: {
-                  in: ['ADMIN', 'MODERATOR', 'READ_ONLY'],
+                  in: roles,
                 },
               },
             },
@@ -90,7 +102,9 @@ export class CommunityService {
             ? ('ADMIN' as const)
             : row.members[0]?.accessControlRole === 'MODERATOR'
               ? ('MODERATOR' as const)
-              : ('READ_ONLY' as const);
+              : row.members[0]?.accessControlRole === 'FOLLOWER'
+                ? ('FOLLOWER' as const)
+                : ('READ_ONLY' as const);
 
       return {
         id: row.id,
@@ -343,7 +357,7 @@ export class CommunityService {
 
     await this.analyticsService.trackCommunityView(community.id);
 
-    const [memberCount, originalPostCount, repostCount] = await Promise.all([
+    const [dbMemberCount, originalPostCount, repostCount] = await Promise.all([
       prisma.communityMemberEntity.count({
         where: this.followerWhere(community.id, community.ownerId),
       }),
@@ -362,6 +376,14 @@ export class CommunityService {
         },
       }),
     ]);
+
+    const hasOwnerInMembers = await prisma.communityMemberEntity
+      .count({
+        where: { communityId: community.id, userId: community.ownerId },
+      })
+      .then((c) => c > 0);
+
+    const memberCount = dbMemberCount + (hasOwnerInMembers ? 0 : 1);
 
     let myRole: PublicCommunityProfileDto['myRole'] = null;
     if (viewerUserId) {
@@ -391,6 +413,205 @@ export class CommunityService {
       repostCount,
       createdAt: community.createdAt,
       myRole,
+    };
+  }
+
+  async listPublicMembers(
+    handle: string,
+    query?: {
+      page?: number;
+      take?: number;
+      search?: string;
+    },
+  ) {
+    const community = await prisma.communityEntity.findUnique({
+      where: { handle: handle.toLowerCase() },
+      select: { id: true, ownerId: true, createdAt: true },
+    });
+    if (!community) {
+      throw new NotFoundException('Community not found.');
+    }
+
+    const page = query?.page || 1;
+    const take = query?.take || 20;
+    const search = query?.search?.trim();
+    const skip = (page - 1) * take;
+
+    const where: Prisma.CommunityMemberEntityWhereInput = {
+      communityId: community.id,
+    };
+
+    if (search) {
+      const searchLower = search.toLowerCase();
+      where.user = {
+        OR: [
+          { firstName: { contains: searchLower, mode: 'insensitive' } },
+          { lastName: { contains: searchLower, mode: 'insensitive' } },
+        ],
+      };
+    }
+
+    const hasOwnerInMembers = await prisma.communityMemberEntity
+      .count({
+        where: { communityId: community.id, userId: community.ownerId },
+      })
+      .then((c) => c > 0);
+
+    const isOwnerLegacy = !hasOwnerInMembers;
+
+    // Determine if legacy owner matches the active search filters
+    let legacyOwnerMatches = false;
+    let legacyOwnerRecord: any = null;
+
+    const mapProfileDetails = (user: any, memberRole: string) => {
+      const displayName =
+        [user.firstName, user.lastName].filter(Boolean).join(' ') || 'User';
+      const profile = user.onboardingProfile;
+
+      let subtitle = '';
+      if (profile) {
+        if (profile.jobTitle && profile.companyName) {
+          subtitle = `${profile.jobTitle} at ${profile.companyName}`;
+        } else if (profile.jobTitle) {
+          subtitle = profile.jobTitle;
+        } else if (profile.companyName) {
+          subtitle = profile.companyName;
+        } else if (profile.college?.name) {
+          subtitle = profile.college.name;
+        } else if (profile.schoolName) {
+          subtitle = profile.schoolName;
+        }
+      }
+
+      return {
+        id: memberRole === 'OWNER' ? `owner-${user.id}` : undefined,
+        userId: user.id,
+        name: displayName,
+        avatarUrl: user.imageUrl,
+        role: memberRole,
+        skills: profile?.skills || [],
+        interests: profile?.interests || [],
+        subtitle: subtitle || undefined,
+        userCategory: profile?.userCategory || undefined,
+      };
+    };
+
+    if (isOwnerLegacy) {
+      const owner = await prisma.userEntity.findUnique({
+        where: { id: community.ownerId },
+        include: {
+          onboardingProfile: {
+            select: {
+              interests: true,
+              skills: true,
+              userCategory: true,
+              jobTitle: true,
+              companyName: true,
+              schoolName: true,
+              course: true,
+              courseSpecialization: true,
+              college: {
+                select: {
+                  name: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      if (owner) {
+        const ownerDisplayName =
+          [owner.firstName, owner.lastName].filter(Boolean).join(' ') ||
+          'Owner';
+        let matchesSearch = true;
+        if (search) {
+          const searchLower = search.toLowerCase();
+          matchesSearch = ownerDisplayName.toLowerCase().includes(searchLower);
+        }
+
+        if (matchesSearch) {
+          legacyOwnerMatches = true;
+          legacyOwnerRecord = {
+            ...mapProfileDetails(owner, 'OWNER'),
+            id: `owner-${owner.id}`,
+          };
+        }
+      }
+    }
+
+    const dbCount = await prisma.communityMemberEntity.count({ where });
+    const total = legacyOwnerMatches ? dbCount + 1 : dbCount;
+
+    let skipDb = skip;
+    let takeDb = take;
+
+    if (legacyOwnerMatches) {
+      if (page === 1) {
+        takeDb = Math.max(0, take - 1);
+      } else {
+        skipDb = skipDb - 1;
+      }
+    }
+
+    let members: any[] = [];
+    if (takeDb > 0) {
+      members = await prisma.communityMemberEntity.findMany({
+        where,
+        include: {
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              imageUrl: true,
+              onboardingProfile: {
+                select: {
+                  interests: true,
+                  skills: true,
+                  userCategory: true,
+                  jobTitle: true,
+                  companyName: true,
+                  schoolName: true,
+                  course: true,
+                  courseSpecialization: true,
+                  college: {
+                    select: {
+                      name: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+        skip: skipDb,
+        take: takeDb,
+      });
+    }
+
+    const mappedMembers = members.map((m) => {
+      const isMemberOwner = m.userId === community.ownerId;
+      const role = isMemberOwner ? 'OWNER' : m.role;
+      return {
+        ...mapProfileDetails(m.user, role),
+        id: m.id,
+      };
+    });
+
+    if (legacyOwnerMatches && page === 1) {
+      mappedMembers.unshift(legacyOwnerRecord);
+    }
+
+    return {
+      items: mappedMembers,
+      total,
+      page,
+      take,
+      totalPages: Math.ceil(total / take),
     };
   }
 
@@ -1242,7 +1463,9 @@ export class CommunityService {
       const trimmed = label.trim();
       if (!trimmed) continue;
       if (trimmed.toUpperCase() === 'FOLLOWER') continue;
-      if (CommunityService.RESERVED_MEMBER_TYPE_NAMES.has(trimmed.toUpperCase())) {
+      if (
+        CommunityService.RESERVED_MEMBER_TYPE_NAMES.has(trimmed.toUpperCase())
+      ) {
         continue;
       }
       const key = trimmed.toLowerCase();
@@ -1876,7 +2099,10 @@ export class CommunityService {
     }
 
     if (community.ownerId === userId) {
-      await this.repairOwnerFollowerRecordIfNeeded(communityId, community.ownerId);
+      await this.repairOwnerFollowerRecordIfNeeded(
+        communityId,
+        community.ownerId,
+      );
       const memberCount = await prisma.communityMemberEntity.count({
         where: this.followerWhere(communityId, community.ownerId),
       });

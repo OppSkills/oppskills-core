@@ -117,5 +117,12 @@ export function useChatSocketSync({
       cancelled = true;
       socketModule.disconnectChatSocket();
     };
-  }, [currentUserId, isAuthLoaded, getToken, queryClient, router, socketModule]);
+  }, [
+    currentUserId,
+    isAuthLoaded,
+    getToken,
+    queryClient,
+    router,
+    socketModule,
+  ]);
 }

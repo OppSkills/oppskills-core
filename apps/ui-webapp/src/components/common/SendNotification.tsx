@@ -249,8 +249,7 @@ export function SendNotification({
         hackathonId: type === "hackathon" ? id || undefined : undefined,
         hackathonSlug: type === "hackathon" ? slug || undefined : undefined,
         communityId: type === "community" ? id || undefined : undefined,
-        communityAudience:
-          type === "community" ? mailAudience : undefined,
+        communityAudience: type === "community" ? mailAudience : undefined,
         htmlBody: message,
         scheduledAt: whenToSend === "Custom Time" ? customDateTime : undefined,
       });
@@ -521,8 +520,6 @@ export function SendNotification({
               </div>
             )}
 
-
-
             {/* FLEXIBLE TWO COLUMN SCHEDULE AREA */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-2">
               <div className="flex flex-col gap-1.5">
@@ -581,49 +578,50 @@ export function SendNotification({
                 </div>
               )}
 
-{type === "community" && (
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs text-neutral-400 font-medium tracking-wide">
-                  Send to
-                </label>
-                <Select
-                  value={mailAudience}
-                  onValueChange={setMailAudience}
-                  disabled={isReadOnly}
-                >
-                  <SelectTrigger className="rounded-full">
-                    <SelectValue placeholder="Community Roster" />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-xl border border-neutral-200 bg-white shadow-md max-h-72">
-                    {communityAudienceOptions.map((option) => (
-                      <SelectItem
-                        key={option}
-                        value={option}
-                        className="rounded-lg text-sm text-neutral-700"
-                      >
-                        {option}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <div className="flex items-center gap-1.5 text-[11px] text-neutral-500 mt-1 font-medium">
-                  {loadingAudienceCount ? (
-                    <>
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      <span>Calculating recipients...</span>
-                    </>
-                  ) : audienceCount !== null ? (
-                    <>
-                      <Info className="h-3.5 w-3.5" />
-                      <span>
-                        {audienceCount.toLocaleString()} recipient
-                        {audienceCount === 1 ? "" : "s"} will receive this mail
-                      </span>
-                    </>
-                  ) : null}
+              {type === "community" && (
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs text-neutral-400 font-medium tracking-wide">
+                    Send to
+                  </label>
+                  <Select
+                    value={mailAudience}
+                    onValueChange={setMailAudience}
+                    disabled={isReadOnly}
+                  >
+                    <SelectTrigger className="rounded-full">
+                      <SelectValue placeholder="Community Roster" />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl border border-neutral-200 bg-white shadow-md max-h-72">
+                      {communityAudienceOptions.map((option) => (
+                        <SelectItem
+                          key={option}
+                          value={option}
+                          className="rounded-lg text-sm text-neutral-700"
+                        >
+                          {option}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <div className="flex items-center gap-1.5 text-[11px] text-neutral-500 mt-1 font-medium">
+                    {loadingAudienceCount ? (
+                      <>
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        <span>Calculating recipients...</span>
+                      </>
+                    ) : audienceCount !== null ? (
+                      <>
+                        <Info className="h-3.5 w-3.5" />
+                        <span>
+                          {audienceCount.toLocaleString()} recipient
+                          {audienceCount === 1 ? "" : "s"} will receive this
+                          mail
+                        </span>
+                      </>
+                    ) : null}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
             </div>
 
             {/* MAIN BODY */}

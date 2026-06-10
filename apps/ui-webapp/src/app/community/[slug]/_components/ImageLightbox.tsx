@@ -20,6 +20,18 @@ export default function ImageLightbox({
   const pointerStartX = useRef<number | null>(null);
   const pointerStartY = useRef<number | null>(null);
   const isDragging = useRef<boolean>(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Focus container on open to capture keyboard events
+  useEffect(() => {
+    if (isOpen) {
+      // Small timeout to let the modal mount and render
+      const timer = setTimeout(() => {
+        containerRef.current?.focus();
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen]);
 
   // Keypress event navigation (Arrow keys to navigate, Escape to close)
   useEffect(() => {
@@ -28,9 +40,17 @@ export default function ImageLightbox({
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         onClose();
-      } else if (e.key === "ArrowLeft" && images.length > 1) {
+      } else if (
+        (e.key === "ArrowLeft" || e.key === "Left") &&
+        images.length > 1
+      ) {
+        e.preventDefault();
         handlePrev();
-      } else if (e.key === "ArrowRight" && images.length > 1) {
+      } else if (
+        (e.key === "ArrowRight" || e.key === "Right") &&
+        images.length > 1
+      ) {
+        e.preventDefault();
         handleNext();
       }
     };
@@ -54,6 +74,8 @@ export default function ImageLightbox({
   // Pointer event handlers for swipe/drag detection
   const handlePointerDown = (e: React.PointerEvent) => {
     if (images.length <= 1) return;
+    // If clicked on a button or inside a button, don't hijack pointer events
+    if ((e.target as HTMLElement).closest("button")) return;
     // Only respond to primary mouse button or touch/pen inputs
     if (e.pointerType === "mouse" && e.button !== 0) return;
 
@@ -114,7 +136,9 @@ export default function ImageLightbox({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-neutral-900/50 backdrop-blur-xs transition-opacity duration-300 animate-in fade-in touch-none select-none"
+      ref={containerRef}
+      tabIndex={-1}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-neutral-900/50 backdrop-blur-xs transition-opacity duration-300 animate-in fade-in touch-none select-none outline-none"
       onClick={onClose}
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}

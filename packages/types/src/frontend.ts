@@ -215,6 +215,8 @@ export type {
   CommunityTask,
   CommunityMeet,
   PaginatedCommunityMembers,
+  PublicCommunityMember,
+  PaginatedPublicCommunityMembers,
 } from "./dtos/backend/community/manage-community.dto";
 
 // Community industry enums are re-exported via ./enums/index (use @oppskills/types/enums for value imports)

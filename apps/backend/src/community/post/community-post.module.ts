@@ -12,9 +12,10 @@ import { CommunityPostRepostService } from './community-post-repost.service';
 import { CommunityPostCacheService } from './community-post-cache.service';
 import { CommunityModule } from '../community.module';
 import { AnalyticsModule } from '../../analytics/analytics.module';
+import { SkillsModule } from '../../skills/skills.module';
 
 @Module({
-  imports: [CommunityModule, AnalyticsModule],
+  imports: [CommunityModule, AnalyticsModule, SkillsModule],
   controllers: [
     CommunityPostPublicController,
     CommunityPostUserFeedController,
