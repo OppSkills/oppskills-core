@@ -10,7 +10,7 @@ import {
   useCommentReplies,
   useCreatePostComment,
   useDebouncedCommentLike,
-} from "@/hooks/useCommunityPosts";
+} from "@/hooks/community/useCommunityPosts";
 import CommentComposer from "./CommentComposer";
 import { formatAuthorName, getAuthorInitials } from "./communityUtils";
 

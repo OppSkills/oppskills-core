@@ -98,15 +98,17 @@ model MessageEntity {
 }
 
 model MessageAttachmentEntity {
-  id         String         @id @default(cuid())
-  messageId  String         @unique @map("message_id")
-  fileName   String         @map("file_name")
-  mimeType   String         @map("mime_type")
-  sizeBytes  Int?           @map("size_bytes")
-  url        String
-  kind       AttachmentKind
-  createdAt  DateTime       @default(now()) @map("created_at")
-  message    MessageEntity  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  id              String         @id @default(cuid())
+  messageId       String         @unique @map("message_id")
+  fileName        String         @map("file_name")
+  mimeType        String         @map("mime_type")
+  sizeBytes       Int?           @map("size_bytes")
+  url             String
+  thumbnailUrl    String?        @map("thumbnail_url")
+  durationSeconds Int?           @map("duration_seconds")
+  kind            AttachmentKind
+  createdAt       DateTime       @default(now()) @map("created_at")
+  message         MessageEntity  @relation(fields: [messageId], references: [id], onDelete: Cascade)
 
   @@index([messageId])
   @@map("message_attachment")

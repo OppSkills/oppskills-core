@@ -2,7 +2,7 @@
 
 import React, { memo, useMemo, useState } from "react";
 import { EmptyState } from "@/components/common/EmptyState";
-import { useReferralRegistrations } from "@/hooks/useReferrals";
+import { useReferralRegistrations } from "@/hooks/referrals/useReferrals";
 import { UserProfileCard } from "./UserProfileCard";
 import { Button } from "@/components/ui/button";
 import { BoneyardSkeleton } from "@/components/boneyard/boneyard-skeleton";

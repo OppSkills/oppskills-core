@@ -36,7 +36,7 @@ import {
   useRepostPost,
   useUndoRepost,
   useCreateFeedPostComment,
-} from "@/hooks/useCommunityPosts";
+} from "@/hooks/community/useCommunityPosts";
 import { stripHtmlPreview } from "./communityUtils";
 import { presignImageUpload } from "@/lib/api/mediaApi";
 import { uploadImageToS3PresignedPost } from "@/lib/uploads/uploadImageToS3";

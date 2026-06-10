@@ -28,7 +28,7 @@ import {
 import { SortFromTopToBottom } from "@solar-icons/react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
-import { useReferrerDetailsForOrganizer } from "@/hooks/useReferrals";
+import { useReferrerDetailsForOrganizer } from "@/hooks/referrals/useReferrals";
 import { ReferredUsersTable } from "./ReferredUsersTable";
 import { UserProfileCard } from "./UserProfileCard";
 import { BoneyardSkeleton } from "@/components/boneyard/boneyard-skeleton";

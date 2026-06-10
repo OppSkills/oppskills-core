@@ -27,7 +27,7 @@ import { Copy, ExternalLink, Trash2, Maximize2 } from "lucide-react";
 import { SortFromTopToBottom } from "@solar-icons/react";
 import { toast } from "sonner";
 import Link from "next/link";
-import { useDeleteReferral, useReferrals } from "@/hooks/useReferrals";
+import { useDeleteReferral, useReferrals } from "@/hooks/referrals/useReferrals";
 import type { ReferralEntityType } from "@/lib/api/referralApi";
 import { ReferrerDetailsSheet } from "./ReferrerDetailsSheet";
 import { BoneyardSkeleton } from "@/components/boneyard/boneyard-skeleton";

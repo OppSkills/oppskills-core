@@ -1,6 +1,6 @@
 "use client";
 
-import { usePastEvents } from "@/hooks/useEvents";
+import { usePastEvents } from "@/hooks/events/useEvents";
 
 import { useRef, useState } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";

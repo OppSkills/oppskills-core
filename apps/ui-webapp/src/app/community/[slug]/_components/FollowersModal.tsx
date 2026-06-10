@@ -4,8 +4,8 @@ import React, { useState } from "react";
 import Image from "next/image";
 import { Search, Loader2 } from "lucide-react";
 import CustomModal from "./CustomModal";
-import { usePublicCommunityMembers } from "@/hooks/useCommunities";
-import { useDebounce } from "@/hooks/use-debounce";
+import { usePublicCommunityMembers } from "@/hooks/community/useCommunities";
+import { useDebounce } from "@/hooks/ui/use-debounce";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 

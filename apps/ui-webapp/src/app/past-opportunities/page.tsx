@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { usePastOpportunities } from "@/hooks/useEvents";
+import { usePastOpportunities } from "@/hooks/events/useEvents";
 import { GenericListingPage } from "@/components/common/GenericListingPage";
 import type { ListingItem } from "@/components/common/ListingCard";
-import type { PastOpportunityItem } from "@/hooks/useEvents";
+import type { PastOpportunityItem } from "@/hooks/events/useEvents";
 
 function deriveRoutePrefix(item: PastOpportunityItem): string {
   return item.type === "HACKATHON" ? "hackathons" : "events";

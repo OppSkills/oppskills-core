@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, Suspense, useMemo, useCallback, useRef } from "react";
-import { usePublicCommunitiesPaged } from "@/hooks/useCommunities";
+import { usePublicCommunitiesPaged } from "@/hooks/community/useCommunities";
 import { GenericListingPage } from "@/components/common/GenericListingPage";
 import { ListingItem } from "@/components/common/ListingCard";
 import { CommunityFilterSidebar } from "@/components/common/CommunityFilterSidebar";

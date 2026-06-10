@@ -13,7 +13,7 @@ import {
   formatHandleForDisplay,
   normalizeCommunityHandle,
 } from "@/lib/community/handleUtils";
-import { useCommunityHandleField } from "@/hooks/useCommunityHandleField";
+import { useCommunityHandleField } from "@/hooks/community/useCommunityHandleField";
 
 type FieldName = "name" | "handle";
 

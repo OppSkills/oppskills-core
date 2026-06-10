@@ -8,7 +8,7 @@ import { MapPin } from "lucide-react";
 import { BoneyardSkeleton } from "@/components/boneyard/boneyard-skeleton";
 import { HackathonDetailFallback } from "@/components/boneyard/loading-fallbacks";
 import { format } from "date-fns";
-import { useEventBySlug } from "@/hooks/useEventBySlug";
+import { useEventBySlug } from "@/hooks/events/useEventBySlug";
 import DOMPurify from "isomorphic-dompurify";
 import { ensureAbsoluteUrl } from "@/lib/utils";
 

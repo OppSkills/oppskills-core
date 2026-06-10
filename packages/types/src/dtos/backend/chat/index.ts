@@ -41,6 +41,8 @@ export type ChatAttachmentDto = Readonly<{
   sizeBytes: number | null;
   url: string;
   kind: ChatAttachmentKind;
+  thumbnailUrl?: string | null;
+  durationSeconds?: number | null;
 }>;
 
 export type ChatMessageDto = Readonly<{
@@ -143,3 +145,12 @@ export type SendChatMessageDto = Readonly<{
 export type AckDeliveredDto = Readonly<{
   messageIds: string[];
 }>;
+
+export type {
+  ChatMessageCreatedEvent,
+  ChatConversationUpdatedEvent,
+  ChatMessagesDeliveredEvent,
+  ChatConversationRemovedEvent,
+  ChatPresenceUpdatedEvent,
+  ChatSocketServerEvent,
+} from "./events";

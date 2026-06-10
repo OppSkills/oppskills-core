@@ -1,6 +1,6 @@
 "use client";
 
-import { usePublicHackathons } from "@/hooks/usePublicHackathons";
+import { usePublicHackathons } from "@/hooks/hackathons/usePublicHackathons";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

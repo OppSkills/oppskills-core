@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 
-import { useUpcomingEvents } from "@/hooks/useEvents";
+import { useUpcomingEvents } from "@/hooks/events/useEvents";
 import { Swiper, SwiperSlide } from "swiper/react";
 import "swiper/css";
 import "swiper/css/navigation";

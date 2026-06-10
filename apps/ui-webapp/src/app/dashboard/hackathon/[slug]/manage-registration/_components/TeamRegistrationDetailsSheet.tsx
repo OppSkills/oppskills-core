@@ -14,11 +14,11 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useTeams } from "@/hooks/useTeams";
+import { useTeams } from "@/hooks/teams/useTeams";
 import {
   useHackathonRegistrationsBySlug,
   useHackathonTeamRegistration,
-} from "@/hooks/useHackathonRegistrations";
+} from "@/hooks/hackathons/useHackathonRegistrations";
 import type { TeamDetailResponse } from "@/lib/api/teamApi";
 import { getTeamRegistrationAnswers } from "@/lib/api/hackathonApi";
 import { useAuth } from "@clerk/nextjs";

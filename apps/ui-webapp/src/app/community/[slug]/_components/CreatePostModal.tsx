@@ -16,7 +16,7 @@ import {
 } from "@oppskills/types/constants";
 import { getPlainTextLengthFromHtml } from "@/lib/community/textUtils";
 import { getDisplayUrl } from "./communityUtils";
-import { useDebounce } from "@/hooks/use-debounce";
+import { useDebounce } from "@/hooks/ui/use-debounce";
 import { useAuth } from "@clerk/nextjs";
 import { searchSkills, type Skill } from "@/lib/api/skillsApi";
 

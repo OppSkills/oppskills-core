@@ -20,7 +20,7 @@ import {
   useCreateReferral,
   useReferrerLookup,
   useReferrals,
-} from "@/hooks/useReferrals";
+} from "@/hooks/referrals/useReferrals";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import type { ReferralEntityType } from "@/lib/api/referralApi";

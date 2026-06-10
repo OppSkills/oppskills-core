@@ -15,8 +15,11 @@ import { verifyToken } from '@clerk/backend';
 import { Logger } from 'src/_utils/logger';
 import { ClerkAuthConfigService } from 'src/common/config.service';
 import { CacheService } from 'src/common/cache.service';
-import { ChatService } from './chat.service';
+import { ChatAuthorizationService } from './services/chat-authorization.service';
+import { ConversationsService } from './services/conversations.service';
+import { MessagesService } from './services/messages.service';
 import { PresenceService } from './presence.service';
+import { VideoThumbnailService } from '../media/video-thumbnail.service';
 import type { SendChatMessageDto } from './dto/chat.dto';
 import { prisma } from '@oppskills/db';
 import type {
@@ -42,10 +45,13 @@ export class ChatGateway
   private readonly logger = new Logger(ChatGateway.name);
 
   constructor(
-    private readonly chatService: ChatService,
+    private readonly auth: ChatAuthorizationService,
+    private readonly messages: MessagesService,
+    private readonly conversations: ConversationsService,
     private readonly presenceService: PresenceService,
     private readonly clerkConfig: ClerkAuthConfigService,
     private readonly cacheService: CacheService,
+    private readonly videoThumbnails: VideoThumbnailService,
   ) {}
 
   afterInit(server: Server) {
@@ -163,7 +169,7 @@ export class ChatGateway
       if (!conversationId)
         return { ok: false, error: 'conversationId required' };
 
-      await this.chatService.assertParticipant(userId, conversationId);
+      await this.auth.assertParticipant(userId, conversationId);
       await client.join(this.conversationRoom(conversationId));
       return { ok: true };
     } catch (error) {
@@ -199,13 +205,16 @@ export class ChatGateway
       if (!conversationId)
         return { ok: false, error: 'conversationId required' };
 
-      const message = await this.chatService.sendMessage(
+      const message = await this.messages.sendMessage(
         userId,
         conversationId,
         payload,
       );
 
       await this.broadcastNewMessage(conversationId, message);
+      if (message.type === 'VIDEO') {
+        void this.processVideoMetadata(conversationId, message.id, userId);
+      }
       return { ok: true, message };
     } catch (error) {
       return this.wsFail(error);
@@ -254,7 +263,7 @@ export class ChatGateway
         return { ok: false, error: 'conversationId and messageIds required' };
       }
 
-      const result = await this.chatService.ackDelivered(
+      const result = await this.messages.ackDelivered(
         userId,
         conversationId,
         messageIds,
@@ -297,7 +306,7 @@ export class ChatGateway
 
     await Promise.all(
       participants.map(async (p) => {
-        const preview = await this.chatService.getConversationPreviewForUser(
+        const preview = await this.conversations.getConversationPreviewForUser(
           conversationId,
           p.userId,
         );
@@ -308,6 +317,41 @@ export class ChatGateway
         }
       }),
     );
+  }
+
+  async processVideoMetadata(
+    conversationId: string,
+    messageId: string,
+    viewerUserId: string,
+  ) {
+    await this.videoThumbnails.processMessageVideo(messageId);
+    const updated = await this.messages.getMessage(
+      viewerUserId,
+      conversationId,
+      messageId,
+    );
+    await this.broadcastMessageUpdated(conversationId, updated);
+  }
+
+  async broadcastMessageUpdated(
+    conversationId: string,
+    message: ChatMessageDto,
+  ) {
+    const payload = { conversationId, message };
+    this.server
+      .to(this.conversationRoom(conversationId))
+      .emit('message_updated', payload);
+
+    const participants = await prisma.conversationParticipantEntity.findMany({
+      where: { conversationId },
+      select: { userId: true },
+    });
+
+    for (const participant of participants) {
+      this.server
+        .to(this.userRoom(participant.userId))
+        .emit('message_updated', payload);
+    }
   }
 
   async broadcastNewMessage(conversationId: string, message: ChatMessageDto) {
@@ -328,7 +372,7 @@ export class ChatGateway
           .to(this.userRoom(p.userId))
           .emit('message_created', payload);
 
-        const preview = await this.chatService.getConversationPreviewForUser(
+        const preview = await this.conversations.getConversationPreviewForUser(
           conversationId,
           p.userId,
         );

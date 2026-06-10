@@ -75,11 +75,13 @@ export class PresignDocumentUploadDto {
     'EVENT_ATTACHMENT',
     'OPPORTUNITY_ATTACHMENT',
     'COMMUNITY_THREAD_ATTACHMENT',
+    'CHAT_ATTACHMENT',
   ])
   purpose:
     | 'EVENT_ATTACHMENT'
     | 'OPPORTUNITY_ATTACHMENT'
-    | 'COMMUNITY_THREAD_ATTACHMENT';
+    | 'COMMUNITY_THREAD_ATTACHMENT'
+    | 'CHAT_ATTACHMENT';
 
   /**
    * MIME type as detected by the browser.

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { useUpcomingHackathons } from "@/hooks/usePublicHackathons";
+import { useUpcomingHackathons } from "@/hooks/hackathons/usePublicHackathons";
 import { Swiper, SwiperSlide } from "swiper/react";
 import "swiper/css";
 import "swiper/css/navigation";
