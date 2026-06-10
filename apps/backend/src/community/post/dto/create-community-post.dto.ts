@@ -38,11 +38,13 @@ export class CreateCommunityPostDto {
   imageUrls?: string[];
 
   @ApiPropertyOptional({
-    description: 'Associated skill IDs',
+    description: 'Associated skill IDs (max 5)',
     type: [String],
+    maxItems: 5,
   })
   @IsOptional()
   @IsArray()
+  @ArrayMaxSize(5)
   @IsString({ each: true })
   skillIds?: string[];
 }
