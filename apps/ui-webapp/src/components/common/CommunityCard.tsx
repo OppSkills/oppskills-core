@@ -3,7 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { cn, normalizeUrl } from "@/lib/utils";
 import { formatCount } from "@/lib/tools";
-import { Users } from "lucide-react";
+import { Users, Crown } from "lucide-react";
 
 export interface CommunityCardProps {
   href: string;
@@ -12,6 +12,7 @@ export interface CommunityCardProps {
   memberCount: number;
   bannerUrl?: string | null;
   avatarUrl?: string | null;
+  roleBadge?: "OWNER" | "ADMIN" | "MODERATOR" | "READ_ONLY" | "FOLLOWER";
 }
 
 export function CommunityCard({
@@ -21,6 +22,7 @@ export function CommunityCard({
   memberCount,
   bannerUrl,
   avatarUrl,
+  roleBadge,
 }: CommunityCardProps) {
   return (
     <Link href={href} prefetch={false} className="h-full block">
@@ -29,6 +31,38 @@ export function CommunityCard({
           "group h-[280px] flex flex-col overflow-hidden border border-neutral-200/50 bg-white hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 rounded-3xl relative",
         )}
       >
+        {/* Role Badge Overlay */}
+        {roleBadge && (
+          <div className="absolute top-3 left-3 z-30 select-none">
+            {roleBadge === "OWNER" && (
+              <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-amber-700 bg-amber-50 border border-amber-300 px-2.5 py-1 rounded-full shadow-sm">
+                <Crown className="w-3 h-3 text-amber-600 fill-amber-500" />
+                Owner
+              </span>
+            )}
+            {roleBadge === "ADMIN" && (
+              <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-purple-700 bg-purple-50 border border-purple-300 px-2.5 py-1 rounded-full shadow-sm">
+                Admin
+              </span>
+            )}
+            {roleBadge === "MODERATOR" && (
+              <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 border border-emerald-300 px-2.5 py-1 rounded-full shadow-sm">
+                Moderator
+              </span>
+            )}
+            {roleBadge === "READ_ONLY" && (
+              <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-blue-700 bg-blue-50 border border-blue-300 px-2.5 py-1 rounded-full shadow-sm">
+                Read Only
+              </span>
+            )}
+            {roleBadge === "FOLLOWER" && (
+              <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-neutral-700 bg-neutral-50 border border-neutral-300 px-2.5 py-1 rounded-full shadow-sm">
+                Follower
+              </span>
+            )}
+          </div>
+        )}
+
         {/* Banner Area */}
         <div className="relative h-[110px] w-full overflow-hidden shrink-0 bg-muted">
           <Image

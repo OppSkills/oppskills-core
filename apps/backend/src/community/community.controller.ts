@@ -55,12 +55,14 @@ export class CommunityController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async listMine(
     @Req() req: Request,
+    @Query('includeFollowed') includeFollowed?: string,
   ): Promise<{ items: CommunityListItemDto[] }> {
     const userId = req.user?.id;
     if (typeof userId !== 'string' || userId.trim().length === 0) {
       throw new UnauthorizedException('User not found.');
     }
-    const items = await this.communityService.listMyCommunities(userId);
+    const withFollowed = includeFollowed === 'true';
+    const items = await this.communityService.listMyCommunities(userId, withFollowed);
     return { items };
   }
 

@@ -49,7 +49,15 @@ export class CommunityService {
   /**
    * Communities the user can open in the manage dashboard: owned, or member with ADMIN/EDITOR.
    */
-  async listMyCommunities(userId: string): Promise<CommunityListItemDto[]> {
+  async listMyCommunities(
+    userId: string,
+    includeFollowed = false,
+  ): Promise<CommunityListItemDto[]> {
+    const roles = ['ADMIN', 'MODERATOR', 'READ_ONLY'];
+    if (includeFollowed) {
+      roles.push('FOLLOWER');
+    }
+
     const rows = await prisma.communityEntity.findMany({
       where: {
         OR: [
@@ -59,7 +67,7 @@ export class CommunityService {
               some: {
                 userId,
                 accessControlRole: {
-                  in: ['ADMIN', 'MODERATOR', 'READ_ONLY'],
+                  in: roles,
                 },
               },
             },
@@ -90,7 +98,9 @@ export class CommunityService {
             ? ('ADMIN' as const)
             : row.members[0]?.accessControlRole === 'MODERATOR'
               ? ('MODERATOR' as const)
-              : ('READ_ONLY' as const);
+              : row.members[0]?.accessControlRole === 'FOLLOWER'
+                ? ('FOLLOWER' as const)
+                : ('READ_ONLY' as const);
 
       return {
         id: row.id,
