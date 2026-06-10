@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useQueryState } from "nuqs";
 import { Users, UserPlus, Loader2 } from "lucide-react";
 import Script from "next/script";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useAuth, useUser } from "@clerk/nextjs";
 import { toast } from "sonner";
@@ -1255,6 +1255,7 @@ export function RegistrationModal({
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <Script src="https://checkout.razorpay.com/v1/checkout.js" />
       <DialogContent className="p-0 md:w-[460px] overflow-hidden sm:rounded-3xl border-none shadow-2xl max-h-full h-full sm:h-auto sm:max-h-[80vh] flex flex-col bg-neutral-100">
+        <DialogTitle className="sr-only">Registration</DialogTitle>
         {/* Header Area (Fixed) */}
         <div className="p-6 pb-4 shadow-sm">
           <h2 className="text-3xl font-medium tracking-tight text-neutral-900">
