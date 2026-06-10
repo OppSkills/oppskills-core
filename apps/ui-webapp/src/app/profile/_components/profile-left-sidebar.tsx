@@ -26,6 +26,11 @@ const NAV_ITEMS = [
     icon: Calendar,
   },
   {
+    title: "Communities",
+    href: "/profile/communities",
+    icon: UserSpeak,
+  },
+  {
     title: "Achievements",
     href: "/profile/achievements",
     icon: Trophy,

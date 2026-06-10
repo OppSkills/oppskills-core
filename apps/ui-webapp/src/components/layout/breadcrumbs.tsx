@@ -22,7 +22,10 @@ function ChatBreadcrumbLabel({ chatId }: { chatId: string }) {
     enabled: isSignedIn && !cachedConversation,
   });
 
-  const label = cachedConversation?.name ?? data?.name ?? (isLoading ? "Loading..." : "Chat");
+  const label =
+    cachedConversation?.name ??
+    data?.name ??
+    (isLoading ? "Loading..." : "Chat");
 
   return (
     <span className="truncate max-w-[150px] sm:max-w-[240px]">{label}</span>

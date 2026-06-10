@@ -7,6 +7,7 @@ export type CommunityPostKind = "ORIGINAL" | "REPOST" | "QUOTE_REPOST";
 export interface CreateCommunityPostDto {
   content: string;
   imageUrls?: string[];
+  skillIds?: string[];
 }
 
 export interface UpdateCommunityPostDto {

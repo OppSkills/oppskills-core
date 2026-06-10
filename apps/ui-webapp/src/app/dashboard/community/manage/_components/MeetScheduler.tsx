@@ -591,16 +591,16 @@ function MeetAudienceControls({
         </label>
         <Select
           value={accessMode}
-          onValueChange={(value) =>
-            onAccessModeChange(value as MeetAccessMode)
-          }
+          onValueChange={(value) => onAccessModeChange(value as MeetAccessMode)}
         >
           <SelectTrigger className="h-12 px-5 border border-neutral-200 rounded-full">
             <SelectValue placeholder="Community members only" />
           </SelectTrigger>
           <SelectContent className="rounded-2xl">
             <SelectItem value="restricted">Community members only</SelectItem>
-            <SelectItem value="open">Open to all (anyone with the link)</SelectItem>
+            <SelectItem value="open">
+              Open to all (anyone with the link)
+            </SelectItem>
           </SelectContent>
         </Select>
       </div>

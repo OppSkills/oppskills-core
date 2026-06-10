@@ -64,9 +64,7 @@ export function clearUnreadInCache(
   conversationId: string,
 ) {
   setConversationsCache(queryClient, (prev) =>
-    prev.map((c) =>
-      c.id === conversationId ? { ...c, unreadCount: 0 } : c,
-    ),
+    prev.map((c) => (c.id === conversationId ? { ...c, unreadCount: 0 } : c)),
   );
 }
 
@@ -209,9 +207,12 @@ export function applyInboxUpdateToCache(
   setConversationsCache(queryClient, (prev) => {
     const existing = prev.find((c) => c.id === conversation.id);
     const messages = existing?.messages ?? [];
-    return applyInboxConversationUpdate(prev, conversation, messages, options).map(
-      stripMessages,
-    );
+    return applyInboxConversationUpdate(
+      prev,
+      conversation,
+      messages,
+      options,
+    ).map(stripMessages);
   });
 }
 
@@ -268,7 +269,8 @@ export function applyServerMessageToCaches(
   if (messageData) {
     const flat = messageData.pages.flatMap((p) => p.messages);
     if (flat.some((m) => m.id === uiMsg.id)) {
-      if (options?.isActiveChat) clearUnreadInCache(queryClient, conversationId);
+      if (options?.isActiveChat)
+        clearUnreadInCache(queryClient, conversationId);
       return uiMsg;
     }
 

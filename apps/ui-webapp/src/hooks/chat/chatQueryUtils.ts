@@ -27,9 +27,9 @@ export function mergeConversationsWithMessageCaches(
   queryClient: QueryClient,
 ): Chat[] {
   return conversations.map((chat) => {
-    const messageData = queryClient.getQueryData<InfiniteData<ChatMessagesPage>>(
-      chatQueryKeys.messages(chat.id),
-    );
+    const messageData = queryClient.getQueryData<
+      InfiniteData<ChatMessagesPage>
+    >(chatQueryKeys.messages(chat.id));
     const messages = flattenChatMessages(messageData);
     if (messages.length === 0) return chat;
     return { ...chat, messages };

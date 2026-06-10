@@ -196,14 +196,17 @@ export function useChatsPage(selectedChatId: string | null) {
     [queryClient],
   );
 
-  const runSearch = useCallback((query: string) => {
-    setInboxSearchInput(query);
-    if (query.trim().length === 0) {
-      void queryClient.invalidateQueries({
-        queryKey: chatQueryKeys.conversations(),
-      });
-    }
-  }, [queryClient]);
+  const runSearch = useCallback(
+    (query: string) => {
+      setInboxSearchInput(query);
+      if (query.trim().length === 0) {
+        void queryClient.invalidateQueries({
+          queryKey: chatQueryKeys.conversations(),
+        });
+      }
+    },
+    [queryClient],
+  );
 
   const runGroupMemberSearch = useCallback((query: string) => {
     setGroupSearchInput(query);
@@ -247,7 +250,12 @@ export function useChatsPage(selectedChatId: string | null) {
   }, [selectedChatId, currentUserId, queryClient, getToken, socketModule]);
 
   useEffect(() => {
-    if (!messagesQuery.data || !selectedChatId || !currentUserId || !socketModule) {
+    if (
+      !messagesQuery.data ||
+      !selectedChatId ||
+      !currentUserId ||
+      !socketModule
+    ) {
       return;
     }
     const lastPage =
@@ -450,16 +458,18 @@ export function useChatsPage(selectedChatId: string | null) {
             },
           };
 
-          let saved = await socketModule.emitSendMessage(conversationId, payload);
+          let saved = await socketModule.emitSendMessage(
+            conversationId,
+            payload,
+          );
           if (!saved) {
             saved = await sendMessageApi(token, conversationId, payload);
           }
           if (saved) {
             const uiMsg = mapMessageToUi(saved, currentUserId);
             if (uiMsg.imageUrl) {
-              const { preloadImageUrl } = await import(
-                "@/lib/chat/preloadImage"
-              );
+              const { preloadImageUrl } =
+                await import("@/lib/chat/preloadImage");
               await preloadImageUrl(uiMsg.imageUrl);
             }
 
@@ -537,9 +547,8 @@ export function useChatsPage(selectedChatId: string | null) {
       }
 
       const token = await getTokenSafe();
-      const { downloadChatMessageAttachment } = await import(
-        "@/lib/chat/downloadAttachment"
-      );
+      const { downloadChatMessageAttachment } =
+        await import("@/lib/chat/downloadAttachment");
       await downloadChatMessageAttachment(
         token,
         conversationId,

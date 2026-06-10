@@ -112,7 +112,10 @@ export async function getMyCommunities(
 ): Promise<ReadonlyArray<MyCommunityListItem>> {
   const res = await API.get("/my", {
     headers: buildAuthHeaders(token),
-    params: includeFollowed !== undefined ? { includeFollowed: String(includeFollowed) } : undefined,
+    params:
+      includeFollowed !== undefined
+        ? { includeFollowed: String(includeFollowed) }
+        : undefined,
   });
 
   const raw = res.data as unknown;
@@ -234,9 +237,7 @@ export async function suggestCommunityHandles(
 // Members
 // ---------------------------------------------------------------------------
 
-function parseMemberTypesResponse(
-  data: unknown,
-): CommunityMemberTypesResponse {
+function parseMemberTypesResponse(data: unknown): CommunityMemberTypesResponse {
   if (
     typeof data === "object" &&
     data !== null &&
@@ -245,7 +246,7 @@ function parseMemberTypesResponse(
   ) {
     return data as CommunityMemberTypesResponse;
   }
-  throw new Error('Invalid response: expected member types object.');
+  throw new Error("Invalid response: expected member types object.");
 }
 
 export async function getUniqueMemberTypes(

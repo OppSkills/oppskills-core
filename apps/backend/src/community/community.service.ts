@@ -53,7 +53,11 @@ export class CommunityService {
     userId: string,
     includeFollowed = false,
   ): Promise<CommunityListItemDto[]> {
-    const roles: CommunityAccessControlRole[] = ['ADMIN', 'MODERATOR', 'READ_ONLY'];
+    const roles: CommunityAccessControlRole[] = [
+      'ADMIN',
+      'MODERATOR',
+      'READ_ONLY',
+    ];
     if (includeFollowed) {
       roles.push('FOLLOWER');
     }
@@ -1459,7 +1463,9 @@ export class CommunityService {
       const trimmed = label.trim();
       if (!trimmed) continue;
       if (trimmed.toUpperCase() === 'FOLLOWER') continue;
-      if (CommunityService.RESERVED_MEMBER_TYPE_NAMES.has(trimmed.toUpperCase())) {
+      if (
+        CommunityService.RESERVED_MEMBER_TYPE_NAMES.has(trimmed.toUpperCase())
+      ) {
         continue;
       }
       const key = trimmed.toLowerCase();
@@ -2093,7 +2099,10 @@ export class CommunityService {
     }
 
     if (community.ownerId === userId) {
-      await this.repairOwnerFollowerRecordIfNeeded(communityId, community.ownerId);
+      await this.repairOwnerFollowerRecordIfNeeded(
+        communityId,
+        community.ownerId,
+      );
       const memberCount = await prisma.communityMemberEntity.count({
         where: this.followerWhere(communityId, community.ownerId),
       });

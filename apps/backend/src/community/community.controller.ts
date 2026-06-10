@@ -62,7 +62,10 @@ export class CommunityController {
       throw new UnauthorizedException('User not found.');
     }
     const withFollowed = includeFollowed === 'true';
-    const items = await this.communityService.listMyCommunities(userId, withFollowed);
+    const items = await this.communityService.listMyCommunities(
+      userId,
+      withFollowed,
+    );
     return { items };
   }
 

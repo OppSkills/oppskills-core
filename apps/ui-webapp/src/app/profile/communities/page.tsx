@@ -12,7 +12,10 @@ import { Button } from "@/components/ui/button";
 const SkeletonCommunityGrid = () => (
   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
     {[...Array(8)].map((_, i) => (
-      <div key={i} className="h-[280px] flex flex-col rounded-3xl border border-neutral-200/50 bg-white overflow-hidden animate-pulse">
+      <div
+        key={i}
+        className="h-[280px] flex flex-col rounded-3xl border border-neutral-200/50 bg-white overflow-hidden animate-pulse"
+      >
         <div className="h-[110px] bg-neutral-200 w-full" />
         <div className="pt-9 px-5 pb-5 flex flex-col flex-1 justify-between">
           <div className="flex flex-col gap-3">
@@ -28,7 +31,9 @@ const SkeletonCommunityGrid = () => (
 
 export default function ProfileCommunitiesPage() {
   const { getToken, isLoaded } = useAuth();
-  const [communities, setCommunities] = useState<ReadonlyArray<MyCommunityListItem>>([]);
+  const [communities, setCommunities] = useState<
+    ReadonlyArray<MyCommunityListItem>
+  >([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("ALL");
@@ -56,13 +61,16 @@ export default function ProfileCommunitiesPage() {
     return communities.filter((item) => {
       const matchesSearch =
         item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (item.industry && item.industry.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (item.handle && item.handle.toLowerCase().includes(searchQuery.toLowerCase()));
+        (item.industry &&
+          item.industry.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (item.handle &&
+          item.handle.toLowerCase().includes(searchQuery.toLowerCase()));
 
       const matchesRole =
         roleFilter === "ALL" ||
         (roleFilter === "OWNER" && item.myRole === "OWNER") ||
-        (roleFilter === "ADMIN" && (item.myRole === "ADMIN" || item.myRole === "MODERATOR")) ||
+        (roleFilter === "ADMIN" &&
+          (item.myRole === "ADMIN" || item.myRole === "MODERATOR")) ||
         (roleFilter === "FOLLOWER" && item.myRole === "FOLLOWER");
 
       return matchesSearch && matchesRole;
@@ -73,7 +81,9 @@ export default function ProfileCommunitiesPage() {
     return {
       ALL: communities.length,
       OWNER: communities.filter((c) => c.myRole === "OWNER").length,
-      ADMIN: communities.filter((c) => c.myRole === "ADMIN" || c.myRole === "MODERATOR").length,
+      ADMIN: communities.filter(
+        (c) => c.myRole === "ADMIN" || c.myRole === "MODERATOR",
+      ).length,
       FOLLOWER: communities.filter((c) => c.myRole === "FOLLOWER").length,
     };
   }, [communities]);
@@ -102,7 +112,8 @@ export default function ProfileCommunitiesPage() {
               My Communities
             </h1>
             <p className="text-neutral-500 text-sm mt-1">
-              Manage and explore all the communities you follow, curate, or administer.
+              Manage and explore all the communities you follow, curate, or
+              administer.
             </p>
           </div>
           <Link href="/community" prefetch={false}>
@@ -169,7 +180,9 @@ export default function ProfileCommunitiesPage() {
             <div className="w-16 h-16 bg-neutral-100 rounded-full flex items-center justify-center mb-4 text-neutral-400">
               <Compass className="w-8 h-8" />
             </div>
-            <h3 className="text-lg font-bold text-neutral-800">No communities found</h3>
+            <h3 className="text-lg font-bold text-neutral-800">
+              No communities found
+            </h3>
             <p className="text-neutral-500 text-sm mt-2 max-w-md">
               {searchQuery || roleFilter !== "ALL"
                 ? "No communities match your current search queries or filter selections."

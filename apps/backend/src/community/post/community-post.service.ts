@@ -13,6 +13,7 @@ import {
   UpdateCommunityPostDto,
 } from './dto/create-community-post.dto';
 import { AnalyticsService } from 'src/analytics/analytics.service';
+import { SkillsService } from 'src/skills/skills.service';
 import type {
   CommunityPostDetailResponseDto,
   CommunityPostFeedItemDto,
@@ -92,6 +93,7 @@ export class CommunityPostService {
     private readonly likeService: CommunityPostLikeService,
     private readonly repostService: CommunityPostRepostService,
     private readonly analyticsService: AnalyticsService,
+    private readonly skillsService: SkillsService,
   ) {}
 
   encodeCursor(createdAt: Date, id: string): string {
@@ -141,6 +143,10 @@ export class CommunityPostService {
 
     await this.cacheService.addToTimeline(communityId, post.id, post.createdAt);
     await this.cacheService.invalidateCommunityFeed(communityId);
+
+    if (dto.skillIds && dto.skillIds.length > 0) {
+      await this.skillsService.incrementSkillScores(dto.skillIds);
+    }
 
     return this.toFeedItem(post, false, post.likeCount, false);
   }

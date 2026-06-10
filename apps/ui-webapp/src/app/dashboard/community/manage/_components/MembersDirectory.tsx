@@ -24,10 +24,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import type { CommunityMember as Member } from "@oppskills/types";
-import {
-  COMMUNITY_ROSTER_TAB,
-  FOLLOWERS_TAB,
-} from "@/lib/api/communityApi";
+import { COMMUNITY_ROSTER_TAB, FOLLOWERS_TAB } from "@/lib/api/communityApi";
 
 interface MembersDirectoryProps {
   onAssignTask?: (memberName: string) => void;
