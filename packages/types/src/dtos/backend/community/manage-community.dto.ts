@@ -71,3 +71,23 @@ export interface CommunityMemberTypesResponse {
   /** Labels persisted on the community; these can be deleted when unused */
   storedLabels: string[];
 }
+
+export interface PublicCommunityMember {
+  id: string;
+  userId: string;
+  name: string;
+  avatarUrl: string | null;
+  role: string;
+  skills: string[];
+  interests: string[];
+  subtitle?: string;
+  userCategory?: string;
+}
+
+export interface PaginatedPublicCommunityMembers {
+  items: PublicCommunityMember[];
+  total: number;
+  page: number;
+  take: number;
+  totalPages: number;
+}

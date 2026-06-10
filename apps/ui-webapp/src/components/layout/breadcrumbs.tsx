@@ -99,14 +99,13 @@ export function Breadcrumbs() {
     const isProfile = segments.includes("profile");
     const rootPath = isProfile ? "/profile" : "/dashboard";
 
-    const items: { label: React.ReactNode; href: string; active: boolean }[] =
-      [
-        {
-          label: <Home className="size-4" />,
-          href: rootPath,
-          active: pathname === rootPath,
-        },
-      ];
+    const items: { label: React.ReactNode; href: string; active: boolean }[] = [
+      {
+        label: <Home className="size-4" />,
+        href: rootPath,
+        active: pathname === rootPath,
+      },
+    ];
 
     let currentPath = rootPath;
 
@@ -128,9 +127,7 @@ export function Breadcrumbs() {
       if (isChatId) {
         labelNode = <ChatBreadcrumbLabel chatId={segment} />;
       } else if (isCommunityManageId) {
-        labelNode = (
-          <CommunityManageBreadcrumbLabel communityId={segment} />
-        );
+        labelNode = <CommunityManageBreadcrumbLabel communityId={segment} />;
       } else {
         labelNode = formatLabel(segment);
       }

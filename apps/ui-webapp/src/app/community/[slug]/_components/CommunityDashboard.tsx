@@ -20,6 +20,7 @@ import { CommunityDetails, Post } from "./types";
 import CommunityDashboardFallback from "./CommunityDashboardFallback";
 import { Skeleton } from "@/components/ui/skeleton";
 import ImageCropDialog from "@/app/dashboard/community/create/_components/ImageCropDialog";
+import FollowersModal from "./FollowersModal";
 
 import {
   followCommunity,
@@ -95,6 +96,7 @@ export default function CommunityDashboard({
   const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
   const [cropType, setCropType] = useState<"cover" | "avatar" | null>(null);
   const [isCropOpen, setIsCropOpen] = useState(false);
+  const [isFollowersOpen, setIsFollowersOpen] = useState(false);
 
   const {
     data: profile,
@@ -469,6 +471,7 @@ export default function CommunityDashboard({
             onCreatePost={canManage ? () => setIsCreatingPost(true) : undefined}
             onFollow={canManage ? undefined : handleFollow}
             onUnfollow={canManage ? undefined : handleUnfollow}
+            onViewMembers={() => setIsFollowersOpen(true)}
           />
         </div>
 
@@ -503,6 +506,7 @@ export default function CommunityDashboard({
                   <PostCard
                     post={post}
                     communityHandle={handle}
+                    communityId={profile?.id || ""}
                     onLike={handleLikePost}
                     onDelete={handleDeletePost}
                     onRepost={handleRepostPost}
@@ -596,6 +600,12 @@ export default function CommunityDashboard({
           }
         />
       )}
+
+      <FollowersModal
+        isOpen={isFollowersOpen}
+        onClose={() => setIsFollowersOpen(false)}
+        handle={handle}
+      />
 
       <ImageCropDialog
         isOpen={isCropOpen}

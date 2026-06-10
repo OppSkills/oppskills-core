@@ -12,6 +12,7 @@ import { OptionalAuthService } from '../common/optional-auth.service';
 import { CommunityService } from './community.service';
 import { PublicCommunityListResponseDto } from './dto/public-community-list-item.dto';
 import { PublicCommunityProfileDto } from './dto/public-community-profile.dto';
+import { PublicCommunityMembersResponseDto } from './dto/public-community-member.dto';
 
 @ApiTags('Communities')
 @Controller('communities/public')
@@ -58,5 +59,24 @@ export class CommunityPublicController {
   ): Promise<PublicCommunityProfileDto> {
     const viewerUserId = await this.optionalAuth.resolveUserId(req);
     return this.communityService.getPublicProfileByHandle(handle, viewerUserId);
+  }
+
+  @Get(':handle/members')
+  @ApiOperation({ summary: 'List public community members' })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'take', required: false, type: Number })
+  @ApiQuery({ name: 'search', required: false })
+  @ApiResponse({ status: 200, type: PublicCommunityMembersResponseDto })
+  async listPublicMembers(
+    @Param('handle') handle: string,
+    @Query('page') page?: number,
+    @Query('take') take?: number,
+    @Query('search') search?: string,
+  ): Promise<PublicCommunityMembersResponseDto> {
+    return this.communityService.listPublicMembers(handle, {
+      page: page ? Number(page) : undefined,
+      take: take ? Number(take) : undefined,
+      search,
+    });
   }
 }

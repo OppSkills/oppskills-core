@@ -23,6 +23,7 @@ interface CommunityHeaderProps {
   onCreatePost?: () => void;
   onFollow?: () => void;
   onUnfollow?: () => void;
+  onViewMembers?: () => void;
   isCoverUploading?: boolean;
   isAvatarUploading?: boolean;
 }
@@ -37,6 +38,7 @@ export default function CommunityHeader({
   onCreatePost,
   onFollow,
   onUnfollow,
+  onViewMembers,
   isCoverUploading = false,
   isAvatarUploading = false,
 }: CommunityHeaderProps) {
@@ -51,7 +53,10 @@ export default function CommunityHeader({
     <div className="w-full bg-white sm:rounded-3xl sm:border border-neutral-200 overflow-hidden shadow-xs relative">
       <div className="relative w-full h-44 sm:h-56 bg-gradient-to-r from-[#FDFBF7] to-[#F5F2EB] flex items-center justify-center overflow-hidden border-b border-neutral-100 group">
         <Image
-          src={details.bannerUrl || "/illustrations/community/community_banner_placeholder.png"}
+          src={
+            details.bannerUrl ||
+            "/illustrations/community/community_banner_placeholder.png"
+          }
           alt="Community Banner"
           fill
           className={cn("object-cover", isCoverUploading && "opacity-50")}
@@ -135,12 +140,17 @@ export default function CommunityHeader({
 
           <div className="flex items-center gap-4 sm:gap-6 self-start sm:self-center">
             <div className="flex items-center gap-4 text-sm font-bold text-neutral-600">
-              <div>
+              <button
+                type="button"
+                onClick={onViewMembers}
+                className="flex items-center gap-1 hover:text-[#5D3EBB] hover:scale-105 active:scale-95 transition-all focus:outline-none cursor-pointer"
+                title="View community members"
+              >
                 <span className="text-neutral-800 font-extrabold">
                   {formatFollowers(details.followers)}
                 </span>{" "}
                 Members
-              </div>
+              </button>
               <div className="w-1.5 h-1.5 rounded-full bg-neutral-300" />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>

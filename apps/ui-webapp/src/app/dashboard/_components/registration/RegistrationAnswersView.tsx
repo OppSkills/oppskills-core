@@ -8,7 +8,7 @@ import { EmptyState } from "@/components/common/EmptyState";
 
 import { BoneyardSkeleton } from "@/components/boneyard/boneyard-skeleton";
 import { StackedFieldsFallback } from "@/components/boneyard/loading-fallbacks";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { cn, ensureAbsoluteUrl } from "@/lib/utils";
 
 export interface RegistrationField {
@@ -195,6 +195,7 @@ export function RegistrationAnswersView({
             onOpenChange={(open: boolean) => !open && setSelectedImage(null)}
           >
             <DialogContent className="max-w-[95vw] max-h-[95vh] p-1 border-none bg-transparent shadow-none [&>button]:hidden">
+              <DialogTitle className="sr-only">Attachment Zoom</DialogTitle>
               <div className="relative w-full h-full flex items-center justify-center group">
                 <img
                   src={ensureAbsoluteUrl(selectedImage) || ""}

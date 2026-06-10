@@ -13,6 +13,7 @@ import type {
   PublicCommunityListResponse,
   PublicCommunityProfile,
   UpdateCommunityDto,
+  PaginatedPublicCommunityMembers,
 } from "@oppskills/types";
 
 const API = createApiClient("/communities");
@@ -475,4 +476,16 @@ export async function getPublicCommunityByHandle(
   const headers = token ? buildAuthHeaders(token) : undefined;
   const res = await API.get(`/public/${handle}`, { headers });
   return res.data as PublicCommunityProfile;
+}
+
+export async function getPublicCommunityMembers(
+  handle: string,
+  params?: {
+    page?: number;
+    take?: number;
+    search?: string;
+  },
+): Promise<PaginatedPublicCommunityMembers> {
+  const res = await API.get(`/public/${handle}/members`, { params });
+  return res.data as PaginatedPublicCommunityMembers;
 }
