@@ -8,19 +8,10 @@ import { useAuth, useUser } from "@clerk/nextjs";
 import { toast } from "sonner";
 import {
   Sparkles,
-  Plus,
-  Users,
-  Check,
-  UserPlus,
-  Search,
-  MessageSquare,
-  ThumbsUp,
-  Image as ImageIcon,
   Send,
   Loader2,
   TrendingUp,
-  Award,
-  Zap
+  Award
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -78,41 +69,6 @@ const MOCK_COMMUNITIES = [
   }
 ];
 
-// Mock Active Members (Follow Suggestions)
-const MOCK_ACTIVE_MEMBERS = [
-  {
-    id: "member-1",
-    name: "Sarah Jenkins",
-    avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=150",
-    role: "Full Stack @ Google",
-    skills: ["React", "Next.js", "Go"],
-    isFollowing: false
-  },
-  {
-    id: "member-2",
-    name: "Alex Rivera",
-    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=150",
-    role: "AI Researcher @ Stanford",
-    skills: ["PyTorch", "ML", "Python"],
-    isFollowing: false
-  },
-  {
-    id: "member-3",
-    name: "Elena Rostova",
-    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150",
-    role: "UI/UX Designer @ Figma",
-    skills: ["Design", "Framer", "Tailwind"],
-    isFollowing: false
-  },
-  {
-    id: "member-4",
-    name: "Rohan Mehta",
-    avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=150",
-    role: "Web3 Architect",
-    skills: ["Solidity", "Rust", "DeFi"],
-    isFollowing: false
-  }
-];
 
 // Initial Mock Posts Data
 const INITIAL_MOCK_POSTS: Post[] = [
@@ -285,7 +241,6 @@ export default function FeedsPage() {
   // Local States
   const [posts, setPosts] = useState<Post[]>(INITIAL_MOCK_POSTS);
   const [commentsMap, setCommentsMap] = useState<Record<string, CommunityPostCommentItem[]>>(INITIAL_MOCK_COMMENTS);
-  const [activeMembers, setActiveMembers] = useState(MOCK_ACTIVE_MEMBERS);
   
   // Composer state
   const [newPostText, setNewPostText] = useState("");
@@ -451,24 +406,6 @@ export default function FeedsPage() {
     }, 800);
   };
 
-  const handleFollowToggle = (memberId: string) => {
-    setActiveMembers((prev) =>
-      prev.map((m) => {
-        if (m.id === memberId) {
-          const isFollowing = !m.isFollowing;
-          if (isFollowing) {
-            toast.success(`Following ${m.name}`);
-          }
-          return {
-            ...m,
-            isFollowing,
-          };
-        }
-        return m;
-      })
-    );
-  };
-
   return (
     <div className="w-full min-h-screen bg-[#F6F8FA] text-neutral-900 pb-16">
       
@@ -621,72 +558,9 @@ export default function FeedsPage() {
             </div>
           </div>
 
-          {/* ── RIGHT COLUMN: ACTIVE MEMBERS SUGGESTIONS (3 Cols) ── */}
+          {/* ── RIGHT COLUMN: QUICK INFO (3 Cols) ── */}
           <div className="hidden lg:block lg:col-span-3">
             <div className="sticky top-24 flex flex-col gap-6">
-              <div className="flex items-center gap-2 px-1">
-                <Zap className="w-5 h-5 text-amber-500 fill-amber-500" />
-                <h2 className="font-aeonicPro text-lg font-bold text-neutral-800 tracking-tight">
-                  Suggested Members
-                </h2>
-              </div>
-
-              <div className="bg-white border border-neutral-200 rounded-3xl p-5 shadow-xs flex flex-col gap-4">
-                {activeMembers.map((m) => (
-                  <div
-                    key={m.id}
-                    className="flex items-start justify-between gap-3 group border-b border-neutral-100/60 pb-4 last:border-b-0 last:pb-0"
-                  >
-                    <div className="flex items-start gap-2.5 min-w-0">
-                      <div className="relative w-10 h-10 rounded-full overflow-hidden border border-neutral-100 shrink-0 select-none bg-neutral-900 flex items-center justify-center font-bold text-white text-sm">
-                        <Image
-                          src={m.avatar}
-                          alt={m.name}
-                          fill
-                          className="object-cover"
-                        />
-                      </div>
-                      <div className="flex flex-col min-w-0">
-                        <span className="font-extrabold text-neutral-800 text-sm truncate leading-none">
-                          {m.name}
-                        </span>
-                        <span className="text-[10px] text-neutral-400 font-bold truncate mt-1">
-                          {m.role}
-                        </span>
-                        <div className="flex flex-wrap gap-1 mt-1.5">
-                          {m.skills.slice(0, 2).map((s, idx) => (
-                            <span
-                              key={idx}
-                              className="text-[9px] font-bold px-1.5 py-0.5 bg-neutral-100 text-neutral-500 rounded-md"
-                            >
-                              {s}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={() => handleFollowToggle(m.id)}
-                      className={`
-                        p-1.5 rounded-full shrink-0 transition-all cursor-pointer border
-                        ${
-                          m.isFollowing
-                            ? "bg-emerald-50 border-emerald-200 text-emerald-600 hover:bg-emerald-100"
-                            : "bg-primary-50 border-primary-200 text-[#5D3EBB] hover:bg-primary-100"
-                        }
-                      `}
-                      title={m.isFollowing ? "Following" : "Follow"}
-                    >
-                      {m.isFollowing ? (
-                        <Check className="w-4 h-4 stroke-2" />
-                      ) : (
-                        <UserPlus className="w-4 h-4 stroke-2" />
-                      )}
-                    </button>
-                  </div>
-                ))}
-              </div>
 
               {/* Quick Info / Showcase Card */}
               <div className="bg-gradient-to-br from-[#1E1146] to-[#2E1E66] text-white rounded-3xl p-6 shadow-md relative overflow-hidden select-none">
