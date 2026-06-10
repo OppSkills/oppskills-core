@@ -23,6 +23,10 @@ export type ChatSocketHandlers = {
     conversationId: string;
     message: ChatMessageDto;
   }) => void;
+  onMessageUpdated?: (payload: {
+    conversationId: string;
+    message: ChatMessageDto;
+  }) => void;
   onConversationUpdated?: (payload: {
     conversation: ChatConversationListItemDto;
   }) => void;
@@ -61,6 +65,7 @@ function startPresenceHeartbeat(sock: Socket) {
 
 function attachHandlers(sock: Socket) {
   sock.off("message_created");
+  sock.off("message_updated");
   sock.off("conversation_updated");
   sock.off("messages_delivered");
   sock.off("conversation_removed");
@@ -70,6 +75,9 @@ function attachHandlers(sock: Socket) {
 
   sock.on("message_created", (payload) => {
     handlers.onMessageCreated?.(payload);
+  });
+  sock.on("message_updated", (payload) => {
+    handlers.onMessageUpdated?.(payload);
   });
   sock.on("conversation_updated", (payload) => {
     handlers.onConversationUpdated?.(payload);

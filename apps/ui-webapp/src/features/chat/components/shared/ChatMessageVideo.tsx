@@ -3,8 +3,14 @@
 import { useAuth } from "@clerk/nextjs";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Download, Play } from "lucide-react";
-import { fetchChatMessageAttachmentBlob } from "@/features/chat/lib/downloadAttachment";
 import type { Message } from "@/features/chat/domain/types";
+import { useVideoCache } from "@/features/chat/hooks/useVideoCache";
+import {
+  formatVideoDuration,
+  isVideoMessage,
+} from "@/features/chat/lib/galleryMedia";
+import { fetchVideoThumbnailBlobUrl } from "@/features/chat/lib/videoCache/fetchThumbnail";
+import { AttachmentUploadOverlay } from "./AttachmentUploadOverlay";
 import { CircularUploadProgress } from "./CircularUploadProgress";
 
 type ChatMessageVideoProps = {
@@ -12,6 +18,8 @@ type ChatMessageVideoProps = {
   conversationId?: string | null;
   onOpen: () => void;
   onDownload: () => void;
+  onCancelUpload?: () => void;
+  onRetryUpload?: () => void;
   className?: string;
   overlayTimestamp?: string;
   overlayFooter?: ReactNode;
@@ -30,11 +38,20 @@ function resolvePosterSource(message: Message): string | undefined {
   return undefined;
 }
 
-export function ChatMessageVideo({
+export function VideoMessage(props: ChatMessageVideoProps) {
+  return <ChatMessageVideoInner {...props} />;
+}
+
+/** @deprecated Use VideoMessage */
+export const ChatMessageVideo = VideoMessage;
+
+function ChatMessageVideoInner({
   message,
   conversationId,
   onOpen,
   onDownload,
+  onCancelUpload,
+  onRetryUpload,
   className = "",
   overlayTimestamp,
   overlayFooter,
@@ -42,78 +59,95 @@ export function ChatMessageVideo({
 }: ChatMessageVideoProps) {
   const { getToken } = useAuth();
   const targetUrl = resolveVideoSource(message);
-  const posterUrl = resolvePosterSource(message);
-  const [displayUrl, setDisplayUrl] = useState<string | undefined>(targetUrl);
-  const ownedBlobRef = useRef<string | null>(null);
+  const localPoster = resolvePosterSource(message);
+  const retainedPosterRef = useRef<string | undefined>(localPoster);
+  const [thumbnailUrl, setThumbnailUrl] = useState<string | undefined>(
+    localPoster,
+  );
 
-  const useSecureAccess =
+  if (localPoster) {
+    retainedPosterRef.current = localPoster;
+  }
+
+  const isOptimistic = message.id.startsWith("optimistic-");
+  const canCache =
     Boolean(conversationId) &&
     Boolean(message.id) &&
-    !message.id.startsWith("optimistic-") &&
-    Boolean(targetUrl) &&
-    !targetUrl!.startsWith("blob:");
+    !isOptimistic &&
+    isVideoMessage(message);
+
+  const shouldPrefetchCache = canCache && !message.isYou;
+
+  const { status, progress } = useVideoCache({
+    conversationId,
+    messageId: message.id,
+    enabled: canCache,
+    prefetch: shouldPrefetchCache,
+  });
 
   useEffect(() => {
-    if (!targetUrl) {
-      setDisplayUrl(undefined);
+    if (localPoster) {
+      setThumbnailUrl(localPoster);
       return;
     }
 
-    if (targetUrl.startsWith("blob:")) {
-      setDisplayUrl(targetUrl);
+    if (
+      !canCache ||
+      !conversationId ||
+      !message.attachment?.thumbnailUrl
+    ) {
       return;
     }
 
-    if (!useSecureAccess || !conversationId) {
-      setDisplayUrl(targetUrl);
-      return;
-    }
-
-    let localBlobUrl: string | null = null;
     let cancelled = false;
+    let blobUrl: string | null = null;
 
     void (async () => {
-      try {
-        const token = await getToken();
-        if (!token || cancelled) return;
-        const blob = await fetchChatMessageAttachmentBlob(
-          token,
-          conversationId,
-          message.id,
-        );
-        if (cancelled) return;
-        localBlobUrl = URL.createObjectURL(blob);
-        ownedBlobRef.current = localBlobUrl;
-        setDisplayUrl(localBlobUrl);
-      } catch {
-        if (!cancelled) setDisplayUrl(undefined);
+      const token = await getToken();
+      if (!token || cancelled) return;
+      blobUrl = await fetchVideoThumbnailBlobUrl(
+        token,
+        conversationId,
+        message.id,
+      );
+      if (!cancelled && blobUrl) {
+        retainedPosterRef.current = blobUrl;
+        setThumbnailUrl(blobUrl);
       }
     })();
 
     return () => {
       cancelled = true;
-      if (localBlobUrl) {
-        URL.revokeObjectURL(localBlobUrl);
-        if (ownedBlobRef.current === localBlobUrl) ownedBlobRef.current = null;
-      }
     };
-  }, [targetUrl, useSecureAccess, conversationId, message.id, getToken]);
+  }, [
+    canCache,
+    conversationId,
+    getToken,
+    localPoster,
+    message.attachment?.thumbnailUrl,
+    message.id,
+  ]);
 
-  useEffect(() => {
-    return () => {
-      if (ownedBlobRef.current) {
-        URL.revokeObjectURL(ownedBlobRef.current);
-        ownedBlobRef.current = null;
-      }
-    };
-  }, []);
+  if (!targetUrl) return null;
 
-  if (!displayUrl) return null;
-
-  const showProgress =
+  const showUploadProgress =
     message.isYou &&
     message.sendState === "pending" &&
     message.uploadProgress !== undefined;
+  const showCancelled = message.isYou && message.sendState === "cancelled";
+  const showFailed = message.isYou && message.sendState === "failed";
+
+  const showCacheProgress =
+    !showUploadProgress &&
+    status === "downloading" &&
+    progress > 0 &&
+    progress < 100;
+
+  const durationLabel = formatVideoDuration(
+    message.attachment?.durationSeconds ?? undefined,
+  );
+
+  const poster = thumbnailUrl ?? retainedPosterRef.current;
 
   const containerClass = flush
     ? "relative rounded-2xl overflow-hidden shadow-sm group/media"
@@ -124,28 +158,50 @@ export function ChatMessageVideo({
       <button
         type="button"
         onClick={onOpen}
-        className="block w-full relative cursor-pointer"
+        className="block w-full relative cursor-pointer leading-none"
       >
-        <video
-          src={displayUrl}
-          poster={posterUrl}
-          muted
-          playsInline
-          preload="metadata"
-          className="w-full max-h-64 object-cover bg-black pointer-events-none"
-        />
-        {!showProgress && (
+        {poster ? (
+          <img
+            src={poster}
+            alt=""
+            className="block w-full min-w-[220px] max-h-64 object-cover bg-black pointer-events-none"
+          />
+        ) : (
+          <div className="block w-full min-w-[220px] h-40 bg-neutral-800 animate-pulse" />
+        )}
+        {!showUploadProgress && !showCacheProgress && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/20 pointer-events-none">
             <div className="w-12 h-12 rounded-full bg-black/50 flex items-center justify-center">
               <Play className="w-6 h-6 text-white fill-white ml-0.5" />
             </div>
           </div>
         )}
+        {showCacheProgress && (
+          <div className="absolute inset-0 bg-black/45 flex items-center justify-center pointer-events-none">
+            <CircularUploadProgress percent={progress} size={52} />
+          </div>
+        )}
+        {status === "cached" && !showUploadProgress && (
+          <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-emerald-400 shadow-sm pointer-events-none" />
+        )}
+        {durationLabel && (
+          <div className="absolute bottom-2 right-2 text-[9px] font-semibold bg-black/55 text-white px-1.5 py-0.5 rounded pointer-events-none">
+            {durationLabel}
+          </div>
+        )}
       </button>
-      {showProgress && (
-        <div className="absolute inset-0 bg-black/45 flex items-center justify-center pointer-events-none">
-          <CircularUploadProgress percent={message.uploadProgress!} size={52} />
-        </div>
+      {showUploadProgress && (
+        <AttachmentUploadOverlay
+          percent={message.uploadProgress!}
+          onCancel={onCancelUpload}
+        />
+      )}
+      {(showCancelled || showFailed) && (
+        <AttachmentUploadOverlay
+          percent={0}
+          variant={showCancelled ? "cancelled" : "failed"}
+          onRetry={onRetryUpload}
+        />
       )}
       <button
         type="button"

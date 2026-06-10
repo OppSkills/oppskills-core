@@ -41,6 +41,8 @@ export type ChatAttachmentDto = Readonly<{
   sizeBytes: number | null;
   url: string;
   kind: ChatAttachmentKind;
+  thumbnailUrl?: string | null;
+  durationSeconds?: number | null;
 }>;
 
 export type ChatMessageDto = Readonly<{

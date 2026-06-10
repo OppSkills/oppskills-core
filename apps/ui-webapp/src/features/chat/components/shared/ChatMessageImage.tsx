@@ -1,17 +1,23 @@
 "use client";
 
 import { useAuth } from "@clerk/nextjs";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Download } from "lucide-react";
 import { fetchChatMessageAttachmentBlob } from "@/features/chat/lib/downloadAttachment";
 import type { Message } from "@/features/chat/domain/types";
-import { CircularUploadProgress } from "./CircularUploadProgress";
+import {
+  peekImageObjectUrl,
+  storeImageObjectUrl,
+} from "@/features/chat/lib/imageCache/imageCacheBridge";
+import { AttachmentUploadOverlay } from "./AttachmentUploadOverlay";
 
 type ChatMessageImageProps = {
   message: Message;
   conversationId?: string | null;
-  onOpen: () => void;
+  onOpen: (displaySrc: string) => void;
   onDownload: () => void;
+  onCancelUpload?: () => void;
+  onRetryUpload?: () => void;
   className?: string;
   /** When set, time is overlaid on the image (image-only bubbles). */
   overlayTimestamp?: string;
@@ -25,6 +31,8 @@ export function ChatMessageImage({
   conversationId,
   onOpen,
   onDownload,
+  onCancelUpload,
+  onRetryUpload,
   className = "",
   overlayTimestamp,
   overlayFooter,
@@ -32,9 +40,15 @@ export function ChatMessageImage({
 }: ChatMessageImageProps) {
   const { getToken } = useAuth();
   const targetUrl = message.imageUrl;
-  const [displayUrl, setDisplayUrl] = useState<string | undefined>(targetUrl);
-  /** Blob URLs created by this component (secure fetch). Never revoke message-owned blobs. */
-  const ownedBlobRef = useRef<string | null>(null);
+  const [displayUrl, setDisplayUrl] = useState<string | undefined>(() => {
+    if (!targetUrl) return undefined;
+    if (targetUrl.startsWith("blob:")) {
+      storeImageObjectUrl(message.id, targetUrl);
+      return targetUrl;
+    }
+    const cached = peekImageObjectUrl(message.id);
+    return cached ?? targetUrl;
+  });
 
   const useSecureAccess =
     Boolean(conversationId) &&
@@ -50,7 +64,14 @@ export function ChatMessageImage({
     }
 
     if (targetUrl.startsWith("blob:")) {
+      storeImageObjectUrl(message.id, targetUrl);
       setDisplayUrl(targetUrl);
+      return;
+    }
+
+    const cached = peekImageObjectUrl(message.id);
+    if (cached) {
+      setDisplayUrl(cached);
       return;
     }
 
@@ -59,7 +80,6 @@ export function ChatMessageImage({
       return;
     }
 
-    let localBlobUrl: string | null = null;
     let cancelled = false;
 
     void (async () => {
@@ -72,8 +92,8 @@ export function ChatMessageImage({
           message.id,
         );
         if (cancelled) return;
-        localBlobUrl = URL.createObjectURL(blob);
-        ownedBlobRef.current = localBlobUrl;
+        const localBlobUrl = URL.createObjectURL(blob);
+        storeImageObjectUrl(message.id, localBlobUrl);
         setDisplayUrl(localBlobUrl);
       } catch {
         if (!cancelled) setDisplayUrl(undefined);
@@ -82,28 +102,17 @@ export function ChatMessageImage({
 
     return () => {
       cancelled = true;
-      if (localBlobUrl) {
-        URL.revokeObjectURL(localBlobUrl);
-        if (ownedBlobRef.current === localBlobUrl) ownedBlobRef.current = null;
-      }
     };
   }, [targetUrl, useSecureAccess, conversationId, message.id, getToken]);
 
-  useEffect(() => {
-    return () => {
-      if (ownedBlobRef.current) {
-        URL.revokeObjectURL(ownedBlobRef.current);
-        ownedBlobRef.current = null;
-      }
-    };
-  }, []);
-
   if (!displayUrl) return null;
 
-  const showProgress =
+  const showUploading =
     message.isYou &&
     message.sendState === "pending" &&
     message.uploadProgress !== undefined;
+  const showCancelled = message.isYou && message.sendState === "cancelled";
+  const showFailed = message.isYou && message.sendState === "failed";
 
   const containerClass = flush
     ? "relative rounded-2xl overflow-hidden shadow-sm group/media"
@@ -114,13 +123,21 @@ export function ChatMessageImage({
       <img
         src={displayUrl}
         alt="Attached image"
-        onClick={onOpen}
-        className="w-full max-h-64 object-cover cursor-pointer hover:opacity-90 transition-opacity"
+        onClick={() => onOpen(displayUrl)}
+        className="block w-full max-h-64 object-cover cursor-pointer hover:opacity-90 transition-opacity"
       />
-      {showProgress && (
-        <div className="absolute inset-0 bg-black/45 flex items-center justify-center pointer-events-none">
-          <CircularUploadProgress percent={message.uploadProgress!} size={52} />
-        </div>
+      {showUploading && (
+        <AttachmentUploadOverlay
+          percent={message.uploadProgress!}
+          onCancel={onCancelUpload}
+        />
+      )}
+      {(showCancelled || showFailed) && (
+        <AttachmentUploadOverlay
+          percent={0}
+          variant={showCancelled ? "cancelled" : "failed"}
+          onRetry={onRetryUpload}
+        />
       )}
       <button
         type="button"

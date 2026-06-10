@@ -31,6 +31,8 @@ import {
   SendChatMessageDto,
   UpdateGroupConversationDto,
 } from './dto/chat.dto';
+import { ChatStreamTokenService } from '../common/chat-stream-token.service';
+import { parseRangeHeader } from './lib/parse-range-header';
 import { ChatAttachmentsService } from './services/chat-attachments.service';
 import { ChatSearchService } from './services/chat-search.service';
 import { ConversationsService } from './services/conversations.service';
@@ -49,6 +51,7 @@ export class ChatController {
     private readonly chatSearch: ChatSearchService,
     private readonly attachments: ChatAttachmentsService,
     private readonly chatGateway: ChatGateway,
+    private readonly streamTokens: ChatStreamTokenService,
   ) {}
 
   private userId(req: Request): string {
@@ -143,12 +146,17 @@ export class ChatController {
 
   @Post('conversations/:id/messages')
   @ApiOperation({ summary: 'Send a message (REST fallback)' })
-  sendMessage(
+  async sendMessage(
     @Req() req: Request,
     @Param('id') id: string,
     @Body() dto: SendChatMessageDto,
   ) {
-    return this.messages.sendMessage(this.userId(req), id, dto);
+    const userId = this.userId(req);
+    const message = await this.messages.sendMessage(userId, id, dto);
+    if (message.type === 'VIDEO') {
+      void this.chatGateway.processVideoMetadata(id, message.id, userId);
+    }
+    return message;
   }
 
   @Post('conversations/:id/read')
@@ -177,6 +185,11 @@ export class ChatController {
     required: false,
     enum: ['inline', 'attachment'],
   })
+  @ApiQuery({
+    name: 'streamToken',
+    required: false,
+    description: 'Short-lived token for HTML video element playback',
+  })
   async streamMessageAttachment(
     @Req() req: Request,
     @Res() res: Response,
@@ -185,16 +198,33 @@ export class ChatController {
     @Query('disposition', new DefaultValuePipe('attachment'))
     disposition: 'inline' | 'attachment',
   ) {
-    const file = await this.attachments.openMessageAttachment(
-      this.userId(req),
+    const userId = this.userId(req);
+    const attachmentMeta = await this.attachments.getAttachmentMetadata(
+      userId,
       conversationId,
       messageId,
+    );
+    const byteRange = parseRangeHeader(
+      req.headers.range,
+      attachmentMeta.totalSize,
+    );
+    const file = await this.attachments.openMessageAttachment(
+      userId,
+      conversationId,
+      messageId,
+      byteRange,
     );
 
     const safeName = file.fileName.replace(/[^\w.\-() ]+/g, '_') || 'download';
     const disp = disposition === 'inline' ? 'inline' : 'attachment';
 
+    res.status(file.statusCode);
     res.setHeader('Content-Type', file.contentType);
+    res.setHeader('Accept-Ranges', 'bytes');
+    res.setHeader('Content-Length', String(file.contentLength));
+    if (file.contentRange) {
+      res.setHeader('Content-Range', file.contentRange);
+    }
     res.setHeader(
       'Content-Disposition',
       `${disp}; filename="${safeName}"; filename*=UTF-8''${encodeURIComponent(file.fileName)}`,
@@ -207,6 +237,52 @@ export class ChatController {
       }
     });
     file.stream.pipe(res);
+  }
+
+  @Get('conversations/:conversationId/messages/:messageId/thumbnail')
+  @ApiOperation({ summary: 'Stream a video message thumbnail' })
+  async streamMessageThumbnail(
+    @Req() req: Request,
+    @Res() res: Response,
+    @Param('conversationId') conversationId: string,
+    @Param('messageId') messageId: string,
+  ) {
+    const file = await this.attachments.openMessageThumbnail(
+      this.userId(req),
+      conversationId,
+      messageId,
+    );
+
+    res.status(file.statusCode);
+    res.setHeader('Content-Type', file.contentType);
+    res.setHeader('Content-Length', String(file.contentLength));
+    res.setHeader('Cache-Control', 'private, no-store');
+
+    file.stream.on('error', () => {
+      if (!res.headersSent) res.status(500).end();
+    });
+    file.stream.pipe(res);
+  }
+
+  @Get('conversations/:conversationId/messages/:messageId/stream-token')
+  @ApiOperation({
+    summary: 'Issue a short-lived stream token for HTML video playback',
+  })
+  createStreamToken(
+    @Req() req: Request,
+    @Param('conversationId') conversationId: string,
+    @Param('messageId') messageId: string,
+  ) {
+    const userId = this.userId(req);
+    const streamToken = this.streamTokens.sign(
+      userId,
+      conversationId,
+      messageId,
+    );
+    return {
+      streamToken,
+      expiresInSeconds: 15 * 60,
+    };
   }
 
   @Get('conversations/:id/attachments')

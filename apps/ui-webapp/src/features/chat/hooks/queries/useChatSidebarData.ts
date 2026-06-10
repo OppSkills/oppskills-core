@@ -35,6 +35,8 @@ export function useChatSidebarAttachments(
         media: mediaPage.data.map((a) => ({
           messageId: a.messageId,
           fileName: a.fileName,
+          kind:
+            a.kind === "VIDEO" ? ("video" as const) : ("image" as const),
         })),
         docs: docsPage.data.map((a) => ({
           messageId: a.messageId,

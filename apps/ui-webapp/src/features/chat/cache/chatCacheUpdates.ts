@@ -10,10 +10,13 @@ import {
   applyInboxConversationUpdate,
   mapConversationToUi,
   mapMessageToUi,
+  markOptimisticMessageCancelled,
   markOptimisticMessageFailed,
+  markOptimisticMessageRetrying,
   mergeChatFromDetail,
   patchMemberPresence,
   patchMessageDelivery,
+  patchMessageInChat,
   patchMessageUploadProgress,
   replaceOptimisticMessage,
 } from "../domain/mappers";
@@ -166,7 +169,12 @@ export function replaceOptimisticMessageInCaches(
   const pending = messageData?.pages
     .flatMap((page) => page.messages)
     .find((m) => m.id === tempId);
-  if (pending) revokeOptimisticPreview(pending);
+  const keepPoster = Boolean(
+    pending?.imageUrl?.startsWith("blob:") &&
+      (!pending.attachment || pending.imageUrl !== pending.attachment.url) &&
+      !uiMsg.attachment?.thumbnailUrl,
+  );
+  if (pending) revokeOptimisticPreview(pending, { keepPoster });
 
   updateMessagesCache(queryClient, conversationId, (chat) =>
     replaceOptimisticMessage(chat, tempId, uiMsg, stableKey),
@@ -205,6 +213,26 @@ export function markOptimisticFailedInCaches(
 ) {
   updateMessagesCache(queryClient, conversationId, (chat) =>
     markOptimisticMessageFailed(chat, tempId),
+  );
+}
+
+export function markOptimisticCancelledInCaches(
+  queryClient: QueryClient,
+  conversationId: string,
+  tempId: string,
+) {
+  updateMessagesCache(queryClient, conversationId, (chat) =>
+    markOptimisticMessageCancelled(chat, tempId),
+  );
+}
+
+export function markOptimisticRetryingInCaches(
+  queryClient: QueryClient,
+  conversationId: string,
+  tempId: string,
+) {
+  updateMessagesCache(queryClient, conversationId, (chat) =>
+    markOptimisticMessageRetrying(chat, tempId),
   );
 }
 
@@ -260,6 +288,31 @@ export function patchPresenceInCaches(
       ...c,
       members: patchMemberPresence(c.members, userId, presence),
     })),
+  );
+}
+
+export function patchMessageUpdatedInCaches(
+  queryClient: QueryClient,
+  conversationId: string,
+  dto: ChatMessageDto,
+  currentUserId: string,
+) {
+  const uiMsg = mapMessageToUi(dto, currentUserId);
+  const messageData = queryClient.getQueryData<InfiniteData<ChatMessagesPage>>(
+    chatQueryKeys.messages(conversationId),
+  );
+  const existing = messageData?.pages
+    .flatMap((page) => page.messages)
+    .find((m) => m.id === uiMsg.id);
+  if (
+    existing?.imageUrl?.startsWith("blob:") &&
+    uiMsg.attachment?.thumbnailUrl &&
+    existing.imageUrl !== uiMsg.imageUrl
+  ) {
+    URL.revokeObjectURL(existing.imageUrl);
+  }
+  updateMessagesCache(queryClient, conversationId, (chat) =>
+    patchMessageInChat(chat, uiMsg.id, uiMsg),
   );
 }
 

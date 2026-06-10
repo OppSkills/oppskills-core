@@ -19,6 +19,7 @@ import { ChatAuthorizationService } from './services/chat-authorization.service'
 import { ConversationsService } from './services/conversations.service';
 import { MessagesService } from './services/messages.service';
 import { PresenceService } from './presence.service';
+import { VideoThumbnailService } from '../media/video-thumbnail.service';
 import type { SendChatMessageDto } from './dto/chat.dto';
 import { prisma } from '@oppskills/db';
 import type {
@@ -50,6 +51,7 @@ export class ChatGateway
     private readonly presenceService: PresenceService,
     private readonly clerkConfig: ClerkAuthConfigService,
     private readonly cacheService: CacheService,
+    private readonly videoThumbnails: VideoThumbnailService,
   ) {}
 
   afterInit(server: Server) {
@@ -210,6 +212,9 @@ export class ChatGateway
       );
 
       await this.broadcastNewMessage(conversationId, message);
+      if (message.type === 'VIDEO') {
+        void this.processVideoMetadata(conversationId, message.id, userId);
+      }
       return { ok: true, message };
     } catch (error) {
       return this.wsFail(error);
@@ -312,6 +317,41 @@ export class ChatGateway
         }
       }),
     );
+  }
+
+  async processVideoMetadata(
+    conversationId: string,
+    messageId: string,
+    viewerUserId: string,
+  ) {
+    await this.videoThumbnails.processMessageVideo(messageId);
+    const updated = await this.messages.getMessage(
+      viewerUserId,
+      conversationId,
+      messageId,
+    );
+    await this.broadcastMessageUpdated(conversationId, updated);
+  }
+
+  async broadcastMessageUpdated(
+    conversationId: string,
+    message: ChatMessageDto,
+  ) {
+    const payload = { conversationId, message };
+    this.server
+      .to(this.conversationRoom(conversationId))
+      .emit('message_updated', payload);
+
+    const participants = await prisma.conversationParticipantEntity.findMany({
+      where: { conversationId },
+      select: { userId: true },
+    });
+
+    for (const participant of participants) {
+      this.server
+        .to(this.userRoom(participant.userId))
+        .emit('message_updated', payload);
+    }
   }
 
   async broadcastNewMessage(conversationId: string, message: ChatMessageDto) {

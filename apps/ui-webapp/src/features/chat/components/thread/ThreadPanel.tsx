@@ -58,8 +58,10 @@ type ThreadPanelProps = {
   messageSearchQuery: string;
   messagesEndRef: React.RefObject<HTMLDivElement | null>;
   messagesLoading: boolean;
+  isLoadingOlder: boolean;
   replyingToMessage: Message | null;
   scrollContainerRef: React.RefObject<HTMLDivElement | null>;
+  topSentinelRef: React.RefObject<HTMLDivElement | null>;
   showChatMenu: boolean;
   showDateFilter: boolean;
   showRightSidebar: boolean;
@@ -76,6 +78,7 @@ type ThreadPanelProps = {
   onCurrentMatchIndexChange: React.Dispatch<React.SetStateAction<number>>;
   onDeleteChat: () => void;
   onDeleteGroup: () => void;
+  onCancelUpload?: (messageId: string) => void;
   onDownloadMessage: (message: Message) => void;
   onEmojiSelect: (emoji: string) => void;
   onEndDateFilterChange: (value: string) => void;
@@ -84,9 +87,10 @@ type ThreadPanelProps = {
   onInputKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
   onLeaveGroup: () => void;
   onMessageSearchQueryChange: (value: string) => void;
-  onOpenImage: (messageId: string) => void;
+  onOpenImage: (messageId: string, displaySrc?: string) => void;
   onReply: (message: Message) => void;
   onReplyCancel: () => void;
+  onRetryUpload?: (messageId: string) => void;
   onScroll: () => void;
   onScrollToMessage: (messageId: string) => void;
   onSearchMessages: () => void;
@@ -117,8 +121,10 @@ export function ThreadPanel({
   messageSearchQuery,
   messagesEndRef,
   messagesLoading,
+  isLoadingOlder,
   replyingToMessage,
   scrollContainerRef,
+  topSentinelRef,
   showChatMenu,
   showDateFilter,
   showRightSidebar,
@@ -135,6 +141,7 @@ export function ThreadPanel({
   onCurrentMatchIndexChange,
   onDeleteChat,
   onDeleteGroup,
+  onCancelUpload,
   onDownloadMessage,
   onEmojiSelect,
   onEndDateFilterChange,
@@ -146,6 +153,7 @@ export function ThreadPanel({
   onOpenImage,
   onReply,
   onReplyCancel,
+  onRetryUpload,
   onScroll,
   onScrollToMessage,
   onSearchMessages,
@@ -227,13 +235,17 @@ export function ThreadPanel({
             messageSearchQuery={messageSearchQuery}
             messagesEndRef={messagesEndRef}
             messagesLoading={messagesLoading}
+            isLoadingOlder={isLoadingOlder}
             scrollContainerRef={scrollContainerRef}
+            topSentinelRef={topSentinelRef}
             selectedChatId={activeChat.id}
             showDateFilter={showDateFilter}
             startDateFilter={startDateFilter}
+            onCancelUpload={onCancelUpload}
             onDownloadMessage={onDownloadMessage}
             onOpenImage={onOpenImage}
             onReply={onReply}
+            onRetryUpload={onRetryUpload}
             onScroll={onScroll}
             onScrollToMessage={onScrollToMessage}
           />

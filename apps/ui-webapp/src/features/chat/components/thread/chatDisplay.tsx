@@ -8,6 +8,9 @@ export function OutgoingMessageStatus({ message }: { message: Message }) {
   if (message.sendState === "pending") {
     return <Clock className="w-3.5 h-3.5" />;
   }
+  if (message.sendState === "cancelled") {
+    return <span className="text-[9px] text-white/70">Cancelled</span>;
+  }
   if (message.sendState === "failed") {
     return <span className="text-[9px] text-red-300">Failed</span>;
   }

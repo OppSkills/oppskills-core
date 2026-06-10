@@ -74,6 +74,7 @@
     "date-fns": "^4.1.0",
     "emoji-picker-react": "^4.12.2",
     "framer-motion": "^12.23.25",
+    "idb": "^8.0.2",
     "isomorphic-dompurify": "^3.11.0",
     "jsdom": "^29.0.2",
     "lexical": "^0.39.0",

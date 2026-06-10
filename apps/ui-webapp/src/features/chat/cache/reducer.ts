@@ -10,8 +10,10 @@ import {
   applyInboxUpdateToCache,
   applyServerMessageToCaches,
   clearUnreadInCache,
+  markOptimisticCancelledInCaches,
   markOptimisticFailedInCaches,
   patchDeliveryInCaches,
+  patchMessageUpdatedInCaches,
   patchPresenceInCaches,
   patchUploadProgressInCaches,
   removeConversationFromCache,
@@ -52,6 +54,13 @@ export function applyChatEvent(
         event.tempId,
       );
       return;
+    case "OPTIMISTIC_CANCELLED":
+      markOptimisticCancelledInCaches(
+        queryClient,
+        event.conversationId,
+        event.tempId,
+      );
+      return;
     case "SERVER_MESSAGE":
       return applyServerMessageToCaches(
         queryClient,
@@ -60,6 +69,14 @@ export function applyChatEvent(
         ctx.currentUserId,
         { isActiveChat: event.isActiveChat },
       );
+    case "MESSAGE_UPDATED":
+      patchMessageUpdatedInCaches(
+        queryClient,
+        event.conversationId,
+        event.dto,
+        ctx.currentUserId,
+      );
+      return;
     case "INBOX_UPDATE":
       applyInboxUpdateToCache(queryClient, event.conversation, {
         isActiveChat: event.isActiveChat,

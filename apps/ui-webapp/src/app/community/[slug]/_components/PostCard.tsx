@@ -14,7 +14,7 @@ import { usePostImpression } from "@/hooks/community/usePostImpression";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import CommentThread from "./CommentThread";
-import { usePostComments } from "@/hooks/useCommunityPosts";
+import { usePostComments } from "@/hooks/community/useCommunityPosts";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface PostCardProps {

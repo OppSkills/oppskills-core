@@ -6,6 +6,7 @@ import type {
   ChatMessageDto,
 } from "@oppskills/types";
 import type { Chat, ChatMemberUi, Message } from "./types";
+import { ensureAbsoluteUrl } from "@/lib/utils";
 
 export function memberDisplayName(m: ChatMemberDto): string {
   const parts = [m.firstName, m.lastName].filter(Boolean);
@@ -34,9 +35,11 @@ export function mapMessageToUi(
           ? formatBytes(m.attachment.sizeBytes)
           : undefined,
         url: m.attachment.url,
+        thumbnailUrl: m.attachment.thumbnailUrl,
+        durationSeconds: m.attachment.durationSeconds,
       };
       if (kind === "VIDEO") {
-        imageUrl = m.attachment.url;
+        imageUrl = m.attachment.thumbnailUrl ?? undefined;
       }
     }
   }
@@ -224,6 +227,17 @@ export function appendMessageToChat(chat: Chat, message: Message): Chat {
   };
 }
 
+export function patchMessageInChat(
+  chat: Chat,
+  messageId: string,
+  message: Message,
+): Chat {
+  return {
+    ...chat,
+    messages: chat.messages.map((m) => (m.id === messageId ? message : m)),
+  };
+}
+
 export function patchMessageUploadProgress(
   chat: Chat,
   tempId: string,
@@ -246,9 +260,20 @@ export function replaceOptimisticMessage(
   stableKey?: string,
 ): Chat {
   const idx = chat.messages.findIndex((m) => m.id === tempId);
+  const pending = idx >= 0 ? chat.messages[idx] : undefined;
+  const pendingLocalImage =
+    pending?.imageUrl?.startsWith("blob:") &&
+    (!pending.attachment || pending.imageUrl !== pending.attachment.url)
+      ? pending.imageUrl
+      : undefined;
+
   const merged: Message = {
     ...message,
-    stableKey: stableKey ?? chat.messages[idx]?.stableKey ?? message.stableKey,
+    imageUrl:
+      message.attachment?.thumbnailUrl ??
+      pendingLocalImage ??
+      message.imageUrl,
+    stableKey: stableKey ?? pending?.stableKey ?? message.stableKey,
     sendState: undefined,
     uploadProgress: undefined,
   };
@@ -280,7 +305,31 @@ export function markOptimisticMessageFailed(chat: Chat, tempId: string): Chat {
   return {
     ...chat,
     messages: chat.messages.map((m) =>
-      m.id === tempId ? { ...m, sendState: "failed" as const } : m,
+      m.id === tempId
+        ? { ...m, sendState: "failed" as const, uploadProgress: undefined }
+        : m,
+    ),
+  };
+}
+
+export function markOptimisticMessageCancelled(chat: Chat, tempId: string): Chat {
+  return {
+    ...chat,
+    messages: chat.messages.map((m) =>
+      m.id === tempId
+        ? { ...m, sendState: "cancelled" as const, uploadProgress: undefined }
+        : m,
+    ),
+  };
+}
+
+export function markOptimisticMessageRetrying(chat: Chat, tempId: string): Chat {
+  return {
+    ...chat,
+    messages: chat.messages.map((m) =>
+      m.id === tempId
+        ? { ...m, sendState: "pending" as const, uploadProgress: 0 }
+        : m,
     ),
   };
 }

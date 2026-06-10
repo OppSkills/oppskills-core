@@ -3,6 +3,10 @@
 import { useAuth } from "@clerk/nextjs";
 import { useEffect, useState } from "react";
 import { fetchChatMessageAttachmentBlob } from "@/features/chat/lib/downloadAttachment";
+import {
+  peekImageObjectUrl,
+  storeImageObjectUrl,
+} from "@/features/chat/lib/imageCache/imageCacheBridge";
 
 type SecureChatAttachmentImageProps = {
   conversationId: string;
@@ -10,6 +14,7 @@ type SecureChatAttachmentImageProps = {
   alt?: string;
   className?: string;
   onClick?: () => void;
+  preferredSrc?: string | null;
 };
 
 export function SecureChatAttachmentImage({
@@ -18,12 +23,24 @@ export function SecureChatAttachmentImage({
   alt = "Attachment",
   className = "",
   onClick,
+  preferredSrc,
 }: SecureChatAttachmentImageProps) {
   const { getToken } = useAuth();
-  const [src, setSrc] = useState<string | null>(null);
+  const [src, setSrc] = useState<string | null>(
+    preferredSrc ?? peekImageObjectUrl(messageId) ?? null,
+  );
 
   useEffect(() => {
-    let blobUrl: string | null = null;
+    const cached = peekImageObjectUrl(messageId);
+    if (preferredSrc) {
+      setSrc(preferredSrc);
+      return;
+    }
+    if (cached) {
+      setSrc(cached);
+      return;
+    }
+
     let cancelled = false;
 
     void (async () => {
@@ -36,7 +53,8 @@ export function SecureChatAttachmentImage({
           messageId,
         );
         if (cancelled) return;
-        blobUrl = URL.createObjectURL(blob);
+        const blobUrl = URL.createObjectURL(blob);
+        storeImageObjectUrl(messageId, blobUrl);
         setSrc(blobUrl);
       } catch {
         if (!cancelled) setSrc(null);
@@ -45,9 +63,8 @@ export function SecureChatAttachmentImage({
 
     return () => {
       cancelled = true;
-      if (blobUrl) URL.revokeObjectURL(blobUrl);
     };
-  }, [conversationId, messageId, getToken]);
+  }, [conversationId, messageId, getToken, preferredSrc]);
 
   if (!src) {
     return (

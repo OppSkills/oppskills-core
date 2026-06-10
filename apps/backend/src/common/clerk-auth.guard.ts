@@ -9,13 +9,17 @@ import type { Request } from 'express';
 // Removed unused ClerkUser import, as we are no longer relying on the full object
 import { prisma } from '@oppskills/db';
 import { Logger } from 'src/_utils/logger';
+import { ChatStreamTokenService } from './chat-stream-token.service';
 import { ClerkAuthConfigService } from './config.service';
 
 @Injectable()
 export class ClerkAuthGuard implements CanActivate {
   private readonly logger = new Logger(ClerkAuthGuard.name);
 
-  constructor(private readonly configService: ClerkAuthConfigService) {}
+  constructor(
+    private readonly configService: ClerkAuthConfigService,
+    private readonly streamTokens: ChatStreamTokenService,
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<Request>();
@@ -75,6 +79,18 @@ export class ClerkAuthGuard implements CanActivate {
         );
         // Continue with normal auth flow - do not bypass
       }
+    }
+
+    const streamToken = this.extractStreamToken(request);
+    const attachmentRoute = this.parseAttachmentRoute(request);
+    if (streamToken && attachmentRoute) {
+      const payload = this.streamTokens.verify(
+        streamToken,
+        attachmentRoute.conversationId,
+        attachmentRoute.messageId,
+      );
+      request.user = { id: payload.sub };
+      return true;
     }
 
     let token = this.extractTokenFromHeader(request);
@@ -171,5 +187,25 @@ export class ClerkAuthGuard implements CanActivate {
       return typeof first === 'string' ? first : undefined;
     }
     return undefined;
+  }
+
+  private extractStreamToken(request: Request): string | undefined {
+    const tokenCandidate = request.query?.streamToken;
+    if (typeof tokenCandidate === 'string') return tokenCandidate;
+    if (Array.isArray(tokenCandidate)) {
+      const first = tokenCandidate[0];
+      return typeof first === 'string' ? first : undefined;
+    }
+    return undefined;
+  }
+
+  private parseAttachmentRoute(
+    request: Request,
+  ): { conversationId: string; messageId: string } | null {
+    const match = request.path.match(
+      /\/chats\/conversations\/([^/]+)\/messages\/([^/]+)\/attachment\/?$/,
+    );
+    if (!match?.[1] || !match[2]) return null;
+    return { conversationId: match[1], messageId: match[2] };
   }
 }

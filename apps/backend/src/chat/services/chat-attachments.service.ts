@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { AttachmentKind, prisma } from '@oppskills/db';
 import type { ChatCursorPageDto, ChatMemberProfileDto } from '@oppskills/types';
+import type { ObjectByteRange } from '../../media/media.service';
 import { MediaService } from '../../media/media.service';
 import { ChatAuthorizationService } from './chat-authorization.service';
 import { USER_SELECT } from './chat.constants';
@@ -69,14 +70,14 @@ export class ChatAttachmentsService {
     };
   }
 
-  async openMessageAttachment(
+  async getAttachmentMetadata(
     userId: string,
     conversationId: string,
     messageId: string,
   ): Promise<{
-    stream: import('stream').Readable;
     contentType: string;
     fileName: string;
+    totalSize: number;
   }> {
     await this.auth.assertParticipant(userId, conversationId);
 
@@ -93,12 +94,93 @@ export class ChatAttachmentsService {
       message.attachment.url,
     );
     this.mediaService.assertChatAttachmentKey(key);
-    const { body, contentType } = await this.mediaService.getObjectStream(key);
+    const metadata = await this.mediaService.getObjectMetadata(key);
 
     return {
-      stream: body,
-      contentType: message.attachment.mimeType || contentType,
+      contentType: message.attachment.mimeType || metadata.contentType,
       fileName: message.attachment.fileName,
+      totalSize: metadata.contentLength,
+    };
+  }
+
+  async openMessageAttachment(
+    userId: string,
+    conversationId: string,
+    messageId: string,
+    byteRange?: ObjectByteRange,
+  ): Promise<{
+    stream: import('stream').Readable;
+    contentType: string;
+    fileName: string;
+    contentLength: number;
+    totalSize: number;
+    contentRange?: string;
+    statusCode: 200 | 206;
+  }> {
+    await this.auth.assertParticipant(userId, conversationId);
+
+    const message = await prisma.messageEntity.findFirst({
+      where: { id: messageId, conversationId },
+      include: { attachment: true },
+    });
+
+    if (!message?.attachment) {
+      throw new NotFoundException('Attachment not found');
+    }
+
+    const key = this.mediaService.resolveObjectKeyFromStoredUrl(
+      message.attachment.url,
+    );
+    this.mediaService.assertChatAttachmentKey(key);
+    const result = await this.mediaService.getObjectStream(key, byteRange);
+
+    return {
+      stream: result.body,
+      contentType: message.attachment.mimeType || result.contentType,
+      fileName: message.attachment.fileName,
+      contentLength: result.contentLength,
+      totalSize: result.totalSize,
+      contentRange: result.contentRange,
+      statusCode: result.statusCode,
+    };
+  }
+
+  async openMessageThumbnail(
+    userId: string,
+    conversationId: string,
+    messageId: string,
+  ): Promise<{
+    stream: import('stream').Readable;
+    contentType: string;
+    fileName: string;
+    contentLength: number;
+    totalSize: number;
+    statusCode: 200;
+  }> {
+    await this.auth.assertParticipant(userId, conversationId);
+
+    const message = await prisma.messageEntity.findFirst({
+      where: { id: messageId, conversationId },
+      include: { attachment: true },
+    });
+
+    if (!message?.attachment?.thumbnailUrl) {
+      throw new NotFoundException('Thumbnail not found');
+    }
+
+    const key = this.mediaService.resolveObjectKeyFromStoredUrl(
+      message.attachment.thumbnailUrl,
+    );
+    this.mediaService.assertChatAttachmentKey(key);
+    const result = await this.mediaService.getObjectStream(key);
+
+    return {
+      stream: result.body,
+      contentType: 'image/jpeg',
+      fileName: 'thumbnail.jpg',
+      contentLength: result.contentLength,
+      totalSize: result.totalSize,
+      statusCode: 200,
     };
   }
 

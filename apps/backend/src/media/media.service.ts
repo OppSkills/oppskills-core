@@ -4,8 +4,18 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import {
+  GetObjectCommand,
+  HeadObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from '@aws-sdk/client-s3';
 import type { Readable } from 'stream';
+
+export type ObjectByteRange = {
+  start: number;
+  end: number;
+};
 import { createPresignedPost } from '@aws-sdk/s3-presigned-post';
 import type { PresignedPost } from '@aws-sdk/s3-presigned-post';
 import type {
@@ -429,15 +439,66 @@ export class MediaService {
     }
   }
 
-  async getObjectStream(key: string): Promise<{
-    body: Readable;
+  async getObjectMetadata(key: string): Promise<{
     contentType: string;
+    contentLength: number;
   }> {
     const bucket = this.getRequiredEnv('MEDIA_S3_BUCKET');
+    const result = await this.s3.send(
+      new HeadObjectCommand({
+        Bucket: bucket,
+        Key: key,
+      }),
+    );
+
+    const contentLength = result.ContentLength ?? 0;
+    if (contentLength <= 0) {
+      throw new InternalServerErrorException('Empty object from S3');
+    }
+
+    return {
+      contentType: result.ContentType ?? 'application/octet-stream',
+      contentLength,
+    };
+  }
+
+  async getObjectStream(
+    key: string,
+    range?: ObjectByteRange,
+  ): Promise<{
+    body: Readable;
+    contentType: string;
+    contentLength: number;
+    totalSize: number;
+    contentRange?: string;
+    statusCode: 200 | 206;
+  }> {
+    const bucket = this.getRequiredEnv('MEDIA_S3_BUCKET');
+    const metadata = await this.getObjectMetadata(key);
+    const totalSize = metadata.contentLength;
+
+    let rangeHeader: string | undefined;
+    let responseLength = totalSize;
+    let contentRange: string | undefined;
+    let statusCode: 200 | 206 = 200;
+
+    if (range) {
+      const start = Math.max(0, range.start);
+      const end = Math.min(range.end, totalSize - 1);
+      if (start > end || start >= totalSize) {
+        throw new BadRequestException('Invalid byte range');
+      }
+      rangeHeader = `bytes=${start}-${end}`;
+      responseLength = end - start + 1;
+      contentRange = `bytes ${start}-${end}/${totalSize}`;
+      statusCode = 206;
+    }
+
     const result = await this.s3.send(
       new GetObjectCommand({
         Bucket: bucket,
         Key: key,
+        ...(rangeHeader ? { Range: rangeHeader } : {}),
       }),
     );
 
@@ -447,7 +508,43 @@ export class MediaService {
 
     return {
       body: result.Body as Readable,
-      contentType: result.ContentType ?? 'application/octet-stream',
+      contentType: result.ContentType ?? metadata.contentType,
+      contentLength: responseLength,
+      totalSize,
+      contentRange,
+      statusCode,
     };
+  }
+
+  async putObjectBuffer(input: {
+    key: string;
+    body: Buffer;
+    contentType: string;
+  }): Promise<void> {
+    const bucket = this.getRequiredEnv('MEDIA_S3_BUCKET');
+    await this.s3.send(
+      new PutObjectCommand({
+        Bucket: bucket,
+        Key: input.key,
+        Body: input.body,
+        ContentType: input.contentType,
+      }),
+    );
+  }
+
+  buildPublicUrl(key: string): string {
+    const cloudfrontBaseUrl = this.normalizeBaseUrl(
+      this.getRequiredEnv('MEDIA_CLOUDFRONT_BASE_URL'),
+    );
+    return `${cloudfrontBaseUrl}/${encodeURI(key)}`;
+  }
+
+  buildChatAttachmentKey(userId: string, fileName: string, extension: string): string {
+    return this.buildDocumentObjectKey(
+      'CHAT_ATTACHMENT',
+      userId,
+      fileName,
+      extension,
+    );
   }
 }

@@ -6,7 +6,7 @@ import type {
 } from "@oppskills/types";
 
 /** Client-only upload state for optimistic outgoing messages */
-export type MessageSendState = "pending" | "failed";
+export type MessageSendState = "pending" | "failed" | "cancelled";
 
 export interface Message {
   type?: ChatMessageType;
@@ -36,6 +36,8 @@ export interface Message {
     type: "document" | "image" | "video";
     size?: string;
     url: string;
+    thumbnailUrl?: string | null;
+    durationSeconds?: number | null;
   };
 }
 

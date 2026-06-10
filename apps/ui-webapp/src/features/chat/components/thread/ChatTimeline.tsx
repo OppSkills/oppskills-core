@@ -2,15 +2,17 @@
 
 import React from "react";
 import { motion } from "framer-motion";
-import { Download, FileText, CornerUpLeft } from "lucide-react";
+import { Download, FileText, CornerUpLeft, Loader2 } from "lucide-react";
 import { BoneyardSkeleton } from "@/components/boneyard/boneyard-skeleton";
+import { AttachmentUploadOverlay } from "@/features/chat/components/shared/AttachmentUploadOverlay";
 import { ChatMessageImage } from "@/features/chat/components/shared/ChatMessageImage";
 import { ChatMessageVideo } from "@/features/chat/components/shared/ChatMessageVideo";
 import type { Chat, Message } from "@/features/chat/domain/types";
-
-function isVideoMessage(message: Message): boolean {
-  return message.attachment?.type === "video";
-}
+import {
+  isVideoMessage,
+  isVideoOnlyMessage,
+  videoMessageCaption,
+} from "@/features/chat/lib/galleryMedia";
 import {
   ChatTimelineFallback,
   formatDateSeparator,
@@ -30,13 +32,17 @@ interface ChatTimelineProps {
   messageSearchQuery: string;
   messagesEndRef: React.RefObject<HTMLDivElement | null>;
   messagesLoading: boolean;
+  isLoadingOlder: boolean;
   scrollContainerRef: React.RefObject<HTMLDivElement | null>;
+  topSentinelRef: React.RefObject<HTMLDivElement | null>;
   selectedChatId: string;
   showDateFilter: boolean;
   startDateFilter: string;
+  onCancelUpload?: (messageId: string) => void;
   onDownloadMessage: (message: Message) => void;
-  onOpenImage: (messageId: string) => void;
+  onOpenImage: (messageId: string, displaySrc?: string) => void;
   onReply: (message: Message) => void;
+  onRetryUpload?: (messageId: string) => void;
   onScroll: () => void;
   onScrollToMessage: (messageId: string) => void;
 }
@@ -52,13 +58,17 @@ const ChatTimeline = React.memo(function ChatTimeline({
   messageSearchQuery,
   messagesEndRef,
   messagesLoading,
+  isLoadingOlder,
   scrollContainerRef,
+  topSentinelRef,
   selectedChatId,
   showDateFilter,
   startDateFilter,
+  onCancelUpload,
   onDownloadMessage,
   onOpenImage,
   onReply,
+  onRetryUpload,
   onScroll,
   onScrollToMessage,
 }: ChatTimelineProps) {
@@ -122,9 +132,12 @@ const ChatTimeline = React.memo(function ChatTimeline({
           matchingMessageIds[currentMatchIndex] === message.id);
 
       const isVideo = isVideoMessage(message);
+      const displayText = isVideo
+        ? videoMessageCaption(message)
+        : message.text.trim();
       const isImageOnly =
         Boolean(message.imageUrl) && !isVideo && !message.text.trim();
-      const isVideoOnly = isVideo && !message.text.trim();
+      const isVideoOnly = isVideoOnlyMessage(message);
       const isMediaOnly = isImageOnly || isVideoOnly;
 
       const messageElement = isSystem ? (
@@ -144,7 +157,7 @@ const ChatTimeline = React.memo(function ChatTimeline({
           data-message-date={message.timestamp}
           className="flex justify-end items-end gap-2 transition-all duration-300 w-full my-1.5"
         >
-          <div className="relative group flex items-end gap-2 max-w-[75%] md:max-w-[60%]">
+          <div className="relative group flex items-end gap-2 max-w-[75%] md:max-w-[60%] ml-auto">
             <div className="absolute right-full mr-2.5 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 z-20">
               <button
                 type="button"
@@ -218,6 +231,16 @@ const ChatTimeline = React.memo(function ChatTimeline({
                     className={isVideoOnly ? "rounded-br-none" : ""}
                     onOpen={() => onOpenImage(message.id)}
                     onDownload={() => onDownloadMessage(message)}
+                    onCancelUpload={
+                      onCancelUpload
+                        ? () => onCancelUpload(message.id)
+                        : undefined
+                    }
+                    onRetryUpload={
+                      onRetryUpload
+                        ? () => onRetryUpload(message.id)
+                        : undefined
+                    }
                   />
                 )}
 
@@ -237,13 +260,23 @@ const ChatTimeline = React.memo(function ChatTimeline({
                       ) : undefined
                     }
                     className={isImageOnly ? "rounded-br-none" : ""}
-                    onOpen={() => onOpenImage(message.id)}
+                    onOpen={(displaySrc) => onOpenImage(message.id, displaySrc)}
                     onDownload={() => onDownloadMessage(message)}
+                    onCancelUpload={
+                      onCancelUpload
+                        ? () => onCancelUpload(message.id)
+                        : undefined
+                    }
+                    onRetryUpload={
+                      onRetryUpload
+                        ? () => onRetryUpload(message.id)
+                        : undefined
+                    }
                   />
                 )}
 
                 {message.attachment && !message.imageUrl && !isVideo && (
-                  <div className="mb-2 p-3 rounded-lg flex items-center gap-3 border bg-primary-700 border-primary-500 text-white">
+                  <div className="relative mb-2 p-3 rounded-lg flex items-center gap-3 border bg-primary-700 border-primary-500 text-white">
                     <FileText className="w-7 h-7 shrink-0 text-white fill-neutral-500/10" />
                     <div className="min-w-0 flex-1">
                       <p className="text-xs font-semibold truncate leading-tight">
@@ -261,13 +294,47 @@ const ChatTimeline = React.memo(function ChatTimeline({
                     >
                       <Download className="w-4 h-4" />
                     </button>
+                    {message.isYou &&
+                      message.sendState === "pending" &&
+                      message.uploadProgress !== undefined && (
+                        <AttachmentUploadOverlay
+                          percent={message.uploadProgress}
+                          onCancel={
+                            onCancelUpload
+                              ? () => onCancelUpload(message.id)
+                              : undefined
+                          }
+                        />
+                      )}
+                    {message.isYou && message.sendState === "cancelled" && (
+                      <AttachmentUploadOverlay
+                        percent={0}
+                        variant="cancelled"
+                        onRetry={
+                          onRetryUpload
+                            ? () => onRetryUpload(message.id)
+                            : undefined
+                        }
+                      />
+                    )}
+                    {message.isYou && message.sendState === "failed" && (
+                      <AttachmentUploadOverlay
+                        percent={0}
+                        variant="failed"
+                        onRetry={
+                          onRetryUpload
+                            ? () => onRetryUpload(message.id)
+                            : undefined
+                        }
+                      />
+                    )}
                   </div>
                 )}
 
-                {message.text.trim() ? (
+                {displayText ? (
                   <p className="wrap-break-word">
                     <HighlightedText
-                      text={message.text}
+                      text={displayText}
                       highlight={isSearchingMessages ? messageSearchQuery : ""}
                     />
                   </p>
@@ -319,7 +386,7 @@ const ChatTimeline = React.memo(function ChatTimeline({
                   bounceDamping: 40,
                 }}
                 className={`
-                  ${isMediaOnly ? "p-0 overflow-hidden border-0" : "p-3 md:p-4 border border-neutral-200"} rounded-2xl shadow-sm text-sm font-normal relative leading-relaxed min-w-[80px] cursor-grab active:cursor-grabbing select-none z-10
+                  ${isMediaOnly ? "p-0 overflow-hidden" : "p-3 md:p-4 border border-neutral-200"} rounded-2xl shadow-sm text-sm font-normal relative leading-relaxed min-w-[80px] cursor-grab active:cursor-grabbing select-none z-10
                   bg-white text-neutral-900 rounded-bl-none transition-[box-shadow,border-color,background-color] duration-300
                   ${isHighlighted ? "ring-4 ring-yellow-400 ring-offset-2 scale-[1.02]" : ""}
                 `}
@@ -368,7 +435,7 @@ const ChatTimeline = React.memo(function ChatTimeline({
                         : undefined
                     }
                     className={isImageOnly ? "rounded-bl-none" : ""}
-                    onOpen={() => onOpenImage(message.id)}
+                    onOpen={(displaySrc) => onOpenImage(message.id, displaySrc)}
                     onDownload={() => onDownloadMessage(message)}
                   />
                 )}
@@ -395,10 +462,10 @@ const ChatTimeline = React.memo(function ChatTimeline({
                   </div>
                 )}
 
-                {message.text.trim() ? (
+                {displayText ? (
                   <p className="wrap-break-word">
                     <HighlightedText
-                      text={message.text}
+                      text={displayText}
                       highlight={isSearchingMessages ? messageSearchQuery : ""}
                     />
                   </p>
@@ -443,9 +510,11 @@ const ChatTimeline = React.memo(function ChatTimeline({
     isSearchingMessages,
     matchingMessageIds,
     messageSearchQuery,
+    onCancelUpload,
     onDownloadMessage,
     onOpenImage,
     onReply,
+    onRetryUpload,
     onScrollToMessage,
     selectedChatId,
     showDateFilter,
@@ -469,6 +538,19 @@ const ChatTimeline = React.memo(function ChatTimeline({
         onScroll={onScroll}
         className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 scrollbar relative z-10 bg-transparent"
       >
+        <div
+          ref={topSentinelRef}
+          className="h-px w-full shrink-0 pointer-events-none"
+          aria-hidden
+        />
+        {isLoadingOlder && (
+          <div className="flex items-center justify-center py-2 sticky top-0 z-20 pointer-events-none">
+            <span className="flex items-center gap-2 rounded-full bg-white/90 px-3 py-1.5 text-[11px] font-medium text-neutral-600 shadow-sm border border-neutral-200">
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              Loading older messages…
+            </span>
+          </div>
+        )}
         <BoneyardSkeleton
           loading={messagesLoading}
           name="chat-message-timeline"

@@ -4,7 +4,6 @@ import React, {
   useState,
   useRef,
   useEffect,
-  useLayoutEffect,
   useCallback,
   useMemo,
 } from "react";
@@ -16,6 +15,7 @@ import { useChatLayout } from "@/features/chat/hooks/layout/useChatLayout";
 import { useImageGallery } from "@/features/chat/hooks/layout/useImageGallery";
 import { useThreadMessageSearch } from "@/features/chat/hooks/search/useThreadMessageSearch";
 import { useActiveChatView } from "@/features/chat/hooks/thread/useActiveChatView";
+import { useChatThreadScroll } from "@/features/chat/hooks/thread/useChatThreadScroll";
 import { useChatPage } from "@/features/chat/hooks/useChatPage";
 import {
   messageDownloadName,
@@ -25,6 +25,8 @@ import { CHAT_DOCUMENT_INPUT_ACCEPT } from "@/features/chat/lib/documentAccept";
 import { formatChatPresenceSubtitle } from "@/features/chat/lib/formatPresence";
 import type { Message } from "@/features/chat/domain/types";
 import { formatDateSeparator } from "@/features/chat/components/thread/chatDisplay";
+import { isVideoMessage } from "@/features/chat/lib/galleryMedia";
+import { registerVideoServiceWorker } from "@/features/chat/lib/videoCache/registerVideoServiceWorker";
 import { InboxPanel } from "@/features/chat/components/inbox/InboxPanel";
 import { DetailsPanel } from "@/features/chat/components/details/DetailsPanel";
 import { ThreadPanel } from "@/features/chat/components/thread/ThreadPanel";
@@ -63,6 +65,8 @@ export default function ChatsPageShell() {
     openUserChat,
     sendTextMessage,
     sendAttachmentBatch,
+    cancelAttachmentUpload,
+    retryAttachmentUpload,
     downloadMessageAttachment,
     messagesLoading,
     threadMessages,
@@ -128,7 +132,6 @@ export default function ChatsPageShell() {
   const attachmentAnchorRef = useRef<HTMLDivElement>(null);
 
   const fileComposer = useChatComposer();
-  const loadingOlderRef = useRef(false);
   const [groupPhotoUploading, setGroupPhotoUploading] = useState(false);
   const [removingMemberId, setRemovingMemberId] = useState<string | null>(null);
   const [showChatMenu, setShowChatMenu] = useState(false);
@@ -148,9 +151,23 @@ export default function ChatsPageShell() {
   // Sticky Scroll & Input Focus States & Refs
   const [stickyDate, setStickyDate] = useState<string>("");
   const [showSticky, setShowSticky] = useState<boolean>(false);
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const lastScrollTopRef = useRef<number>(0);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  const {
+    scrollContainerRef,
+    messagesEndRef,
+    topSentinelRef,
+    isLoadingOlder,
+    handleLoadOlderIfNeeded,
+  } = useChatThreadScroll({
+    selectedChatId,
+    messagesLoading,
+    threadMessageCount: threadMessages.length,
+    unreadCount: activeChat?.unreadCount ?? 0,
+    hasOlderMessages,
+    loadOlderMessages,
+  });
 
   const focusInput = () => {
     setTimeout(() => {
@@ -163,12 +180,7 @@ export default function ChatsPageShell() {
     if (!container) return;
 
     const scrollTop = container.scrollTop;
-    if (scrollTop < 80 && hasOlderMessages && !loadingOlderRef.current) {
-      loadingOlderRef.current = true;
-      void loadOlderMessages().finally(() => {
-        loadingOlderRef.current = false;
-      });
-    }
+    handleLoadOlderIfNeeded(scrollTop);
     const isScrollingUp = scrollTop < lastScrollTopRef.current;
     lastScrollTopRef.current = scrollTop;
 
@@ -209,6 +221,10 @@ export default function ChatsPageShell() {
       setShowSticky(false);
     }
   };
+
+  useEffect(() => {
+    void registerVideoServiceWorker();
+  }, []);
 
   useEffect(() => {
     setStickyDate("");
@@ -255,13 +271,29 @@ export default function ChatsPageShell() {
     : (["Media", "Docs"] as const);
 
   const galleryItems = useMemo(() => {
-    if (sidebarMedia.length > 0) return sidebarMedia;
-    return threadMessages
-      .filter((m) => m.imageUrl && !m.id.startsWith("optimistic-"))
+    const fromThread = threadMessages
+      .filter((m) => m.imageUrl || isVideoMessage(m))
       .map((m) => ({
         messageId: m.id,
         fileName: messageDownloadName(m),
+        kind: isVideoMessage(m) ? ("video" as const) : ("image" as const),
       }));
+
+    if (sidebarMedia.length === 0) return fromThread;
+
+    const kindByMessageId = new Map(
+      fromThread.map((item) => [item.messageId, item.kind]),
+    );
+
+    return sidebarMedia.map((item) => ({
+      ...item,
+      kind:
+        item.kind ??
+        kindByMessageId.get(item.messageId) ??
+        (/\.(mp4|webm|mov|m4v|mkv|avi)(\?|$)/i.test(item.fileName)
+          ? ("video" as const)
+          : ("image" as const)),
+    }));
   }, [sidebarMedia, threadMessages]);
 
   const sidebarOtherMemberId = useMemo(() => {
@@ -406,9 +438,12 @@ export default function ChatsPageShell() {
     }
   })();
 
-  const openImageInModal = (messageId: string) => {
+  const [modalInstantSrc, setModalInstantSrc] = useState<string | null>(null);
+
+  const openImageInModal = (messageId: string, displaySrc?: string) => {
     const idx = galleryItems.findIndex((g) => g.messageId === messageId);
     if (idx !== -1) {
+      setModalInstantSrc(displaySrc ?? null);
       setActiveModalImageIndex(idx);
       setShowImageModal(true);
     }
@@ -416,11 +451,13 @@ export default function ChatsPageShell() {
 
   const handleNextImage = () => {
     if (galleryItems.length === 0) return;
+    setModalInstantSrc(null);
     setActiveModalImageIndex((prev) => (prev + 1) % galleryItems.length);
   };
 
   const handlePrevImage = () => {
     if (galleryItems.length === 0) return;
+    setModalInstantSrc(null);
     setActiveModalImageIndex(
       (prev) => (prev - 1 + galleryItems.length) % galleryItems.length,
     );
@@ -438,71 +475,9 @@ export default function ChatsPageShell() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [showImageModal, galleryItems.length]);
 
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const prevMessageCountRef = useRef(0);
-
-  const scrollToBottom = useCallback((instant: boolean) => {
-    const el = scrollContainerRef.current;
-    if (!el) return;
-    const run = () => {
-      el.scrollTo({
-        top: el.scrollHeight,
-        behavior: instant ? "auto" : "smooth",
-      });
-    };
-    run();
-    requestAnimationFrame(run);
-  }, []);
-
   useEffect(() => {
-    prevMessageCountRef.current = 0;
     lastScrollTopRef.current = 0;
   }, [selectedChatId]);
-
-  // Open read conversations at the latest message (not prior scroll position).
-  useLayoutEffect(() => {
-    if (!selectedChatId || !activeChat || messagesLoading) return;
-    if (activeChat.unreadCount > 0) return;
-
-    const el = scrollContainerRef.current;
-    if (!el || threadMessages.length === 0) return;
-
-    const snap = () => {
-      el.scrollTop = el.scrollHeight;
-    };
-    snap();
-    requestAnimationFrame(snap);
-  }, [
-    selectedChatId,
-    activeChat?.id,
-    activeChat?.unreadCount,
-    threadMessages.length,
-    messagesLoading,
-  ]);
-
-  useEffect(() => {
-    if (!selectedChatId || messagesLoading) return;
-    if ((activeChat?.unreadCount ?? 0) > 0) return;
-    scrollToBottom(true);
-  }, [
-    selectedChatId,
-    messagesLoading,
-    activeChat?.unreadCount,
-    scrollToBottom,
-  ]);
-
-  useEffect(() => {
-    const count = threadMessages.length;
-    if (count === 0) return;
-    const isInitial = prevMessageCountRef.current === 0;
-    const grew = count > prevMessageCountRef.current;
-    prevMessageCountRef.current = count;
-    if (grew) {
-      scrollToBottom(false);
-    } else if (isInitial && (activeChat?.unreadCount ?? 0) === 0) {
-      scrollToBottom(true);
-    }
-  }, [threadMessages.length, activeChat?.unreadCount, scrollToBottom]);
 
   const handleInputKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (!isMobile && e.key === "Enter" && !e.shiftKey) {
@@ -559,6 +534,22 @@ export default function ChatsPageShell() {
       messageDownloadUrl(message),
     );
   };
+
+  const handleCancelUpload = useCallback(
+    (messageId: string) => {
+      if (!selectedChatId) return;
+      cancelAttachmentUpload(selectedChatId, messageId);
+    },
+    [cancelAttachmentUpload, selectedChatId],
+  );
+
+  const handleRetryUpload = useCallback(
+    (messageId: string) => {
+      if (!selectedChatId) return;
+      void retryAttachmentUpload(selectedChatId, messageId);
+    },
+    [retryAttachmentUpload, selectedChatId],
+  );
 
   const handleDownloadGalleryItem = (item: {
     messageId: string;
@@ -726,8 +717,10 @@ export default function ChatsPageShell() {
             messageSearchQuery={messageSearchQuery}
             messagesEndRef={messagesEndRef}
             messagesLoading={messagesLoading}
+            isLoadingOlder={isLoadingOlder}
             replyingToMessage={replyingToMessage}
             scrollContainerRef={scrollContainerRef}
+            topSentinelRef={topSentinelRef}
             showChatMenu={showChatMenu}
             showDateFilter={showDateFilter}
             showRightSidebar={showRightSidebar}
@@ -743,6 +736,7 @@ export default function ChatsPageShell() {
             onCurrentMatchIndexChange={setCurrentMatchIndex}
             onDeleteChat={requestDeleteChat}
             onDeleteGroup={requestDeleteGroup}
+            onCancelUpload={handleCancelUpload}
             onDownloadMessage={handleDownloadMessage}
             onEmojiSelect={insertEmoji}
             onEndDateFilterChange={setEndDateFilter}
@@ -754,6 +748,7 @@ export default function ChatsPageShell() {
             onOpenImage={openImageInModal}
             onReply={handleReplyToMessage}
             onReplyCancel={handleReplyCancel}
+            onRetryUpload={handleRetryUpload}
             onScroll={handleScroll}
             onScrollToMessage={scrollToMessage}
             onSearchMessages={handleSearchMessagesFromMenu}
@@ -799,7 +794,11 @@ export default function ChatsPageShell() {
           onDownloadGalleryItem={handleDownloadGalleryItem}
           onDownloadDocument={handleDownloadSidebarDocument}
           onGroupAvatarSelect={handleGroupAvatarSelect}
-          onImageModalClose={() => setShowImageModal(false)}
+          modalInstantSrc={modalInstantSrc}
+          onImageModalClose={() => {
+            setShowImageModal(false);
+            setModalInstantSrc(null);
+          }}
           onNextImage={handleNextImage}
           onOpenImage={openImageInModal}
           onPrevImage={handlePrevImage}

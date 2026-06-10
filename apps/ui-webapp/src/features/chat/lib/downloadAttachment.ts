@@ -58,7 +58,19 @@ export async function fetchChatMessageAttachmentBlob(
     throw new Error(`Failed to load attachment (${res.status})`);
   }
 
-  return res.blob();
+  const blob = await res.blob();
+  const headerType = res.headers
+    .get("content-type")
+    ?.split(";")[0]
+    ?.trim();
+  if (
+    headerType &&
+    (!blob.type || blob.type === "application/octet-stream")
+  ) {
+    return new Blob([await blob.arrayBuffer()], { type: headerType });
+  }
+
+  return blob;
 }
 
 export function messageDownloadUrl(message: {

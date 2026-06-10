@@ -15,6 +15,7 @@ import { MessagesService } from './services/messages.service';
 
 @Module({
   imports: [CommonModule, MediaModule],
+  // VideoThumbnailService comes from MediaModule
   controllers: [ChatController],
   providers: [
     ChatMapper,

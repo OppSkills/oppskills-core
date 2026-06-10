@@ -12,7 +12,7 @@ const ImageGalleryModal = dynamic(() => import("./ImageGalleryModal"), {
   ssr: false,
 });
 
-type GalleryItem = { messageId: string; fileName: string };
+import type { GalleryItem } from "./ImageGalleryModal";
 
 type SidebarDoc = { messageId: string; name: string; size?: string };
 
@@ -45,7 +45,8 @@ type DetailsPanelProps = {
   onGroupAvatarSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onImageModalClose: () => void;
   onNextImage: () => void;
-  onOpenImage: (messageId: string) => void;
+  modalInstantSrc?: string | null;
+  onOpenImage: (messageId: string, displaySrc?: string) => void;
   onPrevImage: () => void;
   onRemoveGroupMember: (memberId: string, memberName: string) => void;
   onTabChange: (tab: "Members" | "Media" | "Docs") => void;
@@ -72,6 +73,7 @@ export function DetailsPanel({
   onDownloadGalleryItem,
   onDownloadDocument,
   onGroupAvatarSelect,
+  modalInstantSrc = null,
   onImageModalClose,
   onNextImage,
   onOpenImage,
@@ -110,7 +112,9 @@ export function DetailsPanel({
         <ImageGalleryModal
           activeIndex={activeModalImageIndex}
           conversationId={selectedChatId}
+          instantSrc={modalInstantSrc}
           items={galleryItems}
+          messages={activeChat.messages}
           onClose={onImageModalClose}
           onDownload={onDownloadGalleryItem}
           onNext={onNextImage}

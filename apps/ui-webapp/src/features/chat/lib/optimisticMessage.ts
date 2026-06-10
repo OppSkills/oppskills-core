@@ -21,9 +21,13 @@ export function createOptimisticPreviewUrl(
   return undefined;
 }
 
-export function revokeOptimisticPreview(message: Message): void {
+export function revokeOptimisticPreview(
+  message: Message,
+  options?: { keepPoster?: boolean },
+): void {
   const videoUrl = message.attachment?.url;
   if (
+    !options?.keepPoster &&
     message.imageUrl?.startsWith("blob:") &&
     message.imageUrl !== videoUrl
   ) {

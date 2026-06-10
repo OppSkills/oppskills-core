@@ -5,6 +5,7 @@ import type { QueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { applyChatEvent } from "../../cache/reducer";
 import { requireChatToken } from "../../cache/chatQueryUtils";
+import { videoPrefetchQueue } from "../../lib/videoCache/videoPrefetchQueue";
 import type { ChatSocketModule } from "./useChatSocketModule";
 
 type UseChatSocketSyncOptions = {
@@ -64,12 +65,35 @@ export function useChatSocketSync({
             { currentUserId },
           );
 
+          if (
+            message.type === "VIDEO" &&
+            message.attachment &&
+            isActiveChat &&
+            message.senderId !== currentUserId
+          ) {
+            void getToken().then((token) => {
+              if (!token) return;
+              videoPrefetchQueue.enqueue(conversationId, message.id, token);
+            });
+          }
+
           if (isActiveChat && uiMsg) {
             if (!uiMsg.isYou) {
               socketModule.emitAckDelivered(conversationId, [message.id]);
             }
             void markActiveConversationRead(conversationId);
           }
+        },
+        onMessageUpdated: ({ conversationId, message }) => {
+          applyChatEvent(
+            queryClient,
+            {
+              type: "MESSAGE_UPDATED",
+              conversationId,
+              dto: message,
+            },
+            { currentUserId },
+          );
         },
         onConversationUpdated: ({ conversation }) => {
           const isActiveChat = selectedChatIdRef.current === conversation.id;

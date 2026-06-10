@@ -22,15 +22,26 @@ export class GroupsService {
     userId: string,
     input: { name: string; handle?: string; memberIds: string[] },
   ): Promise<ChatConversationDetailDto> {
+    // Validate and trim name and handle before doing any DB checks
+    const name = input.name ? input.name.trim() : '';
+    const handle = input.handle ? input.handle.trim() : undefined;
+
+    // Prevent empty group names
+    if (!name) {
+      throw new BadRequestException('Group name cannot be empty');
+    }
+
     const uniqueMembers = [...new Set(input.memberIds)].filter(
       (id) => id !== userId,
     );
     if (uniqueMembers.length === 0) {
       throw new BadRequestException('Select at least one member');
     }
-    if (input.handle) {
+
+    if (handle) {
+      // Run uniqueness check on trimmed handle
       const taken = await prisma.conversationEntity.findUnique({
-        where: { handle: input.handle },
+        where: { handle },
       });
       if (taken) throw new BadRequestException('Group handle already taken');
     }
@@ -39,8 +50,8 @@ export class GroupsService {
       const conv = await tx.conversationEntity.create({
         data: {
           type: ConversationType.GROUP,
-          name: input.name.trim(),
-          handle: input.handle?.trim() || null,
+          name,
+          handle: handle || null,
           createdById: userId,
           participants: {
             create: [
@@ -64,7 +75,7 @@ export class GroupsService {
           conversationId: conv.id,
           senderId: userId,
           type: MessageType.SYSTEM,
-          body: `Group "${input.name.trim()}" created by ${creatorName}.`,
+          body: `Group "${name}" created by ${creatorName}.`,
         },
       });
 

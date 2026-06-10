@@ -168,6 +168,22 @@ export class MessagesService {
     return this.mapMessage(message, userId);
   }
 
+  async getMessage(
+    userId: string,
+    conversationId: string,
+    messageId: string,
+  ): Promise<ChatMessageDto> {
+    await this.auth.assertParticipant(userId, conversationId);
+    const message = await prisma.messageEntity.findFirst({
+      where: { id: messageId, conversationId },
+      include: MESSAGE_INCLUDE,
+    });
+    if (!message) {
+      throw new BadRequestException('Message not found');
+    }
+    return this.mapMessage(message, userId);
+  }
+
   async ackDelivered(
     userId: string,
     conversationId: string,
@@ -248,6 +264,8 @@ export class MessagesService {
         mimeType: string;
         sizeBytes: number | null;
         url: string;
+        thumbnailUrl: string | null;
+        durationSeconds: number | null;
         kind: AttachmentKind;
       } | null;
     },
@@ -268,6 +286,8 @@ export class MessagesService {
         mimeType: message.attachment.mimeType,
         sizeBytes: message.attachment.sizeBytes,
         url: message.attachment.url,
+        thumbnailUrl: message.attachment.thumbnailUrl,
+        durationSeconds: message.attachment.durationSeconds,
         kind: message.attachment.kind,
       };
     }

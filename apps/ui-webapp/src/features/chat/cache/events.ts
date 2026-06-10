@@ -34,11 +34,23 @@ export type ChatOptimisticFailedEvent = Readonly<{
   tempId: string;
 }>;
 
+export type ChatOptimisticCancelledEvent = Readonly<{
+  type: "OPTIMISTIC_CANCELLED";
+  conversationId: string;
+  tempId: string;
+}>;
+
 export type ChatServerMessageEvent = Readonly<{
   type: "SERVER_MESSAGE";
   conversationId: string;
   dto: ChatMessageDto;
   isActiveChat?: boolean;
+}>;
+
+export type ChatMessageUpdatedEvent = Readonly<{
+  type: "MESSAGE_UPDATED";
+  conversationId: string;
+  dto: ChatMessageDto;
 }>;
 
 export type ChatInboxUpdateEvent = Readonly<{
@@ -86,7 +98,9 @@ export type ChatClientEvent =
   | ChatOptimisticReplaceEvent
   | ChatUploadProgressEvent
   | ChatOptimisticFailedEvent
+  | ChatOptimisticCancelledEvent
   | ChatServerMessageEvent
+  | ChatMessageUpdatedEvent
   | ChatInboxUpdateEvent
   | ChatConversationDetailEvent
   | ChatUpsertConversationEvent

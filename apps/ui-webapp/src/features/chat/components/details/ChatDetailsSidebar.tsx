@@ -18,10 +18,7 @@ import type { Chat } from "@/features/chat/domain/types";
 
 type SidebarTab = "Members" | "Media" | "Docs";
 
-interface GalleryItem {
-  messageId: string;
-  fileName: string;
-}
+import type { GalleryItem } from "./ImageGalleryModal";
 
 interface SidebarDoc {
   messageId: string;
