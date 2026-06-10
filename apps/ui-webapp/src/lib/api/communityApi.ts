@@ -108,9 +108,11 @@ export async function createCommunity(
 
 export async function getMyCommunities(
   token: string,
+  includeFollowed?: boolean,
 ): Promise<ReadonlyArray<MyCommunityListItem>> {
   const res = await API.get("/my", {
     headers: buildAuthHeaders(token),
+    params: includeFollowed !== undefined ? { includeFollowed: String(includeFollowed) } : undefined,
   });
 
   const raw = res.data as unknown;
