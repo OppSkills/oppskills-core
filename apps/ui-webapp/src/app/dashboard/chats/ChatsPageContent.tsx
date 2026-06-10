@@ -10,11 +10,7 @@ import React, {
 } from "react";
 import dynamic from "next/dynamic";
 import { useParams, useRouter } from "next/navigation";
-import {
-  X,
-  Sparkles,
-  Quote,
-} from "lucide-react";
+import { X, Sparkles, Quote } from "lucide-react";
 import { useChatsPage } from "@/hooks/useChatsPage";
 import { useChatComposer } from "@/hooks/useChatComposer";
 import {
@@ -24,9 +20,7 @@ import {
 import { CHAT_DOCUMENT_INPUT_ACCEPT } from "@/lib/chat/documentAccept";
 import { formatChatPresenceSubtitle } from "@/lib/chat/formatPresence";
 import type { Chat, Message } from "@/lib/chat/types";
-import {
-  formatDateSeparator,
-} from "./_components/chatDisplay";
+import { formatDateSeparator } from "./_components/chatDisplay";
 import ChatSidebar from "./_components/ChatSidebar";
 
 const ActiveChatHeader = dynamic(
@@ -43,10 +37,9 @@ const ChatTimeline = dynamic(() => import("./_components/ChatTimeline"), {
   ssr: false,
 });
 
-const MessageComposer = dynamic(
-  () => import("./_components/MessageComposer"),
-  { ssr: false },
-);
+const MessageComposer = dynamic(() => import("./_components/MessageComposer"), {
+  ssr: false,
+});
 
 const MessageFilterBar = dynamic(
   () => import("./_components/MessageFilterBar"),

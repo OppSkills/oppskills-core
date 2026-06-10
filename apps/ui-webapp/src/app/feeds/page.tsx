@@ -6,13 +6,7 @@ import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth, useUser } from "@clerk/nextjs";
 import { toast } from "sonner";
-import {
-  Sparkles,
-  Send,
-  Loader2,
-  TrendingUp,
-  Award
-} from "lucide-react";
+import { Sparkles, Send, Loader2, TrendingUp, Award } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 import PostCard from "@/app/community/[slug]/_components/PostCard";
@@ -36,102 +30,117 @@ const MOCK_COMMUNITIES = [
     title: "Next.js Pioneers",
     genre: "Tech",
     memberCount: 1250,
-    bannerUrl: "https://images.unsplash.com/photo-1618477388954-7852f32655ec?auto=format&fit=crop&q=80&w=600",
+    bannerUrl:
+      "https://images.unsplash.com/photo-1618477388954-7852f32655ec?auto=format&fit=crop&q=80&w=600",
     avatarUrl: null,
-    handle: "nextjs-pioneers"
+    handle: "nextjs-pioneers",
   },
   {
     href: "/community/ai-builders",
     title: "AI Builders Club",
     genre: "Artificial Intelligence",
     memberCount: 4500,
-    bannerUrl: "https://images.unsplash.com/photo-1620712943543-bcc4688e7485?auto=format&fit=crop&q=80&w=600",
+    bannerUrl:
+      "https://images.unsplash.com/photo-1620712943543-bcc4688e7485?auto=format&fit=crop&q=80&w=600",
     avatarUrl: null,
-    handle: "ai-builders"
+    handle: "ai-builders",
   },
   {
     href: "/community/framer-wizards",
     title: "Framer Motion Wizards",
     genre: "UI Design",
     memberCount: 850,
-    bannerUrl: "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?auto=format&fit=crop&q=80&w=600",
+    bannerUrl:
+      "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?auto=format&fit=crop&q=80&w=600",
     avatarUrl: null,
-    handle: "framer-wizards"
+    handle: "framer-wizards",
   },
   {
     href: "/community/solidity-devs",
     title: "Solidity Devs",
     genre: "Web3",
     memberCount: 2200,
-    bannerUrl: "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?auto=format&fit=crop&q=80&w=600",
+    bannerUrl:
+      "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?auto=format&fit=crop&q=80&w=600",
     avatarUrl: null,
-    handle: "solidity-devs"
-  }
+    handle: "solidity-devs",
+  },
 ];
-
 
 // Initial Mock Posts Data
 const INITIAL_MOCK_POSTS: Post[] = [
   {
     id: "post-1",
     authorName: "Sarah Jenkins",
-    authorAvatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=150",
+    authorAvatar:
+      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=150",
     followersCount: 14500,
     timeframe: "2 hours ago",
-    content: "Next.js 16 is looking absolutely mind-blowing! The new Turbopack compilation updates speed up local hot-module replacement by another 40%. Here's a quick benchmark showing build times comparing Next.js 15 Webpack vs Next.js 16 Turbopack in a large monorepo. Who else is migrating? 🚀",
+    content:
+      "Next.js 16 is looking absolutely mind-blowing! The new Turbopack compilation updates speed up local hot-module replacement by another 40%. Here's a quick benchmark showing build times comparing Next.js 15 Webpack vs Next.js 16 Turbopack in a large monorepo. Who else is migrating? 🚀",
     likes: 342,
     commentsCount: 3,
     reposts: 18,
     communityHandle: "nextjs-pioneers",
     isLiked: false,
     isReposted: false,
-    images: ["https://images.unsplash.com/photo-1618477388954-7852f32655ec?auto=format&fit=crop&q=80&w=600"]
+    images: [
+      "https://images.unsplash.com/photo-1618477388954-7852f32655ec?auto=format&fit=crop&q=80&w=600",
+    ],
   },
   {
     id: "post-2",
     authorName: "Alex Rivera",
-    authorAvatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=150",
+    authorAvatar:
+      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=150",
     followersCount: 8900,
     timeframe: "5 hours ago",
-    content: "Just published a new guide on implementing advanced Retrieval-Augmented Generation (RAG) with local small language models (SLMs) like Llama-3-8B. The trick is to optimize vector search indexing and use dynamic context window compression to keep latencies under 200ms. Check it out and let me know your thoughts! 🤖",
+    content:
+      "Just published a new guide on implementing advanced Retrieval-Augmented Generation (RAG) with local small language models (SLMs) like Llama-3-8B. The trick is to optimize vector search indexing and use dynamic context window compression to keep latencies under 200ms. Check it out and let me know your thoughts! 🤖",
     likes: 521,
     commentsCount: 2,
     reposts: 45,
     communityHandle: "ai-builders",
     isLiked: true,
     isReposted: false,
-    images: []
+    images: [],
   },
   {
     id: "post-3",
     authorName: "Elena Rostova",
-    authorAvatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150",
+    authorAvatar:
+      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150",
     followersCount: 24000,
     timeframe: "1 day ago",
-    content: "Working on a new dashboard interface using glassmorphism and subtle micro-animations. Here is a preview of the workspace switcher animation built using Framer Motion. Smooth transitions make the interface feel so premium and responsive! ✨",
+    content:
+      "Working on a new dashboard interface using glassmorphism and subtle micro-animations. Here is a preview of the workspace switcher animation built using Framer Motion. Smooth transitions make the interface feel so premium and responsive! ✨",
     likes: 789,
     commentsCount: 2,
     reposts: 92,
     communityHandle: "framer-wizards",
     isLiked: false,
     isReposted: true,
-    images: ["https://images.unsplash.com/photo-1550684848-fac1c5b4e853?auto=format&fit=crop&q=80&w=600"]
+    images: [
+      "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?auto=format&fit=crop&q=80&w=600",
+    ],
   },
   {
     id: "post-4",
     authorName: "Rohan Mehta",
-    authorAvatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=150",
+    authorAvatar:
+      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=150",
     followersCount: 3100,
     timeframe: "2 days ago",
-    content: "Audit your Solidity smart contracts carefully! A common vulnerability is the reentrancy attack on withdrawal functions. Always make sure to use the Checks-Effects-Interactions pattern or inherit OpenZeppelin's ReentrancyGuard. Keep your protocols secure! 🔒",
+    content:
+      "Audit your Solidity smart contracts carefully! A common vulnerability is the reentrancy attack on withdrawal functions. Always make sure to use the Checks-Effects-Interactions pattern or inherit OpenZeppelin's ReentrancyGuard. Keep your protocols secure! 🔒",
     likes: 120,
     commentsCount: 1,
     reposts: 5,
     communityHandle: "solidity-devs",
     isLiked: false,
     isReposted: false,
-    images: []
-  }
+    images: [],
+  },
 ];
 
 // Mock Comments Data keyed by Post ID
@@ -141,35 +150,55 @@ const INITIAL_MOCK_COMMENTS: Record<string, CommunityPostCommentItem[]> = {
       id: "comment-1-1",
       postId: "post-1",
       parentId: null,
-      content: "Absolutely! The Turbopack dev speeds are a game changer. Can't wait to migrate our teams.",
+      content:
+        "Absolutely! The Turbopack dev speeds are a game changer. Can't wait to migrate our teams.",
       createdAt: new Date(Date.now() - 3600000).toISOString(),
       likeCount: 12,
       isLikedByMe: false,
       replyCount: 0,
-      author: { id: "user-1", firstName: "Marcus", lastName: "Aurelius", imageUrl: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=100" }
+      author: {
+        id: "user-1",
+        firstName: "Marcus",
+        lastName: "Aurelius",
+        imageUrl:
+          "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=100",
+      },
     },
     {
       id: "comment-1-2",
       postId: "post-1",
       parentId: null,
-      content: "Is there any backward compatibility issues with older custom webpack configs?",
+      content:
+        "Is there any backward compatibility issues with older custom webpack configs?",
       createdAt: new Date(Date.now() - 7200000).toISOString(),
       likeCount: 4,
       isLikedByMe: false,
       replyCount: 0,
-      author: { id: "user-2", firstName: "Chloe", lastName: "Sutton", imageUrl: null }
+      author: {
+        id: "user-2",
+        firstName: "Chloe",
+        lastName: "Sutton",
+        imageUrl: null,
+      },
     },
     {
       id: "comment-1-3",
       postId: "post-1",
       parentId: null,
-      content: "Yeah, we had to refactor a couple of plugins but overall it's super smooth.",
+      content:
+        "Yeah, we had to refactor a couple of plugins but overall it's super smooth.",
       createdAt: new Date(Date.now() - 10800000).toISOString(),
       likeCount: 8,
       isLikedByMe: true,
       replyCount: 0,
-      author: { id: "user-3", firstName: "Devon", lastName: "Lane", imageUrl: "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&q=80&w=100" }
-    }
+      author: {
+        id: "user-3",
+        firstName: "Devon",
+        lastName: "Lane",
+        imageUrl:
+          "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&q=80&w=100",
+      },
+    },
   ],
   "post-2": [
     {
@@ -181,31 +210,50 @@ const INITIAL_MOCK_COMMENTS: Record<string, CommunityPostCommentItem[]> = {
       likeCount: 15,
       isLikedByMe: false,
       replyCount: 0,
-      author: { id: "user-4", firstName: "Dianne", lastName: "Russell", imageUrl: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&q=80&w=100" }
+      author: {
+        id: "user-4",
+        firstName: "Dianne",
+        lastName: "Russell",
+        imageUrl:
+          "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&q=80&w=100",
+      },
     },
     {
       id: "comment-2-2",
       postId: "post-2",
       parentId: null,
-      content: "Which database did you choose for storing embeddings? Chroma or pgvector?",
+      content:
+        "Which database did you choose for storing embeddings? Chroma or pgvector?",
       createdAt: new Date(Date.now() - 28800000).toISOString(),
       likeCount: 6,
       isLikedByMe: false,
       replyCount: 0,
-      author: { id: "user-5", firstName: "Guy", lastName: "Hawkins", imageUrl: null }
-    }
+      author: {
+        id: "user-5",
+        firstName: "Guy",
+        lastName: "Hawkins",
+        imageUrl: null,
+      },
+    },
   ],
   "post-3": [
     {
       id: "comment-3-1",
       postId: "post-3",
       parentId: null,
-      content: "Framer Motion transitions are always so satisfying. Top tier design work!",
+      content:
+        "Framer Motion transitions are always so satisfying. Top tier design work!",
       createdAt: new Date(Date.now() - 3600000).toISOString(),
       likeCount: 20,
       isLikedByMe: true,
       replyCount: 0,
-      author: { id: "user-6", firstName: "Kristin", lastName: "Watson", imageUrl: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=100" }
+      author: {
+        id: "user-6",
+        firstName: "Kristin",
+        lastName: "Watson",
+        imageUrl:
+          "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=100",
+      },
     },
     {
       id: "comment-3-2",
@@ -216,22 +264,34 @@ const INITIAL_MOCK_COMMENTS: Record<string, CommunityPostCommentItem[]> = {
       likeCount: 3,
       isLikedByMe: false,
       replyCount: 0,
-      author: { id: "user-7", firstName: "Cody", lastName: "Fisher", imageUrl: null }
-    }
+      author: {
+        id: "user-7",
+        firstName: "Cody",
+        lastName: "Fisher",
+        imageUrl: null,
+      },
+    },
   ],
   "post-4": [
     {
       id: "comment-4-1",
       postId: "post-4",
       parentId: null,
-      content: "Solid advice. Reentrancy is still one of the biggest reasons for hacks.",
+      content:
+        "Solid advice. Reentrancy is still one of the biggest reasons for hacks.",
       createdAt: new Date(Date.now() - 86400000).toISOString(),
       likeCount: 9,
       isLikedByMe: false,
       replyCount: 0,
-      author: { id: "user-8", firstName: "Jane", lastName: "Cooper", imageUrl: "https://images.unsplash.com/photo-1554151228-14d9def656e4?auto=format&fit=crop&q=80&w=100" }
-    }
-  ]
+      author: {
+        id: "user-8",
+        firstName: "Jane",
+        lastName: "Cooper",
+        imageUrl:
+          "https://images.unsplash.com/photo-1554151228-14d9def656e4?auto=format&fit=crop&q=80&w=100",
+      },
+    },
+  ],
 };
 
 export default function FeedsPage() {
@@ -240,8 +300,10 @@ export default function FeedsPage() {
 
   // Local States
   const [posts, setPosts] = useState<Post[]>(INITIAL_MOCK_POSTS);
-  const [commentsMap, setCommentsMap] = useState<Record<string, CommunityPostCommentItem[]>>(INITIAL_MOCK_COMMENTS);
-  
+  const [commentsMap, setCommentsMap] = useState<
+    Record<string, CommunityPostCommentItem[]>
+  >(INITIAL_MOCK_COMMENTS);
+
   // Composer state
   const [newPostText, setNewPostText] = useState("");
   const [selectedCommunity, setSelectedCommunity] = useState("nextjs-pioneers");
@@ -264,12 +326,24 @@ export default function FeedsPage() {
 
       // Set for both true & false states of isSignedIn to prevent caching issues
       queryClient.setQueryData(
-        ["community-post-comments", post.communityHandle || "general", post.id, 5, true],
-        commentsData
+        [
+          "community-post-comments",
+          post.communityHandle || "general",
+          post.id,
+          5,
+          true,
+        ],
+        commentsData,
       );
       queryClient.setQueryData(
-        ["community-post-comments", post.communityHandle || "general", post.id, 5, false],
-        commentsData
+        [
+          "community-post-comments",
+          post.communityHandle || "general",
+          post.id,
+          5,
+          false,
+        ],
+        commentsData,
       );
     });
   }, [posts, commentsMap, queryClient, isSignedIn]);
@@ -287,7 +361,7 @@ export default function FeedsPage() {
           };
         }
         return post;
-      })
+      }),
     );
   };
 
@@ -308,7 +382,7 @@ export default function FeedsPage() {
           };
         }
         return post;
-      })
+      }),
     );
     toast.success("Post reposted");
   };
@@ -361,7 +435,7 @@ export default function FeedsPage() {
           };
         }
         return p;
-      })
+      }),
     );
 
     toast.success("Comment added!");
@@ -381,7 +455,9 @@ export default function FeedsPage() {
       const newPost: Post = {
         id: newPostId,
         authorName: user?.fullName || "Anonymous Student",
-        authorAvatar: user?.imageUrl || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=150",
+        authorAvatar:
+          user?.imageUrl ||
+          "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=150",
         followersCount: 1,
         timeframe: "Just now",
         content: text,
@@ -391,7 +467,7 @@ export default function FeedsPage() {
         communityHandle: selectedCommunity,
         isLiked: false,
         isReposted: false,
-        images: []
+        images: [],
       };
 
       setPosts([newPost, ...posts]);
@@ -408,7 +484,6 @@ export default function FeedsPage() {
 
   return (
     <div className="w-full min-h-screen bg-[#F6F8FA] text-neutral-900 pb-16">
-      
       {/* Dynamic Welcome Header Banner */}
       <div className="relative w-full bg-gradient-to-r from-[#1E1146] via-[#2E1E66] to-[#5D3EBB] text-white py-12 md:py-16 overflow-hidden select-none">
         {/* Glow decoration */}
@@ -425,7 +500,8 @@ export default function FeedsPage() {
               Discover OppSkills Hub
             </h1>
             <p className="text-white/80 text-sm md:text-base font-semibold leading-relaxed">
-              Explore ongoing discussions, technical questions, project updates, and events directly from your favorite student communities.
+              Explore ongoing discussions, technical questions, project updates,
+              and events directly from your favorite student communities.
             </p>
           </div>
         </div>
@@ -433,7 +509,6 @@ export default function FeedsPage() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
         <div className="grid grid-cols-12 gap-8">
-          
           {/* ── LEFT COLUMN: TRENDING COMMUNITIES (3 Cols) ── */}
           <div className="hidden lg:block lg:col-span-3">
             <div className="sticky top-24 flex flex-col gap-6">
@@ -461,7 +536,6 @@ export default function FeedsPage() {
 
           {/* ── CENTER COLUMN: FEED & COMPOSER (6 Cols) ── */}
           <div className="col-span-12 lg:col-span-6 flex flex-col gap-6">
-            
             {/* Functional Post Composer Box */}
             <div className="w-full bg-white rounded-3xl border border-neutral-200 p-5 sm:p-6 shadow-xs flex flex-col gap-4">
               <div className="flex gap-3 items-start">
@@ -489,7 +563,9 @@ export default function FeedsPage() {
 
               <div className="flex justify-between items-center pt-2 border-t border-neutral-100 flex-wrap gap-3">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-neutral-400 font-bold whitespace-nowrap">Post in:</span>
+                  <span className="text-xs text-neutral-400 font-bold whitespace-nowrap">
+                    Post in:
+                  </span>
                   <Select
                     value={selectedCommunity}
                     onValueChange={setSelectedCommunity}
@@ -550,7 +626,10 @@ export default function FeedsPage() {
                       onRepost={handleRepost}
                       onShare={handleShare}
                       onComment={handleComment}
-                      canManage={post.authorName === user?.fullName || post.id.startsWith("post-")}
+                      canManage={
+                        post.authorName === user?.fullName ||
+                        post.id.startsWith("post-")
+                      }
                     />
                   </motion.div>
                 ))}
@@ -561,7 +640,6 @@ export default function FeedsPage() {
           {/* ── RIGHT COLUMN: QUICK INFO (3 Cols) ── */}
           <div className="hidden lg:block lg:col-span-3">
             <div className="sticky top-24 flex flex-col gap-6">
-
               {/* Quick Info / Showcase Card */}
               <div className="bg-gradient-to-br from-[#1E1146] to-[#2E1E66] text-white rounded-3xl p-6 shadow-md relative overflow-hidden select-none">
                 <div className="absolute top-[-30px] right-[-30px] w-24 h-24 bg-white/5 rounded-full blur-xl pointer-events-none" />
@@ -571,7 +649,9 @@ export default function FeedsPage() {
                     OppSkills Leaderboard
                   </h3>
                   <p className="text-xs text-white/80 font-semibold leading-relaxed">
-                    Earn points by posting tutorials, helping others resolve code issues, or organizing community meets. Join a community today!
+                    Earn points by posting tutorials, helping others resolve
+                    code issues, or organizing community meets. Join a community
+                    today!
                   </p>
                   <Link
                     href="/community"
@@ -581,10 +661,8 @@ export default function FeedsPage() {
                   </Link>
                 </div>
               </div>
-
             </div>
           </div>
-
         </div>
       </div>
     </div>

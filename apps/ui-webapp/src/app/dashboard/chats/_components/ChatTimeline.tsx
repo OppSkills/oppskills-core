@@ -61,9 +61,7 @@ const ChatTimeline = React.memo(function ChatTimeline({
     if (activeChat.messages.length === 0) return null;
 
     const sortedMessages = [...activeChat.messages].sort((a, b) => {
-      return (
-        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-      );
+      return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
     });
 
     const filteredMessages = sortedMessages.filter((message) => {

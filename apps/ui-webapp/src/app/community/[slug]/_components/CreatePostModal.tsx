@@ -17,6 +17,9 @@ import {
 import { getPlainTextLengthFromHtml } from "@/lib/community/textUtils";
 import { getDisplayUrl } from "./communityUtils";
 import { useDebounce } from "@/hooks/use-debounce";
+import { useAuth } from "@clerk/nextjs";
+import { searchSkills, recommendSkills, Skill } from "@/lib/api/skillsApi";
+import { Loader2 } from "lucide-react";
 
 const RichTextEditor = dynamic(
   () => import("@/components/ui/editor/RichtextEditor"),
@@ -27,7 +30,11 @@ interface CreatePostModalProps {
   isOpen: boolean;
   onClose: () => void;
   postToEdit?: Post | null;
-  onPublish: (content: string, images: string[]) => void | Promise<void>;
+  onPublish: (
+    content: string,
+    images: string[],
+    skillIds?: string[],
+  ) => void | Promise<void>;
 }
 
 export default function CreatePostModal({
@@ -36,6 +43,7 @@ export default function CreatePostModal({
   postToEdit,
   onPublish,
 }: CreatePostModalProps) {
+  const { getToken } = useAuth();
   const [content, setContent] = useState("");
   const [images, setImages] = useState<string[]>([]);
   const [isAdjusting, setIsAdjusting] = useState(false);
@@ -43,6 +51,13 @@ export default function CreatePostModal({
   const [isPublishing, setIsPublishing] = useState(false);
   const [isPresetOpen, setIsPresetOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [selectedSkills, setSelectedSkills] = useState<Skill[]>([]);
+  const [skillSearchQuery, setSkillSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<Skill[]>([]);
+  const [recommendedSkills, setRecommendedSkills] = useState<Skill[]>([]);
+  const [isSearchingSkills, setIsSearchingSkills] = useState(false);
+  const [isRecommendingSkills, setIsRecommendingSkills] = useState(false);
 
   const resetForm = useCallback(() => {
     setImages((prev) => {
@@ -52,10 +67,67 @@ export default function CreatePostModal({
       return [];
     });
     setContent("");
+    setSelectedSkills([]);
+    setSkillSearchQuery("");
+    setSearchResults([]);
+    setRecommendedSkills([]);
   }, []);
 
   const debouncedContent = useDebounce(content, 1000);
   const debouncedImages = useDebounce(images, 1000);
+  const debouncedRecommendationContent = useDebounce(content, 500);
+  const debouncedSearchQuery = useDebounce(skillSearchQuery, 500);
+
+  // Fetch recommendations
+  useEffect(() => {
+    async function fetchRecommendations() {
+      const token = await getToken();
+      if (!token) return;
+      setIsRecommendingSkills(true);
+      try {
+        const text =
+          getPlainTextLengthFromHtml(debouncedRecommendationContent) > 0
+            ? debouncedRecommendationContent.replace(/<[^>]*>/g, "")
+            : "";
+        const recs = await recommendSkills(token, text, 5);
+        setRecommendedSkills(recs);
+      } catch (err) {
+        console.error("Failed to get skill recommendations:", err);
+      } finally {
+        setIsRecommendingSkills(false);
+      }
+    }
+
+    if (isOpen) {
+      fetchRecommendations();
+    }
+  }, [debouncedRecommendationContent, getToken, isOpen]);
+
+  // Fetch search results
+  useEffect(() => {
+    async function fetchSearch() {
+      if (!debouncedSearchQuery.trim()) {
+        setSearchResults([]);
+        return;
+      }
+      const token = await getToken();
+      if (!token) return;
+      setIsSearchingSkills(true);
+      try {
+        const results = await searchSkills(
+          token,
+          debouncedSearchQuery.trim(),
+          10,
+        );
+        setSearchResults(results);
+      } catch (err) {
+        console.error("Failed to search skills:", err);
+      } finally {
+        setIsSearchingSkills(false);
+      }
+    }
+    fetchSearch();
+  }, [debouncedSearchQuery, getToken]);
 
   // Restore draft automatically when opening modal (for new posts only)
   useEffect(() => {
@@ -185,7 +257,8 @@ export default function CreatePostModal({
 
     setIsPublishing(true);
     try {
-      await onPublish(content, images);
+      const skillIds = selectedSkills.map((s) => s.id);
+      await onPublish(content, images, skillIds);
       // Clear draft on successful post
       localStorage.removeItem("community_post_draft");
       resetForm();
@@ -225,6 +298,171 @@ export default function CreatePostModal({
             scrollable
             className="rounded-[28px] border-neutral-200 focus-within:border-[#5D3EBB]/60"
           />
+
+          {/* Skills Section */}
+          <div className="flex flex-col gap-3.5 border-t border-neutral-100 pt-4">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider">
+                Skills Tagged
+              </span>
+              {selectedSkills.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedSkills([])}
+                  className="text-xs text-neutral-400 hover:text-[#5D3EBB] transition-colors"
+                >
+                  Clear all
+                </button>
+              )}
+            </div>
+
+            {/* Selected Skills Tags */}
+            <div className="flex flex-wrap gap-2">
+              {selectedSkills.length === 0 ? (
+                <span className="text-sm text-neutral-400 italic">
+                  No skills tagged yet.
+                </span>
+              ) : (
+                selectedSkills.map((skill) => (
+                  <span
+                    key={skill.id}
+                    className="inline-flex items-center gap-1.5 bg-[#E6E0FA] text-[#2E1E66] text-xs font-semibold px-3 py-1.5 rounded-full shadow-2xs hover:bg-[#D4C9F5] transition-all"
+                  >
+                    <span>{skill.name}</span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setSelectedSkills((prev) =>
+                          prev.filter((s) => s.id !== skill.id),
+                        )
+                      }
+                      className="text-[#2E1E66] hover:text-red-600 rounded-full p-0.5"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </span>
+                ))
+              )}
+            </div>
+
+            {/* Recommendations / Search Results */}
+            <div className="flex flex-col gap-2.5 bg-neutral-50/50 border border-neutral-200/50 rounded-2xl p-4">
+              {/* Skill Search Input */}
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Search and tag skills..."
+                  value={skillSearchQuery}
+                  onChange={(e) => setSkillSearchQuery(e.target.value)}
+                  className="w-full bg-white border border-neutral-200 focus:border-[#5D3EBB]/60 focus:ring-1 focus:ring-[#5D3EBB]/60 text-sm px-4 py-2.5 rounded-full outline-none transition-all placeholder:text-neutral-400"
+                />
+                {isSearchingSkills && (
+                  <div className="absolute right-3.5 top-3 text-[#5D3EBB]">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  </div>
+                )}
+              </div>
+
+              {/* Suggestions / Results */}
+              <div>
+                {skillSearchQuery.trim() !== "" ? (
+                  <div>
+                    <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider mb-2 block">
+                      Search Results
+                    </span>
+                    {isSearchingSkills ? (
+                      <div className="flex flex-wrap gap-2 animate-pulse">
+                        {Array.from({ length: 3 }).map((_, i) => (
+                          <div
+                            key={i}
+                            className="h-7 w-20 bg-neutral-200 rounded-full"
+                          />
+                        ))}
+                      </div>
+                    ) : searchResults.length === 0 ? (
+                      <span className="text-xs text-neutral-400">
+                        No matching skills found.
+                      </span>
+                    ) : (
+                      <div className="flex flex-wrap gap-2">
+                        {searchResults.map((skill) => {
+                          const isSelected = selectedSkills.some(
+                            (s) => s.id === skill.id,
+                          );
+                          return (
+                            <button
+                              key={skill.id}
+                              type="button"
+                              disabled={isSelected}
+                              onClick={() => {
+                                setSelectedSkills((prev) => [...prev, skill]);
+                                setSkillSearchQuery("");
+                              }}
+                              className={`text-xs px-3 py-1.5 rounded-full border transition-all ${
+                                isSelected
+                                  ? "bg-neutral-100 border-neutral-200 text-neutral-400 cursor-not-allowed"
+                                  : "border-neutral-200 hover:border-[#5D3EBB]/30 hover:bg-[#E6E0FA]/20 text-neutral-600 hover:text-[#2E1E66] active:scale-95"
+                              }`}
+                            >
+                              + {skill.name}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div>
+                    <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider mb-2 block flex items-center gap-1.5">
+                      <span>Suggested Skills</span>
+                      {isRecommendingSkills && (
+                        <Loader2 className="w-3 h-3 animate-spin text-[#5D3EBB]" />
+                      )}
+                    </span>
+                    {isRecommendingSkills && recommendedSkills.length === 0 ? (
+                      <div className="flex flex-wrap gap-2 animate-pulse">
+                        {Array.from({ length: 4 }).map((_, i) => (
+                          <div
+                            key={i}
+                            className="h-7 w-20 bg-neutral-200 rounded-full"
+                          />
+                        ))}
+                      </div>
+                    ) : recommendedSkills.length === 0 ? (
+                      <span className="text-xs text-neutral-400">
+                        No suggestions available.
+                      </span>
+                    ) : (
+                      <div className="flex flex-wrap gap-2">
+                        {recommendedSkills.map((skill) => {
+                          const isSelected = selectedSkills.some(
+                            (s) => s.id === skill.id,
+                          );
+                          return (
+                            <button
+                              key={skill.id}
+                              type="button"
+                              disabled={isSelected}
+                              onClick={() =>
+                                setSelectedSkills((prev) => [...prev, skill])
+                              }
+                              className={`text-xs px-3 py-1.5 rounded-full border transition-all ${
+                                isSelected
+                                  ? "bg-neutral-100 border-neutral-200 text-neutral-400 cursor-not-allowed"
+                                  : "border-neutral-200 hover:border-[#5D3EBB]/30 hover:bg-[#E6E0FA]/20 text-neutral-600 hover:text-[#2E1E66] active:scale-95"
+                              }`}
+                            >
+                              + {skill.name}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
 
           {images.length > 0 && (
             <div className="flex flex-col gap-2">

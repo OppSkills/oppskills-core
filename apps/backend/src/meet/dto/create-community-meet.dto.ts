@@ -39,7 +39,10 @@ export class CreateCommunityMeetDto {
   @IsISO8601()
   scheduledStartAt?: string;
 
-  @ApiPropertyOptional({ enum: MEET_AUDIENCE_SCOPE_VALUES, default: 'MEMBER_TYPES' })
+  @ApiPropertyOptional({
+    enum: MEET_AUDIENCE_SCOPE_VALUES,
+    default: 'MEMBER_TYPES',
+  })
   @IsOptional()
   @IsIn(MEET_AUDIENCE_SCOPE_VALUES)
   audienceScope?: MeetAudienceScope;

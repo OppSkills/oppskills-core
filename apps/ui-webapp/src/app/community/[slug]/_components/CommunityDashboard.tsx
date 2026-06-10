@@ -218,12 +218,16 @@ export default function CommunityDashboard({
     return urls;
   }
 
-  const handleCreatePost = async (content: string, images: string[]) => {
+  const handleCreatePost = async (
+    content: string,
+    images: string[],
+    skillIds?: string[],
+  ) => {
     if (!profile) return;
     setIsUploadingImages(true);
     try {
       const imageUrls = await resolveImageUrls(images);
-      await createPostMutation.mutateAsync({ content, imageUrls });
+      await createPostMutation.mutateAsync({ content, imageUrls, skillIds });
       toast.success("Post published!");
     } catch (err) {
       toast.error(

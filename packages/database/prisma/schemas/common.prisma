@@ -99,6 +99,7 @@ model SkillEntity {
   id                         String                     @id @default(cuid())
   name                       String
   slug                       String                     @unique
+  platformScore              Int                        @default(0) @map("platform_score")
   createdAt                  DateTime                   @default(now()) @map("created_at")
   updatedAt                  DateTime                   @updatedAt @map("updated_at")
   skillCategorySkillEntities SkillCategorySkillEntity[]

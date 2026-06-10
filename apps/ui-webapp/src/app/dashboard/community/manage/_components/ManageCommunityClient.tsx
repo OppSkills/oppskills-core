@@ -100,9 +100,9 @@ export default function ManageCommunityClient({
   // Shared Dynamic State Pools
   const [members, setMembers] = useState<Member[]>(initialMembers);
   const [customMemberTypes, setCustomMemberTypes] = useState<string[]>([]);
-  const [storedMemberTypeLabels, setStoredMemberTypeLabels] = useState<string[]>(
-    [],
-  );
+  const [storedMemberTypeLabels, setStoredMemberTypeLabels] = useState<
+    string[]
+  >([]);
   const [availableRoles, setAvailableRoles] = useState<string[]>(defaultRoles);
   const [deleteTypeDialog, setDeleteTypeDialog] = useState<{
     open: boolean;
@@ -188,15 +188,21 @@ export default function ManageCommunityClient({
           },
         );
 
-        const [details, meetItems, memberTypes, taskList, statsData, myMemberRecord] =
-          await Promise.all([
-            getCommunity(token, communityId),
-            listCommunityMeets(token, communityId),
-            getUniqueMemberTypes(token, communityId),
-            listTasks(token, communityId),
-            statsPromise,
-            getMyMemberRecord(token, communityId).catch(() => null),
-          ]);
+        const [
+          details,
+          meetItems,
+          memberTypes,
+          taskList,
+          statsData,
+          myMemberRecord,
+        ] = await Promise.all([
+          getCommunity(token, communityId),
+          listCommunityMeets(token, communityId),
+          getUniqueMemberTypes(token, communityId),
+          listTasks(token, communityId),
+          statsPromise,
+          getMyMemberRecord(token, communityId).catch(() => null),
+        ]);
         if (!cancelled) {
           const isOwner = loggedInUserId === details.ownerId;
           const isOwnerOrMember =
