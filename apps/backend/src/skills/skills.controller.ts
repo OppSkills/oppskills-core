@@ -1,5 +1,4 @@
 import {
-  Body,
   Controller,
   Get,
   HttpCode,
@@ -8,18 +7,9 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import {
-  ApiBearerAuth,
-  ApiOperation,
-  ApiQuery,
-  ApiTags,
-} from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { ClerkAuthGuard } from '../common/clerk-auth.guard';
 import { SkillsService } from './skills.service';
-
-export class RecommendSkillsDto {
-  text: string;
-}
 
 @ApiTags('Skills')
 @ApiBearerAuth('clerk-auth')
@@ -29,7 +19,10 @@ export class SkillsController {
   constructor(private readonly skillsService: SkillsService) {}
 
   @Get('search')
-  @ApiOperation({ summary: 'Search skills by name (cached in-memory)' })
+  @ApiOperation({
+    summary:
+      'Search skills by name (in-memory, no DB). Empty q returns top N by score.',
+  })
   @ApiQuery({ name: 'q', required: false, type: String })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   search(@Query('q') q?: string, @Query('limit') limitStr?: string) {
@@ -39,13 +32,12 @@ export class SkillsController {
 
   @Post('recommend')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Recommend skills based on caption/text content' })
+  @ApiOperation({
+    summary: 'Return top N skills by platformScore (score-based only, no text analysis).',
+  })
   @ApiQuery({ name: 'limit', required: false, type: Number })
-  recommend(
-    @Body() body: RecommendSkillsDto,
-    @Query('limit') limitStr?: string,
-  ) {
+  recommend(@Query('limit') limitStr?: string) {
     const limit = limitStr ? parseInt(limitStr, 10) : undefined;
-    return this.skillsService.recommendSkills(body.text, limit);
+    return this.skillsService.recommendSkills(limit);
   }
 }
