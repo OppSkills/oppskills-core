@@ -53,7 +53,7 @@ export class CommunityService {
     userId: string,
     includeFollowed = false,
   ): Promise<CommunityListItemDto[]> {
-    const roles = ['ADMIN', 'MODERATOR', 'READ_ONLY'];
+    const roles: CommunityAccessControlRole[] = ['ADMIN', 'MODERATOR', 'READ_ONLY'];
     if (includeFollowed) {
       roles.push('FOLLOWER');
     }
