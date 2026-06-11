@@ -199,10 +199,7 @@ export class ChatService {
     return this.conversations.leaveGroup(userId, conversationId);
   }
 
-  deleteGroup(
-    adminUserId: string,
-    conversationId: string,
-  ): Promise<string[]> {
+  deleteGroup(adminUserId: string, conversationId: string): Promise<string[]> {
     return this.groups.deleteGroup(adminUserId, conversationId);
   }
 

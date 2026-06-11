@@ -99,11 +99,7 @@ export function applyChatEvent(
       clearUnreadInCache(queryClient, event.conversationId);
       return;
     case "DELIVERY_PATCH":
-      patchDeliveryInCaches(
-        queryClient,
-        event.messageId,
-        event.deliveryStatus,
-      );
+      patchDeliveryInCaches(queryClient, event.messageId, event.deliveryStatus);
       return;
     case "PRESENCE_PATCH":
       patchPresenceInCaches(queryClient, event.userId, {

@@ -539,7 +539,11 @@ export class MediaService {
     return `${cloudfrontBaseUrl}/${encodeURI(key)}`;
   }
 
-  buildChatAttachmentKey(userId: string, fileName: string, extension: string): string {
+  buildChatAttachmentKey(
+    userId: string,
+    fileName: string,
+    extension: string,
+  ): string {
     return this.buildDocumentObjectKey(
       'CHAT_ATTACHMENT',
       userId,

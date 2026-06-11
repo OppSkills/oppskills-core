@@ -104,10 +104,7 @@ describe('ChatService', () => {
     messagesService = new MessagesService(mapper, auth);
     const groups = new GroupsService(mapper, auth, conversations);
     const search = new ChatSearchService(mapper, conversations);
-    const attachments = new ChatAttachmentsService(
-      auth,
-      mediaService as never,
-    );
+    const attachments = new ChatAttachmentsService(auth, mediaService as never);
     service = new ChatService(
       mapper,
       auth,

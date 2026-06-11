@@ -20,7 +20,12 @@ export function getContainedSize(
   maxWidth: number,
   maxHeight: number,
 ): DisplaySize {
-  if (naturalWidth <= 0 || naturalHeight <= 0 || maxWidth <= 0 || maxHeight <= 0) {
+  if (
+    naturalWidth <= 0 ||
+    naturalHeight <= 0 ||
+    maxWidth <= 0 ||
+    maxHeight <= 0
+  ) {
     return { width: 0, height: 0 };
   }
 

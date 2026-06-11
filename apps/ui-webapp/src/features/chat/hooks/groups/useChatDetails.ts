@@ -1,7 +1,10 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { useChatMemberProfile, useChatSidebarAttachments } from "../queries/useChatSidebarData";
+import {
+  useChatMemberProfile,
+  useChatSidebarAttachments,
+} from "../queries/useChatSidebarData";
 
 export function useChatDetails() {
   const [sidebarRequest, setSidebarRequest] = useState<{

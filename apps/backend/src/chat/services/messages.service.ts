@@ -1,9 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import {
-  AttachmentKind,
-  MessageType,
-  prisma,
-} from '@oppskills/db';
+import { AttachmentKind, MessageType, prisma } from '@oppskills/db';
 import type {
   ChatAttachmentDto,
   ChatCursorPageDto,

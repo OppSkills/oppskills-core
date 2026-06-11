@@ -81,7 +81,10 @@ export class VideoThumbnailService {
         await fs.unlink(thumbPath).catch(() => undefined);
       }
     } catch (error) {
-      this.logger.warn(`Video thumbnail generation failed for ${messageId}`, error);
+      this.logger.warn(
+        `Video thumbnail generation failed for ${messageId}`,
+        error,
+      );
     }
   }
 

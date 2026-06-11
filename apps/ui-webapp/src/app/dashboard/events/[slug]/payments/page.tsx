@@ -21,7 +21,10 @@ import {
   IndianRupee,
 } from "lucide-react";
 import PayoutDetailsForm from "@/components/ui/payment-side/PayoutDetailsForm";
-import { usePayoutDetails, useUpsertPayoutDetails } from "@/hooks/payments/usePayments";
+import {
+  usePayoutDetails,
+  useUpsertPayoutDetails,
+} from "@/hooks/payments/usePayments";
 import {
   useEventEarnings,
   useUpdateEventPricing,

@@ -7,7 +7,12 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiQuery,
+  ApiTags,
+} from '@nestjs/swagger';
 import { ClerkAuthGuard } from '../common/clerk-auth.guard';
 import { SkillsService } from './skills.service';
 
@@ -33,7 +38,8 @@ export class SkillsController {
   @Post('recommend')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Return top N skills by platformScore (score-based only, no text analysis).',
+    summary:
+      'Return top N skills by platformScore (score-based only, no text analysis).',
   })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   recommend(@Query('limit') limitStr?: string) {

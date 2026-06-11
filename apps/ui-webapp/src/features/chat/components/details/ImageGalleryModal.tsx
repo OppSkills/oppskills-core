@@ -50,13 +50,12 @@ const ImageGalleryModal = React.memo(function ImageGalleryModal({
   if (!activeItem) return null;
 
   const activeMessage = messageById.get(activeItem.messageId);
-  const isVideo =
-    resolveGalleryItemKind(activeItem, activeMessage) === "video";
+  const isVideo = resolveGalleryItemKind(activeItem, activeMessage) === "video";
   const localImageSrc =
     instantSrc ??
     (activeMessage?.imageUrl?.startsWith("blob:")
       ? activeMessage.imageUrl
-      : peekImageObjectUrl(activeItem.messageId) ?? null);
+      : (peekImageObjectUrl(activeItem.messageId) ?? null));
 
   return (
     <div className="fixed inset-0 bg-black/95 backdrop-blur-md flex items-center justify-center select-none z-50">

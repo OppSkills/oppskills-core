@@ -10,7 +10,10 @@ import "react-image-crop/dist/ReactCrop.css";
 import { X } from "lucide-react";
 import CustomModal from "./CustomModal";
 import { Button } from "@/components/ui/button";
-import { blobToCroppedFile, getCroppedImageBlob } from "@/features/chat/lib/cropImage";
+import {
+  blobToCroppedFile,
+  getCroppedImageBlob,
+} from "@/features/chat/lib/cropImage";
 import { getDisplayUrl } from "./communityUtils";
 
 interface AdjustImagesModalProps {

@@ -270,9 +270,7 @@ export function replaceOptimisticMessage(
   const merged: Message = {
     ...message,
     imageUrl:
-      message.attachment?.thumbnailUrl ??
-      pendingLocalImage ??
-      message.imageUrl,
+      message.attachment?.thumbnailUrl ?? pendingLocalImage ?? message.imageUrl,
     stableKey: stableKey ?? pending?.stableKey ?? message.stableKey,
     sendState: undefined,
     uploadProgress: undefined,
@@ -312,7 +310,10 @@ export function markOptimisticMessageFailed(chat: Chat, tempId: string): Chat {
   };
 }
 
-export function markOptimisticMessageCancelled(chat: Chat, tempId: string): Chat {
+export function markOptimisticMessageCancelled(
+  chat: Chat,
+  tempId: string,
+): Chat {
   return {
     ...chat,
     messages: chat.messages.map((m) =>
@@ -323,7 +324,10 @@ export function markOptimisticMessageCancelled(chat: Chat, tempId: string): Chat
   };
 }
 
-export function markOptimisticMessageRetrying(chat: Chat, tempId: string): Chat {
+export function markOptimisticMessageRetrying(
+  chat: Chat,
+  tempId: string,
+): Chat {
   return {
     ...chat,
     messages: chat.messages.map((m) =>

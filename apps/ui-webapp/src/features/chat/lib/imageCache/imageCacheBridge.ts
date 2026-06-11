@@ -5,7 +5,10 @@ export function peekImageObjectUrl(messageId: string): string | undefined {
 }
 
 /** Register an existing blob URL (e.g. already shown in the thread). */
-export function storeImageObjectUrl(messageId: string, objectUrl: string): void {
+export function storeImageObjectUrl(
+  messageId: string,
+  objectUrl: string,
+): void {
   if (!objectUrl.startsWith("blob:")) return;
   const existing = imageObjectUrls.get(messageId);
   if (existing === objectUrl) return;

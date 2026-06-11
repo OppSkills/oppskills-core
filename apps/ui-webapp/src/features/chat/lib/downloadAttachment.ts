@@ -59,14 +59,8 @@ export async function fetchChatMessageAttachmentBlob(
   }
 
   const blob = await res.blob();
-  const headerType = res.headers
-    .get("content-type")
-    ?.split(";")[0]
-    ?.trim();
-  if (
-    headerType &&
-    (!blob.type || blob.type === "application/octet-stream")
-  ) {
+  const headerType = res.headers.get("content-type")?.split(";")[0]?.trim();
+  if (headerType && (!blob.type || blob.type === "application/octet-stream")) {
     return new Blob([await blob.arrayBuffer()], { type: headerType });
   }
 

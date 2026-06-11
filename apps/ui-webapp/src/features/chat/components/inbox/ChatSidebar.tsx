@@ -7,7 +7,10 @@ import { BoneyardSkeleton } from "@/components/boneyard/boneyard-skeleton";
 import { formatLastMessagePreview } from "@/features/chat/domain/mappers";
 import { isDmPeerOnline } from "@/features/chat/lib/formatPresence";
 import type { Chat, SearchUserHit } from "@/features/chat/domain/types";
-import { ChatSidebarFallback, formatSidebarTimestamp } from "../thread/chatDisplay";
+import {
+  ChatSidebarFallback,
+  formatSidebarTimestamp,
+} from "../thread/chatDisplay";
 
 type ChatTab = "All" | "Unread" | "Groups" | "Individual";
 
@@ -191,13 +194,13 @@ const ChatSidebar = React.memo(function ChatSidebar({
                         (lastPreview.type === "DOCUMENT" ||
                           lastPreview.type === "IMAGE" ||
                           lastPreview.type === "VIDEO") && (
-                        <div className="mt-1 flex items-center gap-1.5 py-0.5 px-2 rounded-full bg-neutral-100 border border-neutral-300 text-[10px] w-fit font-medium text-neutral-700">
-                          <FileText className="w-3.5 h-3.5 text-primary-500" />
-                          <span className="truncate max-w-[130px]">
-                            {lastPreview.body ?? "Attachment"}
-                          </span>
-                        </div>
-                      )}
+                          <div className="mt-1 flex items-center gap-1.5 py-0.5 px-2 rounded-full bg-neutral-100 border border-neutral-300 text-[10px] w-fit font-medium text-neutral-700">
+                            <FileText className="w-3.5 h-3.5 text-primary-500" />
+                            <span className="truncate max-w-[130px]">
+                              {lastPreview.body ?? "Attachment"}
+                            </span>
+                          </div>
+                        )}
                     </div>
 
                     {chat.unreadCount > 0 && (

@@ -10,7 +10,10 @@ import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import type { Request } from 'express';
 import { OptionalAuthService } from '../common/optional-auth.service';
 import { CommunityService } from './community.service';
-import { PublicCommunityListItemDto, PublicCommunityListResponseDto } from './dto/public-community-list-item.dto';
+import {
+  PublicCommunityListItemDto,
+  PublicCommunityListResponseDto,
+} from './dto/public-community-list-item.dto';
 import { PublicCommunityProfileDto } from './dto/public-community-profile.dto';
 import { PublicCommunityMembersResponseDto } from './dto/public-community-member.dto';
 

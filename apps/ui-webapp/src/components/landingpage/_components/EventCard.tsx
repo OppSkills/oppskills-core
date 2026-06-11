@@ -4,7 +4,10 @@ import { Card } from "@/components/ui/card";
 import { cn, normalizeUrl } from "@/lib/utils";
 import { formatInTimeZone } from "date-fns-tz";
 import { formatCount } from "@/lib/tools";
-import type { EventListItem, PastOpportunityItem } from "@/hooks/events/useEvents";
+import type {
+  EventListItem,
+  PastOpportunityItem,
+} from "@/hooks/events/useEvents";
 import { formatListingEntryFee } from "@/lib/formatListingEntryFee";
 
 interface EventCardProps {
