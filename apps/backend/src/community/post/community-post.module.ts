@@ -3,6 +3,7 @@ import { CommunityPostController } from './community-post.controller';
 import {
   CommunityPostPublicController,
   CommunityPostUserFeedController,
+  CommunityPostGlobalFeedController,
 } from './community-post-public.controller';
 import { CommunityPostService } from './community-post.service';
 import { CommunityPostLikeService } from './community-post-like.service';
@@ -19,6 +20,7 @@ import { SkillsModule } from '../../skills/skills.module';
   controllers: [
     CommunityPostPublicController,
     CommunityPostUserFeedController,
+    CommunityPostGlobalFeedController,
     CommunityPostController,
   ],
   providers: [

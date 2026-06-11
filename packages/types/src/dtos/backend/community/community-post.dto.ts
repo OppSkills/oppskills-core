@@ -95,6 +95,7 @@ export interface PublicCommunityListItem {
   memberCount: number;
   postCount: number;
   createdAt: string;
+  myRole?: CommunityMyRole;
 }
 
 export interface PublicCommunityListResponse {

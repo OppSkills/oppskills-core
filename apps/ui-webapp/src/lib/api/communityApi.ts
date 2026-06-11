@@ -14,6 +14,7 @@ import type {
   PublicCommunityProfile,
   UpdateCommunityDto,
   PaginatedPublicCommunityMembers,
+  PublicCommunityListItem,
 } from "@oppskills/types";
 
 const API = createApiClient("/communities");
@@ -491,4 +492,70 @@ export async function getPublicCommunityMembers(
 ): Promise<PaginatedPublicCommunityMembers> {
   const res = await API.get(`/public/${handle}/members`, { params });
   return res.data as PaginatedPublicCommunityMembers;
+}
+
+export async function getTrendingCommunities(
+  token?: string,
+  limit?: number,
+): Promise<ReadonlyArray<PublicCommunityListItem>> {
+  const headers = token ? buildAuthHeaders(token) : undefined;
+  const res = await API.get("/public/trending", {
+    headers,
+    params: limit !== undefined ? { limit: String(limit) } : undefined,
+  });
+
+  const raw = res.data as unknown;
+  if (!Array.isArray(raw)) {
+    throw new Error("Invalid response: expected array.");
+  }
+
+  return raw.map((entry) => {
+    if (!isRecord(entry)) {
+      throw new Error("Invalid response: expected community object.");
+    }
+    return {
+      id: requireString(entry, "id"),
+      name: requireString(entry, "name"),
+      handle: requireString(entry, "handle"),
+      description: optionalString(entry, "description"),
+      industry: requireString(entry, "industry") as CommunityIndustryValue,
+      coverImage: optionalString(entry, "coverImage"),
+      avatarImage: optionalString(entry, "avatarImage"),
+      memberCount:
+        typeof entry.memberCount === "number" ? entry.memberCount : 0,
+      postCount: typeof entry.postCount === "number" ? entry.postCount : 0,
+      createdAt: requireString(entry, "createdAt"),
+      myRole: optionalString(entry, "myRole") as CommunityMyRole | undefined,
+    };
+  });
+}
+
+export type PostableCommunity = Readonly<{
+  id: string;
+  name: string;
+  handle: string;
+}>;
+
+export async function getPostableCommunities(
+  token: string,
+): Promise<ReadonlyArray<PostableCommunity>> {
+  const res = await API.get("/postable", {
+    headers: buildAuthHeaders(token),
+  });
+
+  const raw = res.data as unknown;
+  if (!Array.isArray(raw)) {
+    throw new Error("Invalid response: expected array.");
+  }
+
+  return raw.map((entry) => {
+    if (!isRecord(entry)) {
+      throw new Error("Invalid response: expected community object.");
+    }
+    return {
+      id: requireString(entry, "id"),
+      name: requireString(entry, "name"),
+      handle: requireString(entry, "handle"),
+    };
+  });
 }

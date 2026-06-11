@@ -9,7 +9,10 @@ import {
 import { Prisma, CommunityAccessControlRole } from '@prisma/client';
 import { prisma } from '@oppskills/db';
 import { CreateCommunityDto } from './dto/create-community.dto';
-import { CommunityResponseDto } from './dto/community-response.dto';
+import {
+  CommunityResponseDto,
+  PostableCommunityDto,
+} from './dto/community-response.dto';
 import type { CommunityListItemDto } from './dto/community-list-item.dto';
 import { AddCommunityMembersDto } from './dto/add-community-members.dto';
 import { CommunityEmailQueue } from '../email/queue/community-email.queue';
@@ -333,6 +336,92 @@ export class CommunityService {
     };
   }
 
+  async listTrendingCommunities(
+    limit = 4,
+    viewerUserId?: string,
+  ): Promise<PublicCommunityListItemDto[]> {
+    const rows = await prisma.communityEntity.findMany({
+      orderBy: [{ views: 'desc' }, { members: { _count: 'desc' } }],
+      take: limit,
+      select: {
+        id: true,
+        name: true,
+        handle: true,
+        description: true,
+        industry: true,
+        coverImage: true,
+        avatarImage: true,
+        ownerId: true,
+        createdAt: true,
+        _count: {
+          select: {
+            members: true,
+            posts: { where: { status: 'PUBLISHED' } },
+          },
+        },
+        members: viewerUserId
+          ? {
+              where: { userId: viewerUserId },
+              select: { accessControlRole: true },
+            }
+          : undefined,
+      },
+    });
+
+    return rows.map((row) => {
+      let myRole: any = null;
+      if (viewerUserId) {
+        if (row.ownerId === viewerUserId) {
+          myRole = 'OWNER';
+        } else if (row.members && row.members.length > 0) {
+          myRole = row.members[0].accessControlRole;
+        }
+      }
+
+      return {
+        id: row.id,
+        name: row.name,
+        handle: row.handle,
+        description: row.description,
+        industry: row.industry,
+        coverImage: row.coverImage,
+        avatarImage: row.avatarImage,
+        memberCount: row._count.members,
+        postCount: row._count.posts,
+        createdAt: row.createdAt,
+        myRole,
+      };
+    });
+  }
+
+  async listPostableCommunities(
+    userId: string,
+  ): Promise<PostableCommunityDto[]> {
+    return prisma.communityEntity.findMany({
+      where: {
+        OR: [
+          { ownerId: userId },
+          {
+            members: {
+              some: {
+                userId,
+                accessControlRole: {
+                  in: ['ADMIN', 'MODERATOR', 'MEMBER'],
+                },
+              },
+            },
+          },
+        ],
+      },
+      select: {
+        id: true,
+        name: true,
+        handle: true,
+      },
+      orderBy: { name: 'asc' },
+    });
+  }
+
   async getPublicProfileByHandle(
     handle: string,
     viewerUserId?: string,
@@ -357,10 +446,8 @@ export class CommunityService {
 
     await this.analyticsService.trackCommunityView(community.id);
 
-    const [dbMemberCount, originalPostCount, repostCount] = await Promise.all([
-      prisma.communityMemberEntity.count({
-        where: this.followerWhere(community.id, community.ownerId),
-      }),
+    const [memberCount, originalPostCount, repostCount] = await Promise.all([
+      this.getCommunityMemberCount(community.id, community.ownerId),
       prisma.communityPostEntity.count({
         where: {
           communityId: community.id,
@@ -376,14 +463,6 @@ export class CommunityService {
         },
       }),
     ]);
-
-    const hasOwnerInMembers = await prisma.communityMemberEntity
-      .count({
-        where: { communityId: community.id, userId: community.ownerId },
-      })
-      .then((c) => c > 0);
-
-    const memberCount = dbMemberCount + (hasOwnerInMembers ? 0 : 1);
 
     let myRole: PublicCommunityProfileDto['myRole'] = null;
     if (viewerUserId) {
@@ -703,6 +782,23 @@ export class CommunityService {
       accessControlRole: 'FOLLOWER',
       userId: { not: ownerId },
     };
+  }
+
+  private async getCommunityMemberCount(
+    communityId: string,
+    ownerId: string,
+  ): Promise<number> {
+    const [dbCount, hasOwner] = await Promise.all([
+      prisma.communityMemberEntity.count({
+        where: { communityId },
+      }),
+      prisma.communityMemberEntity
+        .count({
+          where: { communityId, userId: ownerId },
+        })
+        .then((c) => c > 0),
+    ]);
+    return dbCount + (hasOwner ? 0 : 1);
   }
 
   private formatAssignedDate(date: Date): string {
@@ -1081,7 +1177,7 @@ export class CommunityService {
 
       let matchesRole = true;
       if (!isRosterTab) {
-        matchesRole = ownerRole.toLowerCase() === role!.toLowerCase();
+        matchesRole = ownerRole.toLowerCase() === role.toLowerCase();
       }
 
       if (matchesSearch && matchesRole) {
@@ -1192,7 +1288,7 @@ export class CommunityService {
 
     if (legacyOwnerMatches && page === 1) {
       legacyOwnerRecord.lastAssignedDate =
-        lastAssignedByUser.get(community.owner!.id) ?? null;
+        lastAssignedByUser.get(community.owner.id) ?? null;
       mappedMembers.unshift(legacyOwnerRecord);
     }
 
@@ -2103,9 +2199,10 @@ export class CommunityService {
         communityId,
         community.ownerId,
       );
-      const memberCount = await prisma.communityMemberEntity.count({
-        where: this.followerWhere(communityId, community.ownerId),
-      });
+      const memberCount = await this.getCommunityMemberCount(
+        communityId,
+        community.ownerId,
+      );
       return { following: true, memberCount };
     }
 
@@ -2118,9 +2215,10 @@ export class CommunityService {
           'You are already an internal member of this community.',
         );
       }
-      const memberCount = await prisma.communityMemberEntity.count({
-        where: this.followerWhere(communityId, community.ownerId),
-      });
+      const memberCount = await this.getCommunityMemberCount(
+        communityId,
+        community.ownerId,
+      );
       return { following: true, memberCount };
     }
 
@@ -2133,9 +2231,10 @@ export class CommunityService {
       },
     });
 
-    const memberCount = await prisma.communityMemberEntity.count({
-      where: this.followerWhere(communityId, community.ownerId),
-    });
+    const memberCount = await this.getCommunityMemberCount(
+      communityId,
+      community.ownerId,
+    );
     return { following: true, memberCount };
   }
 
@@ -2161,9 +2260,10 @@ export class CommunityService {
       where: { communityId_userId: { communityId, userId } },
     });
     if (!member) {
-      const memberCount = await prisma.communityMemberEntity.count({
-        where: this.followerWhere(communityId, community.ownerId),
-      });
+      const memberCount = await this.getCommunityMemberCount(
+        communityId,
+        community.ownerId,
+      );
       return { following: false, memberCount };
     }
 
@@ -2177,9 +2277,10 @@ export class CommunityService {
       where: { communityId_userId: { communityId, userId } },
     });
 
-    const memberCount = await prisma.communityMemberEntity.count({
-      where: this.followerWhere(communityId, community.ownerId),
-    });
+    const memberCount = await this.getCommunityMemberCount(
+      communityId,
+      community.ownerId,
+    );
     return { following: false, memberCount };
   }
 }

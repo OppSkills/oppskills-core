@@ -125,3 +125,29 @@ export class CommunityPostUserFeedController {
     );
   }
 }
+
+@ApiTags('Community Posts')
+@Controller('communities/public-posts')
+export class CommunityPostGlobalFeedController {
+  constructor(
+    private readonly postService: CommunityPostService,
+    private readonly optionalAuth: OptionalAuthService,
+  ) {}
+
+  @Get()
+  @ApiOperation({ summary: 'List mixed/global public community feed posts' })
+  @ApiQuery({ name: 'cursor', required: false })
+  @ApiQuery({ name: 'take', required: false, type: Number })
+  @ApiResponse({ status: 200, type: CommunityPostFeedResponseDto })
+  async listGlobalFeed(
+    @Query() query: CommunityPostFeedQueryDto,
+    @Req() req: Request,
+  ): Promise<CommunityPostFeedResponseDto> {
+    const viewerUserId = await this.optionalAuth.resolveUserId(req);
+    return this.postService.listGlobalPublicFeed(
+      query.cursor,
+      query.take ?? 20,
+      viewerUserId,
+    );
+  }
+}

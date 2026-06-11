@@ -31,6 +31,12 @@ export class PublicCommunityListItemDto {
 
   @ApiProperty()
   createdAt: Date;
+
+  @ApiPropertyOptional({
+    enum: ['OWNER', 'ADMIN', 'MODERATOR', 'READ_ONLY', 'FOLLOWER'],
+    nullable: true,
+  })
+  myRole?: 'OWNER' | 'ADMIN' | 'MODERATOR' | 'READ_ONLY' | 'FOLLOWER' | null;
 }
 
 export class PublicCommunityListResponseDto {
