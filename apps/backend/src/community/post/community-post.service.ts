@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { prisma } from '@oppskills/db';
+import { prisma, Prisma } from '@oppskills/db';
 import { CommunityService } from '../community.service';
 import { CommunityPostCacheService } from './community-post-cache.service';
 import { CommunityPostLikeService } from './community-post-like.service';
@@ -370,6 +370,34 @@ export class CommunityPostService {
     return response;
   }
 
+  async listGlobalPublicFeed(
+    cursor?: string,
+    take = 20,
+    viewerUserId?: string,
+  ): Promise<CommunityPostFeedResponseDto> {
+    const posts = await this.fetchGlobalFeedPosts(cursor, take + 1);
+    const hasMore = posts.length > take;
+    const pagePosts = hasMore ? posts.slice(0, take) : posts;
+
+    const items = await Promise.all(
+      pagePosts.map((post) => this.hydrateFeedItem(post, viewerUserId)),
+    );
+
+    const lastPost = pagePosts[pagePosts.length - 1];
+    const nextCursor =
+      hasMore && lastPost
+        ? this.encodeCursor(lastPost.createdAt, lastPost.id)
+        : null;
+
+    const result = { items, nextCursor, hasMore };
+    if (viewerUserId) {
+      const postIds = result.items.map((item) => item.id);
+      await this.analyticsService.trackServedPosts(viewerUserId, postIds);
+    }
+
+    return result;
+  }
+
   async listUserFeed(
     handle: string,
     userId: string,
@@ -411,6 +439,32 @@ export class CommunityPostService {
     }
 
     return result;
+  }
+
+  private async fetchGlobalFeedPosts(
+    cursor: string | undefined,
+    limit: number,
+  ): Promise<PostWithRelations[]> {
+    const decoded = cursor ? this.decodeCursor(cursor) : null;
+
+    const where: Prisma.CommunityPostEntityWhereInput = {
+      status: 'PUBLISHED',
+      postKind: 'ORIGINAL',
+    };
+
+    if (decoded) {
+      where.OR = [
+        { createdAt: decoded.createdAt, id: { lt: decoded.id } },
+        { createdAt: { lt: decoded.createdAt } },
+      ];
+    }
+
+    return prisma.communityPostEntity.findMany({
+      where,
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: limit,
+      include: postInclude,
+    });
   }
 
   private async fetchCommunityFeedPosts(

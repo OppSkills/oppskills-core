@@ -25,7 +25,10 @@ import type { Request } from 'express';
 import { ClerkAuthGuard } from '../common/clerk-auth.guard';
 import { CommunityService } from './community.service';
 import { CreateCommunityDto } from './dto/create-community.dto';
-import { CommunityResponseDto } from './dto/community-response.dto';
+import {
+  CommunityResponseDto,
+  PostableCommunityDto,
+} from './dto/community-response.dto';
 import { CommunityListItemDto } from './dto/community-list-item.dto';
 import { AddCommunityMembersDto } from './dto/add-community-members.dto';
 import { CreateMemberTypeDto } from './dto/create-member-type.dto';
@@ -67,6 +70,24 @@ export class CommunityController {
       withFollowed,
     );
     return { items };
+  }
+
+  @Get('postable')
+  @UseGuards(ClerkAuthGuard)
+  @ApiBearerAuth('clerk-auth')
+  @ApiOperation({
+    summary: 'List postable communities',
+    description:
+      'Returns communities where the authenticated user can create posts.',
+  })
+  @ApiResponse({ status: 200, type: [PostableCommunityDto] })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async listPostable(@Req() req: Request): Promise<PostableCommunityDto[]> {
+    const userId = req.user?.id;
+    if (typeof userId !== 'string' || userId.trim().length === 0) {
+      throw new UnauthorizedException('User not found.');
+    }
+    return this.communityService.listPostableCommunities(userId);
   }
 
   @Get('handles/check')

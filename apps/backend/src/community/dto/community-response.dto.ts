@@ -38,3 +38,14 @@ export class CommunityResponseDto {
   @ApiProperty({ example: '2026-05-25T12:00:00.000Z' })
   createdAt: Date;
 }
+
+export class PostableCommunityDto {
+  @ApiProperty({ example: 'clxyz123communityid' })
+  id: string;
+
+  @ApiProperty({ example: 'OppSkills Developers' })
+  name: string;
+
+  @ApiProperty({ example: 'oppskills-devs' })
+  handle: string;
+}

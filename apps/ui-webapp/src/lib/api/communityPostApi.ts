@@ -193,3 +193,14 @@ export async function undoRepost(
   });
   return res.data as UndoCommunityPostRepostResponse;
 }
+
+const GLOBAL_FEED_API = createApiClient("/communities/public-posts");
+
+export async function getGlobalFeedPosts(
+  params: { cursor?: string; take?: number } = {},
+  token?: string,
+): Promise<CommunityPostFeedResponse> {
+  const headers = token ? buildAuthHeaders(token) : undefined;
+  const res = await GLOBAL_FEED_API.get("", { params, headers });
+  return res.data as CommunityPostFeedResponse;
+}

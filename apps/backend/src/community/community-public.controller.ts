@@ -10,7 +10,7 @@ import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import type { Request } from 'express';
 import { OptionalAuthService } from '../common/optional-auth.service';
 import { CommunityService } from './community.service';
-import { PublicCommunityListResponseDto } from './dto/public-community-list-item.dto';
+import { PublicCommunityListItemDto, PublicCommunityListResponseDto } from './dto/public-community-list-item.dto';
 import { PublicCommunityProfileDto } from './dto/public-community-profile.dto';
 import { PublicCommunityMembersResponseDto } from './dto/public-community-member.dto';
 
@@ -48,6 +48,20 @@ export class CommunityPublicController {
       sort,
       sortOrder,
     });
+  }
+
+  @Get('trending')
+  @ApiOperation({ summary: 'List trending public communities' })
+  @ApiResponse({ status: 200, type: [PublicCommunityListItemDto] })
+  async listTrending(
+    @Req() req: Request,
+    @Query('limit') limit?: number,
+  ): Promise<PublicCommunityListItemDto[]> {
+    const viewerUserId = await this.optionalAuth.resolveUserId(req);
+    return this.communityService.listTrendingCommunities(
+      limit ? Number(limit) : 4,
+      viewerUserId,
+    );
   }
 
   @Get(':handle')

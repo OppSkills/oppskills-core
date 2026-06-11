@@ -17,6 +17,7 @@ jest.mock('@oppskills/db', () => ({
     },
     communityPostEntity: {
       aggregate: jest.fn(),
+      count: jest.fn(),
     },
   },
 }));
@@ -320,6 +321,31 @@ describe('CommunityService', () => {
       expect(result.items[0].role).toBe('OWNER');
       expect(result.items[0].skills).toEqual(['Coding']);
       expect(result.items[0].interests).toEqual(['Tech']);
+    });
+  });
+
+  describe('getPublicProfileByHandle', () => {
+    it('returns correct memberCount counting all members and accounting for legacy owner', async () => {
+      (prisma.communityEntity.findUnique as jest.Mock).mockResolvedValue({
+        id: 'comm1',
+        ownerId: 'owner_user',
+        name: 'Test Community',
+        handle: 'test-community',
+        createdAt: new Date(),
+      });
+
+      (prisma.communityMemberEntity.count as jest.Mock)
+        .mockResolvedValueOnce(3) // dbCount = 3
+        .mockResolvedValueOnce(0); // hasOwner = false (legacy owner)
+
+      (prisma.communityPostEntity.count as jest.Mock)
+        .mockResolvedValueOnce(2) // originalPostCount
+        .mockResolvedValueOnce(1); // repostCount
+
+      const result = await service.getPublicProfileByHandle('test-community');
+      expect(result.memberCount).toBe(4); // 3 + 1 (legacy owner)
+      expect(result.postCount).toBe(2);
+      expect(result.repostCount).toBe(1);
     });
   });
 });

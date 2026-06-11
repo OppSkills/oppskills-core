@@ -1,7 +1,17 @@
-import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
+import {
+  useQuery,
+  useInfiniteQuery,
+  useMutation,
+  useQueryClient,
+} from "@tanstack/react-query";
+import { useAuth } from "@clerk/nextjs";
 import {
   getPublicCommunities,
   getPublicCommunityMembers,
+  getTrendingCommunities,
+  getPostableCommunities,
+  followCommunity,
+  unfollowCommunity,
 } from "@/lib/api/communityApi";
 
 export interface CommunityFilterState {
@@ -57,5 +67,72 @@ export function usePublicCommunityMembers(
       return lastPage.page + 1;
     },
     enabled: options?.enabled !== false && !!handle,
+  });
+}
+
+export function useTrendingCommunities(
+  token?: string,
+  limit?: number,
+  options?: { enabled?: boolean },
+) {
+  return useQuery({
+    queryKey: [
+      "communities",
+      "public",
+      "trending",
+      token || "anonymous",
+      limit,
+    ] as const,
+    queryFn: async () => {
+      return await getTrendingCommunities(token, limit);
+    },
+    enabled: options?.enabled,
+  });
+}
+
+export function usePostableCommunities(
+  token?: string,
+  options?: { enabled?: boolean },
+) {
+  return useQuery({
+    queryKey: ["communities", "postable", token] as const,
+    queryFn: async () => {
+      if (!token)
+        throw new Error("Authentication required for postable communities");
+      return await getPostableCommunities(token);
+    },
+    enabled: options?.enabled !== false && !!token,
+  });
+}
+
+export function useFollowCommunity() {
+  const { getToken } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (communityId: string) => {
+      const token = await getToken();
+      if (!token) throw new Error("Sign in to follow communities.");
+      return followCommunity(token, communityId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["communities"] });
+    },
+  });
+}
+
+export function useUnfollowCommunity() {
+  const { getToken } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (communityId: string) => {
+      const token = await getToken();
+      if (!token) throw new Error("Sign in to unfollow communities.");
+      return unfollowCommunity(token, communityId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["communities"] });
+    },
   });
 }

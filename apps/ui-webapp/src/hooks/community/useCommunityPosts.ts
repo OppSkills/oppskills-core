@@ -19,6 +19,7 @@ import {
   toggleCommentLike,
   createRepost,
   undoRepost,
+  getGlobalFeedPosts,
 } from "@/lib/api/communityPostApi";
 import type {
   CreateCommunityPostDto,
@@ -402,6 +403,198 @@ export function useCreateFeedPostComment(communityId: string, handle: string) {
         queryKey: ["community-post", handle, postId],
       });
       queryClient.invalidateQueries({ queryKey: ["community-posts", handle] });
+    },
+  });
+}
+
+export function useGlobalFeedPosts(options?: {
+  enabled?: boolean;
+  take?: number;
+}) {
+  const { getToken, isSignedIn } = useAuth();
+  const take = options?.take ?? 10;
+
+  return useInfiniteQuery({
+    queryKey: ["global-feed-posts", take, isSignedIn] as const,
+    queryFn: async ({ pageParam }) => {
+      const token = isSignedIn ? await getToken() : undefined;
+      return getGlobalFeedPosts(
+        { cursor: pageParam as string | undefined, take },
+        token ?? undefined,
+      );
+    },
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage) =>
+      lastPage.hasMore ? (lastPage.nextCursor ?? undefined) : undefined,
+    enabled: options?.enabled !== false,
+  });
+}
+
+export function useCreatePostGeneral() {
+  const { getToken } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      communityId,
+      data,
+    }: {
+      communityId: string;
+      data: CreateCommunityPostDto;
+    }) => {
+      const token = await getToken();
+      if (!token) throw new Error("Authentication required.");
+      return createCommunityPost(token, communityId, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["global-feed-posts"] });
+      queryClient.invalidateQueries({ queryKey: ["community-posts"] });
+    },
+  });
+}
+
+export function useDeletePostGeneral() {
+  const { getToken } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      communityId,
+      postId,
+    }: {
+      communityId: string;
+      postId: string;
+    }) => {
+      const token = await getToken();
+      if (!token) throw new Error("Authentication required.");
+      return deleteCommunityPost(token, communityId, postId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["global-feed-posts"] });
+      queryClient.invalidateQueries({ queryKey: ["community-posts"] });
+    },
+  });
+}
+
+export function useTogglePostLikeGeneral() {
+  const { getToken } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      communityId,
+      postId,
+    }: {
+      communityId: string;
+      postId: string;
+    }) => {
+      const token = await getToken();
+      if (!token) throw new Error("Sign in to like posts.");
+      return toggleCommunityPostLike(token, communityId, postId);
+    },
+    onSuccess: (_data, { postId }) => {
+      queryClient.invalidateQueries({ queryKey: ["global-feed-posts"] });
+      queryClient.invalidateQueries({ queryKey: ["community-posts"] });
+      queryClient.invalidateQueries({
+        predicate: (query) =>
+          query.queryKey[0] === "community-post" &&
+          query.queryKey.includes(postId),
+      });
+    },
+  });
+}
+
+export function useRepostPostGeneral() {
+  const { getToken } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      communityId,
+      postId,
+      data,
+    }: {
+      communityId: string;
+      postId: string;
+      data?: CreateCommunityPostRepostDto;
+    }) => {
+      const token = await getToken();
+      if (!token) throw new Error("Sign in to repost.");
+      return createRepost(token, communityId, postId, data);
+    },
+    onSuccess: (_data, { postId }) => {
+      queryClient.invalidateQueries({ queryKey: ["global-feed-posts"] });
+      queryClient.invalidateQueries({ queryKey: ["community-posts"] });
+      queryClient.invalidateQueries({
+        predicate: (query) =>
+          query.queryKey[0] === "community-post" &&
+          query.queryKey.includes(postId),
+      });
+      queryClient.invalidateQueries({ queryKey: ["community-user-feed"] });
+    },
+  });
+}
+
+export function useUndoRepostGeneral() {
+  const { getToken } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      communityId,
+      postId,
+    }: {
+      communityId: string;
+      postId: string;
+    }) => {
+      const token = await getToken();
+      if (!token) throw new Error("Sign in to undo repost.");
+      return undoRepost(token, communityId, postId);
+    },
+    onSuccess: (_data, { postId }) => {
+      queryClient.invalidateQueries({ queryKey: ["global-feed-posts"] });
+      queryClient.invalidateQueries({ queryKey: ["community-posts"] });
+      queryClient.invalidateQueries({
+        predicate: (query) =>
+          query.queryKey[0] === "community-post" &&
+          query.queryKey.includes(postId),
+      });
+      queryClient.invalidateQueries({ queryKey: ["community-user-feed"] });
+    },
+  });
+}
+
+export function useCreateFeedPostCommentGeneral() {
+  const { getToken } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      communityId,
+      postId,
+      content,
+    }: {
+      communityId: string;
+      postId: string;
+      content: string;
+    }) => {
+      const token = await getToken();
+      if (!token) throw new Error("Sign in to comment.");
+      return createPostComment(token, communityId, postId, { content });
+    },
+    onSuccess: (_comment, { postId }) => {
+      queryClient.invalidateQueries({
+        predicate: (query) =>
+          query.queryKey[0] === "community-post-comments" &&
+          query.queryKey.includes(postId),
+      });
+      queryClient.invalidateQueries({
+        predicate: (query) =>
+          query.queryKey[0] === "community-post" &&
+          query.queryKey.includes(postId),
+      });
+      queryClient.invalidateQueries({ queryKey: ["global-feed-posts"] });
+      queryClient.invalidateQueries({ queryKey: ["community-posts"] });
     },
   });
 }
