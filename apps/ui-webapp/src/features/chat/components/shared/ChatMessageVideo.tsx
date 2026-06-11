@@ -91,11 +91,7 @@ function ChatMessageVideoInner({
       return;
     }
 
-    if (
-      !canCache ||
-      !conversationId ||
-      !message.attachment?.thumbnailUrl
-    ) {
+    if (!canCache || !conversationId || !message.attachment?.thumbnailUrl) {
       return;
     }
 

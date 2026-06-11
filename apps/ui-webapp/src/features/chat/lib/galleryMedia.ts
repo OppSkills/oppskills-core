@@ -1,13 +1,13 @@
 import type { Message } from "@/features/chat/domain/types";
-import type { GalleryItem, GalleryMediaKind } from "@/features/chat/components/details/ImageGalleryModal";
+import type {
+  GalleryItem,
+  GalleryMediaKind,
+} from "@/features/chat/components/details/ImageGalleryModal";
 
 const VIDEO_FILE_PATTERN = /\.(mp4|webm|mov|m4v|mkv|avi)(\?|$)/i;
 
 export function isVideoMessage(message: Message): boolean {
-  return (
-    message.attachment?.type === "video" ||
-    message.type === "VIDEO"
-  );
+  return message.attachment?.type === "video" || message.type === "VIDEO";
 }
 
 export function resolveGalleryItemKind(

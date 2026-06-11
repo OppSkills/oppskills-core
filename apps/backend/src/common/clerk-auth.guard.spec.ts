@@ -6,6 +6,8 @@ describe('ClerkAuthGuard', () => {
   it('should be defined', () => {
     const mockConfigService = {} as ClerkAuthConfigService;
     const mockStreamTokens = {} as ChatStreamTokenService;
-    expect(new ClerkAuthGuard(mockConfigService, mockStreamTokens)).toBeDefined();
+    expect(
+      new ClerkAuthGuard(mockConfigService, mockStreamTokens),
+    ).toBeDefined();
   });
 });

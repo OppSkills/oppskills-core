@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import dynamic from "next/dynamic";
 import { PlusCircle, Send, LayoutGrid, X, Loader2 } from "lucide-react";
 import CustomModal from "./CustomModal";
@@ -87,18 +93,45 @@ export default function CreatePostModal({
   const [skillSearchQuery, setSkillSearchQuery] = useState("");
   const [topSkills, setTopSkills] = useState<Skill[]>([]);
   const [isLoadingSkills, setIsLoadingSkills] = useState(false);
+  const [isSkillsExpanded, setIsSkillsExpanded] = useState(false);
+
+  const [searchResults, setSearchResults] = useState<Skill[]>([]);
+  const [isLoadingSearch, setIsLoadingSearch] = useState(false);
 
   const atSkillLimit = selectedSkills.length >= SKILLS_MAX_PER_POST;
 
-  // --- Client-side search: pure filter over the in-memory topSkills list ---
   const debouncedSearchQuery = useDebounce(skillSearchQuery, 200);
-  const filteredSkills = useMemo(() => {
-    const q = debouncedSearchQuery.trim().toLowerCase();
-    if (!q) return [];
-    return topSkills
-      .filter((s) => s.name.toLowerCase().includes(q))
-      .slice(0, 10);
-  }, [debouncedSearchQuery, topSkills]);
+
+  // Fetch search results from API when search query changes
+  useEffect(() => {
+    let active = true;
+    const q = debouncedSearchQuery.trim();
+    if (!q) {
+      setSearchResults([]);
+      return;
+    }
+
+    async function doSearch() {
+      setIsLoadingSearch(true);
+      try {
+        const token = await getToken();
+        if (!token || !active) return;
+        const results = await searchSkills(token, q, 10);
+        if (active) {
+          setSearchResults(results);
+        }
+      } catch (err) {
+        console.error("Search failed:", err);
+      } finally {
+        if (active) setIsLoadingSearch(false);
+      }
+    }
+
+    doSearch();
+    return () => {
+      active = false;
+    };
+  }, [debouncedSearchQuery, getToken]);
 
   // Suggestions when not searching: history-first, then top skills
   const suggestions = useMemo(() => {
@@ -119,6 +152,7 @@ export default function CreatePostModal({
     setContent("");
     setSelectedSkills([]);
     setSkillSearchQuery("");
+    setIsSkillsExpanded(false);
   }, []);
 
   const debouncedContent = useDebounce(content, 1000);
@@ -306,7 +340,9 @@ export default function CreatePostModal({
       toast.error("Please enter some content for your post.");
       return;
     }
-    if (getPlainTextLengthFromHtml(content) > COMMUNITY_POST_CONTENT_MAX_LENGTH) {
+    if (
+      getPlainTextLengthFromHtml(content) > COMMUNITY_POST_CONTENT_MAX_LENGTH
+    ) {
       toast.error(
         `Post content cannot exceed ${COMMUNITY_POST_CONTENT_MAX_LENGTH} characters.`,
       );
@@ -326,8 +362,9 @@ export default function CreatePostModal({
   };
 
   // Decide which skill chips to show in the suggestion panel
-  const displaySkills =
-    debouncedSearchQuery.trim() ? filteredSkills : suggestions;
+  const displaySkills: Skill[] = debouncedSearchQuery.trim()
+    ? searchResults
+    : suggestions;
 
   const footer = (
     <Button
@@ -360,12 +397,15 @@ export default function CreatePostModal({
             className="rounded-[28px] border-neutral-200 focus-within:border-[#5D3EBB]/60"
           />
 
-          {/* ── Skills Section ─────────────────────────────────────────── */}
+          {/* ── Tags Section ─────────────────────────────────────────── */}
           <div className="flex flex-col gap-3 border-t border-neutral-100 pt-4">
             {/* Header */}
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider">
-                Skills{" "}
+              <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider flex items-center gap-1">
+                Tags{" "}
+                <span className="text-[10px] text-neutral-400 font-semibold normal-case">
+                  • For better reach
+                </span>{" "}
                 <span
                   className={
                     atSkillLimit ? "text-amber-500" : "text-neutral-300"
@@ -374,15 +414,24 @@ export default function CreatePostModal({
                   ({selectedSkills.length}/{SKILLS_MAX_PER_POST})
                 </span>
               </span>
-              {selectedSkills.length > 0 && (
+              <div className="flex items-center gap-3">
+                {selectedSkills.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedSkills([])}
+                    className="text-xs text-neutral-400 hover:text-[#5D3EBB] transition-colors"
+                  >
+                    Clear all
+                  </button>
+                )}
                 <button
                   type="button"
-                  onClick={() => setSelectedSkills([])}
-                  className="text-xs text-neutral-400 hover:text-[#5D3EBB] transition-colors"
+                  onClick={() => setIsSkillsExpanded(!isSkillsExpanded)}
+                  className="text-xs font-bold text-[#5D3EBB] hover:underline"
                 >
-                  Clear all
+                  {isSkillsExpanded ? "Hide" : "Advanced"}
                 </button>
-              )}
+              </div>
             </div>
 
             {/* Selected skill tags */}
@@ -407,81 +456,84 @@ export default function CreatePostModal({
               </div>
             )}
 
-            {/* Search + suggestions panel */}
-            <div className="flex flex-col gap-2.5 bg-neutral-50/50 border border-neutral-200/50 rounded-2xl p-3.5">
-              {/* Search input */}
-              <div className="relative">
-                <input
-                  type="text"
-                  id="skill-search-input"
-                  placeholder={
-                    atSkillLimit
-                      ? `Max ${SKILLS_MAX_PER_POST} skills reached`
-                      : "Search skills..."
-                  }
-                  disabled={atSkillLimit}
-                  value={skillSearchQuery}
-                  onChange={(e) => setSkillSearchQuery(e.target.value)}
-                  className="w-full bg-white border border-neutral-200 focus:border-[#5D3EBB]/60 focus:ring-1 focus:ring-[#5D3EBB]/60 text-sm px-4 py-2.5 rounded-full outline-none transition-all placeholder:text-neutral-400 disabled:opacity-50 disabled:cursor-not-allowed"
-                />
-                {isLoadingSkills && (
-                  <div className="absolute right-3.5 top-3 text-[#5D3EBB]">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  </div>
-                )}
-              </div>
-
-              {/* Chip list */}
-              {!atSkillLimit && (
-                <div>
-                  <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider mb-2 block">
-                    {debouncedSearchQuery.trim()
-                      ? "Search Results"
-                      : "Suggested Skills"}
-                  </span>
-
-                  {isLoadingSkills && displaySkills.length === 0 ? (
-                    <div className="flex flex-wrap gap-2 animate-pulse">
-                      {Array.from({ length: 5 }).map((_, i) => (
-                        <div
-                          key={i}
-                          className="h-7 w-20 bg-neutral-200 rounded-full"
-                        />
-                      ))}
-                    </div>
-                  ) : displaySkills.length === 0 ? (
-                    <span className="text-xs text-neutral-400">
-                      {debouncedSearchQuery.trim()
-                        ? "No matching skills."
-                        : "No suggestions available."}
-                    </span>
-                  ) : (
-                    <div className="flex flex-wrap gap-2">
-                      {displaySkills.map((skill) => {
-                        const isSelected = selectedSkills.some(
-                          (s) => s.id === skill.id,
-                        );
-                        return (
-                          <button
-                            key={skill.id}
-                            type="button"
-                            disabled={isSelected}
-                            onClick={() => addSkill(skill)}
-                            className={`text-xs px-3 py-1.5 rounded-full border transition-all ${
-                              isSelected
-                                ? "bg-neutral-100 border-neutral-200 text-neutral-400 cursor-not-allowed"
-                                : "border-neutral-200 hover:border-[#5D3EBB]/30 hover:bg-[#E6E0FA]/20 text-neutral-600 hover:text-[#2E1E66] active:scale-95"
-                            }`}
-                          >
-                            + {skill.name}
-                          </button>
-                        );
-                      })}
+            {/* Search + suggestions panel - collapsible */}
+            {isSkillsExpanded && (
+              <div className="flex flex-col gap-2.5 bg-neutral-50/50 border border-neutral-200/50 rounded-2xl p-3.5 mt-1 animate-in fade-in duration-200">
+                {/* Search input */}
+                <div className="relative">
+                  <input
+                    type="text"
+                    id="skill-search-input"
+                    placeholder={
+                      atSkillLimit
+                        ? `Max ${SKILLS_MAX_PER_POST} tags reached`
+                        : "Search tags..."
+                    }
+                    disabled={atSkillLimit}
+                    value={skillSearchQuery}
+                    onChange={(e) => setSkillSearchQuery(e.target.value)}
+                    className="w-full bg-white border border-neutral-200 focus:border-[#5D3EBB]/60 focus:ring-1 focus:ring-[#5D3EBB]/60 text-sm px-4 py-2.5 rounded-full outline-none transition-all placeholder:text-neutral-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                  />
+                  {isLoadingSearch && (
+                    <div className="absolute right-3.5 top-3 text-[#5D3EBB]">
+                      <Loader2 className="w-4 h-4 animate-spin" />
                     </div>
                   )}
                 </div>
-              )}
-            </div>
+
+                {/* Chip list */}
+                {!atSkillLimit && (
+                  <div>
+                    <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider mb-2 block">
+                      {debouncedSearchQuery.trim()
+                        ? "Search Results"
+                        : "Suggested Tags"}
+                    </span>
+
+                    {isLoadingSearch ||
+                    (isLoadingSkills && displaySkills.length === 0) ? (
+                      <div className="flex flex-wrap gap-2 animate-pulse">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <div
+                            key={i}
+                            className="h-7 w-20 bg-neutral-200 rounded-full"
+                          />
+                        ))}
+                      </div>
+                    ) : displaySkills.length === 0 ? (
+                      <span className="text-xs text-neutral-400">
+                        {debouncedSearchQuery.trim()
+                          ? "No matching tags."
+                          : "No suggestions available."}
+                      </span>
+                    ) : (
+                      <div className="flex flex-wrap gap-2">
+                        {displaySkills.map((skill: Skill) => {
+                          const isSelected = selectedSkills.some(
+                            (s) => s.id === skill.id,
+                          );
+                          return (
+                            <button
+                              key={skill.id}
+                              type="button"
+                              disabled={isSelected}
+                              onClick={() => addSkill(skill)}
+                              className={`text-xs px-3 py-1.5 rounded-full border transition-all ${
+                                isSelected
+                                  ? "bg-neutral-100 border-neutral-200 text-neutral-400 cursor-not-allowed"
+                                  : "border-neutral-200 hover:border-[#5D3EBB]/30 hover:bg-[#E6E0FA]/20 text-neutral-600 hover:text-[#2E1E66] active:scale-95"
+                              }`}
+                            >
+                              + {skill.name}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {images.length > 0 && (

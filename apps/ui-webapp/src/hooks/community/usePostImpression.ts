@@ -12,9 +12,7 @@ export const postImpressionMutationKeys = {
 
 const impressionQueue = new Set<string>();
 let flushTimer: ReturnType<typeof setTimeout> | null = null;
-let flushImpressions:
-  | ((postIds: string[]) => Promise<unknown>)
-  | null = null;
+let flushImpressions: ((postIds: string[]) => Promise<unknown>) | null = null;
 
 /**
  * Queues a post ID for impression tracking and schedules a batch flush.

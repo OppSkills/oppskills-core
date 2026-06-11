@@ -178,8 +178,8 @@ function mockMissingRegistrationForm(prismaMock: any) {
 }
 
 function getCreateManyFieldIds(prismaMock: any): string[] {
-  const call = prismaMock.hackathonRegistrationAnswerEntity.createMany.mock
-    .calls[0]?.[0];
+  const call =
+    prismaMock.hackathonRegistrationAnswerEntity.createMany.mock.calls[0]?.[0];
   return (call?.data ?? []).map((row: { fieldId: string }) => row.fieldId);
 }
 

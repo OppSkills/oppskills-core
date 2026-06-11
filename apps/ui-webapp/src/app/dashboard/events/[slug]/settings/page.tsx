@@ -42,7 +42,10 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { useEventBySlug, getEventBySlugQueryKey } from "@/hooks/events/useEventBySlug";
+import {
+  useEventBySlug,
+  getEventBySlugQueryKey,
+} from "@/hooks/events/useEventBySlug";
 import {
   submitEventForApproval,
   updateEventStatus,

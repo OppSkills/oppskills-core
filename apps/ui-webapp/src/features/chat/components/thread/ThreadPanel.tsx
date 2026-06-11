@@ -5,10 +5,9 @@ import dynamic from "next/dynamic";
 import type { Chat, Message } from "../../domain/types";
 import type { useChatComposer } from "../../hooks/composer/useChatComposer";
 
-const ActiveChatHeader = dynamic(
-  () => import("../details/ActiveChatHeader"),
-  { ssr: false },
-);
+const ActiveChatHeader = dynamic(() => import("../details/ActiveChatHeader"), {
+  ssr: false,
+});
 
 const ChatTimeline = dynamic(() => import("./ChatTimeline"), { ssr: false });
 
@@ -33,8 +32,7 @@ const ChatAttachmentComposer = dynamic(
 );
 
 const ChatEmojiPicker = dynamic(
-  () =>
-    import("../shared/ChatEmojiPicker").then((mod) => mod.ChatEmojiPicker),
+  () => import("../shared/ChatEmojiPicker").then((mod) => mod.ChatEmojiPicker),
   { ssr: false },
 );
 

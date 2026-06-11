@@ -2,10 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-export function useChatLayout(
-  selectedChatId: string | null,
-  isGroup = false,
-) {
+export function useChatLayout(selectedChatId: string | null, isGroup = false) {
   const [isMobile, setIsMobile] = useState(false);
   const [showLeftSidebar, setShowLeftSidebar] = useState(!selectedChatId);
   const [showRightSidebar, setShowRightSidebar] = useState(false);

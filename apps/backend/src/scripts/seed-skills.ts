@@ -17,7 +17,6 @@
 
 import { prisma } from '@oppskills/db';
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
 const { skills } = require('../../data.js') as {
   skills: Record<string, string[]>;
 };
@@ -32,10 +31,10 @@ function slugify(text: string): string {
   return text
     .toLowerCase()
     .trim()
-    .replace(/[^a-z0-9\s-]/g, '')   // remove special chars (preserves spaces/dashes)
-    .replace(/\s+/g, '-')            // spaces → single dash
-    .replace(/-+/g, '-')             // collapse consecutive dashes
-    .replace(/^-+|-+$/g, '');        // trim edge dashes
+    .replace(/[^a-z0-9\s-]/g, '') // remove special chars (preserves spaces/dashes)
+    .replace(/\s+/g, '-') // spaces → single dash
+    .replace(/-+/g, '-') // collapse consecutive dashes
+    .replace(/^-+|-+$/g, ''); // trim edge dashes
 }
 
 /** "softwareDevelopment" → "Software Development" */
@@ -101,7 +100,7 @@ async function main() {
       const skill = await prisma.skillEntity.upsert({
         where: { slug },
         create: { name: skillName, slug, platformScore: 0 },
-        update: { name: skillName },   // fix casing drift only
+        update: { name: skillName }, // fix casing drift only
         select: { id: true },
       });
 
@@ -111,7 +110,7 @@ async function main() {
           skillId_categoryId: { skillId: skill.id, categoryId },
         },
         create: { skillId: skill.id, categoryId },
-        update: {},   // nothing to update — the row just needs to exist
+        update: {}, // nothing to update — the row just needs to exist
       });
 
       console.log(`    ✓  ${skillName}  (slug: ${slug})`);

@@ -171,8 +171,8 @@ export function replaceOptimisticMessageInCaches(
     .find((m) => m.id === tempId);
   const keepPoster = Boolean(
     pending?.imageUrl?.startsWith("blob:") &&
-      (!pending.attachment || pending.imageUrl !== pending.attachment.url) &&
-      !uiMsg.attachment?.thumbnailUrl,
+    (!pending.attachment || pending.imageUrl !== pending.attachment.url) &&
+    !uiMsg.attachment?.thumbnailUrl,
   );
   if (pending) revokeOptimisticPreview(pending, { keepPoster });
 

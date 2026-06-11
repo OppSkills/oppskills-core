@@ -202,12 +202,7 @@ export function useChatThreadScroll({
       window.clearInterval(pollId);
       allowLoadOlderRef.current = true;
     };
-  }, [
-    selectedChatId,
-    messagesLoading,
-    threadMessageCount,
-    unreadCount,
-  ]);
+  }, [selectedChatId, messagesLoading, threadMessageCount, unreadCount]);
 
   // IntersectionObserver: load older when the top sentinel is visible.
   useEffect(() => {
@@ -225,12 +220,7 @@ export function useChatThreadScroll({
 
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [
-    selectedChatId,
-    hasOlderMessages,
-    threadMessageCount,
-    attemptLoadOlder,
-  ]);
+  }, [selectedChatId, hasOlderMessages, threadMessageCount, attemptLoadOlder]);
 
   // Auto-scroll only for new messages at the bottom — not prepended history.
   useEffect(() => {

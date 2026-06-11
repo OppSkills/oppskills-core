@@ -47,7 +47,10 @@ function sendPipelineReducer(
 ): SendPipelineState {
   switch (action.type) {
     case "START_BATCH":
-      return { batchState: "uploading", activeConversationId: action.conversationId };
+      return {
+        batchState: "uploading",
+        activeConversationId: action.conversationId,
+      };
     case "UPLOADING":
       return { ...state, batchState: "uploading" };
     case "SENDING":
@@ -236,9 +239,8 @@ export function useChatSendPipeline({
 
           if (pending?.imageUrl?.startsWith("blob:")) {
             try {
-              const { seedImageCache } = await import(
-                "@/features/chat/lib/imageCache/imageCacheBridge"
-              );
+              const { seedImageCache } =
+                await import("@/features/chat/lib/imageCache/imageCacheBridge");
               await seedImageCache(uiMsg.id, pending.imageUrl);
             } catch (error) {
               console.warn("Failed to seed image cache", error);
@@ -250,9 +252,8 @@ export function useChatSendPipeline({
             pending.attachment.url?.startsWith("blob:")
           ) {
             try {
-              const { VideoCacheManager } = await import(
-                "@/features/chat/lib/videoCache/VideoCacheManager"
-              );
+              const { VideoCacheManager } =
+                await import("@/features/chat/lib/videoCache/VideoCacheManager");
               const blob = await fetch(pending.attachment.url).then((r) =>
                 r.blob(),
               );
@@ -363,8 +364,7 @@ export function useChatSendPipeline({
       dispatch({ type: "START_BATCH", conversationId });
 
       const optimisticMsgs = items.map((item, i) => {
-        const previewUrl =
-          item.previewUrl ?? createOptimisticPreviewUrl(item);
+        const previewUrl = item.previewUrl ?? createOptimisticPreviewUrl(item);
         const displayCaption = i === 0 ? caption : "";
         return createOptimisticMessage(
           item,
@@ -521,9 +521,8 @@ export function useChatSendPipeline({
       }
 
       const token = await getTokenSafe();
-      const { downloadChatMessageAttachment } = await import(
-        "@/features/chat/lib/downloadAttachment"
-      );
+      const { downloadChatMessageAttachment } =
+        await import("@/features/chat/lib/downloadAttachment");
       await downloadChatMessageAttachment(
         token,
         conversationId,

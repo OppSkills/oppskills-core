@@ -21,14 +21,10 @@ export class ChatStreamTokenService {
   }
 
   sign(userId: string, conversationId: string, messageId: string): string {
-    return jwt.sign(
-      { conversationId, messageId },
-      this.secret(),
-      {
-        subject: userId,
-        expiresIn: '15m',
-      },
-    );
+    return jwt.sign({ conversationId, messageId }, this.secret(), {
+      subject: userId,
+      expiresIn: '15m',
+    });
   }
 
   verify(

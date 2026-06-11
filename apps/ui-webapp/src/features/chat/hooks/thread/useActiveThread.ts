@@ -66,7 +66,12 @@ export function useActiveThread({
   }, [selectedChatId, currentUserId, socketModule]);
 
   useEffect(() => {
-    if (!messagesQuery.data || !selectedChatId || !currentUserId || !socketModule) {
+    if (
+      !messagesQuery.data ||
+      !selectedChatId ||
+      !currentUserId ||
+      !socketModule
+    ) {
       return;
     }
     const lastPage =

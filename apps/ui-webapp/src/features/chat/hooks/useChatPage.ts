@@ -35,7 +35,8 @@ export function useChatPage(selectedChatId: string | null) {
 
   const openUserChatAction = useCallback(
     async (otherUserId: string) => {
-      const conv = await mutations.createDirectMutation.mutateAsync(otherUserId);
+      const conv =
+        await mutations.createDirectMutation.mutateAsync(otherUserId);
       router.push(`/dashboard/chats/${conv.id}`);
     },
     [mutations.createDirectMutation, router],

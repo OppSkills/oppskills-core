@@ -7,7 +7,9 @@ export function peekVideoObjectUrl(messageId: string): string | undefined {
   return objectUrlCache.get(messageId);
 }
 
-export async function getVideoObjectUrl(messageId: string): Promise<string | null> {
+export async function getVideoObjectUrl(
+  messageId: string,
+): Promise<string | null> {
   const existing = objectUrlCache.get(messageId);
   if (existing) return existing;
 

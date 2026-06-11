@@ -5,7 +5,10 @@ import { useAuth } from "@clerk/nextjs";
 import { searchChats } from "@/features/chat/api/chatApi";
 import { mapConversationToUi } from "@/features/chat/domain/mappers";
 import { chatQueryKeys } from "../../cache/chatQueryKeys";
-import { mapSearchUserHits, requireChatToken } from "../../cache/chatQueryUtils";
+import {
+  mapSearchUserHits,
+  requireChatToken,
+} from "../../cache/chatQueryUtils";
 
 export function useChatSearch(query: string, options?: { enabled?: boolean }) {
   const { getToken, isLoaded } = useAuth();

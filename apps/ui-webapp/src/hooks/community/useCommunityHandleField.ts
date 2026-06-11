@@ -72,10 +72,7 @@ export function useCommunityHandleField({
   const status: HandleAvailabilityStatus = (() => {
     if (!normalizedHandle) return "idle";
     if (!isValidCommunityHandle(normalizedHandle)) return "invalid";
-    if (
-      normalizedHandle !== debouncedHandle ||
-      availabilityQuery.isFetching
-    ) {
+    if (normalizedHandle !== debouncedHandle || availabilityQuery.isFetching) {
       return "checking";
     }
     if (availabilityQuery.isError) return "idle";

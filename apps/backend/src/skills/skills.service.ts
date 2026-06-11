@@ -133,7 +133,10 @@ export class SkillsService implements OnModuleInit, OnModuleDestroy {
       'Starting periodic flush of skill scores from Redis to PostgreSQL...',
     );
 
-    const stream = this.redis.scanStream({ match: 'skills:score:*', count: 200 });
+    const stream = this.redis.scanStream({
+      match: 'skills:score:*',
+      count: 200,
+    });
     let flushedCount = 0;
 
     for await (const keys of stream) {
@@ -169,9 +172,7 @@ export class SkillsService implements OnModuleInit, OnModuleDestroy {
             data: { platformScore: { increment: count } },
           });
           flushedCount++;
-          this.logger.log(
-            `Flushed +${count} points to skill ${skillId}.`,
-          );
+          this.logger.log(`Flushed +${count} points to skill ${skillId}.`);
         } catch (err) {
           const isRecordNotFound =
             err instanceof Prisma.PrismaClientKnownRequestError &&

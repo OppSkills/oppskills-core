@@ -4,7 +4,10 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@clerk/nextjs";
 import { searchUsersForGroup } from "@/features/chat/api/chatApi";
 import { chatQueryKeys } from "../../cache/chatQueryKeys";
-import { mapSearchUserHits, requireChatToken } from "../../cache/chatQueryUtils";
+import {
+  mapSearchUserHits,
+  requireChatToken,
+} from "../../cache/chatQueryUtils";
 
 export function useChatGroupMemberSearch(
   query: string,

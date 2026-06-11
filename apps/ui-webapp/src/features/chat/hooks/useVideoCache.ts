@@ -45,7 +45,8 @@ export function useVideoCache({
 
   const refreshCachedUrl = useCallback(async () => {
     if (!messageId) return;
-    const cached = peekVideoObjectUrl(messageId) ?? (await getVideoObjectUrl(messageId));
+    const cached =
+      peekVideoObjectUrl(messageId) ?? (await getVideoObjectUrl(messageId));
     if (cached) {
       setObjectUrl(cached);
       setStatus("cached");

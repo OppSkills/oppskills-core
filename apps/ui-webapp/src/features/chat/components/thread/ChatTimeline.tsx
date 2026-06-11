@@ -219,9 +219,7 @@ const ChatTimeline = React.memo(function ChatTimeline({
                     conversationId={selectedChatId}
                     flush={isVideoOnly}
                     overlayTimestamp={
-                      isVideoOnly
-                        ? formatTime12h(message.timestamp)
-                        : undefined
+                      isVideoOnly ? formatTime12h(message.timestamp) : undefined
                     }
                     overlayFooter={
                       isVideoOnly ? (
@@ -250,9 +248,7 @@ const ChatTimeline = React.memo(function ChatTimeline({
                     conversationId={selectedChatId}
                     flush={isImageOnly}
                     overlayTimestamp={
-                      isImageOnly
-                        ? formatTime12h(message.timestamp)
-                        : undefined
+                      isImageOnly ? formatTime12h(message.timestamp) : undefined
                     }
                     overlayFooter={
                       isImageOnly ? (
@@ -414,9 +410,7 @@ const ChatTimeline = React.memo(function ChatTimeline({
                     conversationId={selectedChatId}
                     flush={isVideoOnly}
                     overlayTimestamp={
-                      isVideoOnly
-                        ? formatTime12h(message.timestamp)
-                        : undefined
+                      isVideoOnly ? formatTime12h(message.timestamp) : undefined
                     }
                     className={isVideoOnly ? "rounded-bl-none" : ""}
                     onOpen={() => onOpenImage(message.id)}
@@ -430,9 +424,7 @@ const ChatTimeline = React.memo(function ChatTimeline({
                     conversationId={selectedChatId}
                     flush={isImageOnly}
                     overlayTimestamp={
-                      isImageOnly
-                        ? formatTime12h(message.timestamp)
-                        : undefined
+                      isImageOnly ? formatTime12h(message.timestamp) : undefined
                     }
                     className={isImageOnly ? "rounded-bl-none" : ""}
                     onOpen={(displaySrc) => onOpenImage(message.id, displaySrc)}
