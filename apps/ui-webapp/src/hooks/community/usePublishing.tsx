@@ -58,17 +58,18 @@ export function PublishingProvider({ children }: { children: React.ReactNode }) 
       if (raw) {
         const parsed = JSON.parse(raw) as PublishingPost[];
         // Any post that was left in an active state when session was closed should be treated as failed
-        const sanitized = parsed.map((post) =>
-          post.status === "uploading" ||
-          post.status === "creating" ||
-          post.status === "preparing"
-            ? {
-                ...post,
-                status: "failed" as const,
-                error: "Publish interrupted by page reload.",
-              }
-            : post,
-        );
+        const sanitized = parsed.map((post) => {
+          const isPending =
+            post.status === "uploading" ||
+            post.status === "creating" ||
+            post.status === "preparing";
+          return {
+            ...post,
+            status: isPending ? ("failed" as const) : post.status,
+            error: isPending ? "Publish interrupted by page reload." : post.error,
+            images: post.images.filter((img) => !img.startsWith("blob:")),
+          };
+        });
         setPublishingPosts(sanitized);
       }
     } catch (e) {
