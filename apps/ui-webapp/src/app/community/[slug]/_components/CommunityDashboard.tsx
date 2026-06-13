@@ -14,6 +14,8 @@ import PostCard from "./PostCard";
 import CreatePostModal from "./CreatePostModal";
 import EditDescriptionModal from "./EditDescriptionModal";
 import RepostModal from "./RepostModal";
+import PublishingProgressBanner from "./PublishingProgressBanner";
+import { usePublishing } from "@/hooks/community/usePublishing";
 import { Button } from "@/components/ui/button";
 import { ShareModal } from "@/components/common/ShareModal";
 import { CommunityDetails, Post } from "./types";
@@ -80,6 +82,7 @@ export default function CommunityDashboard({
   const coverInputRef = useRef<HTMLInputElement>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
+  const { publishPost } = usePublishing();
   const [isCreatingPost, setIsCreatingPost] = useState(false);
   const [isEditAboutOpen, setIsEditAboutOpen] = useState(false);
   const [isShareOpen, setIsShareOpen] = useState(false);
@@ -166,6 +169,7 @@ export default function CommunityDashboard({
       isLiked: item.isLikedByMe ?? false,
       isReposted: item.isRepostedByMe ?? false,
       communityHandle: item.community.handle,
+      skills: item.skills,
     }));
   }, [postsData, profile?.memberCount]);
 
@@ -218,24 +222,19 @@ export default function CommunityDashboard({
     return urls;
   }
 
-  const handleCreatePost = async (
+  const handleCreatePost = (
     content: string,
     images: string[],
     skillIds?: string[],
   ) => {
     if (!profile) return;
-    setIsUploadingImages(true);
-    try {
-      const imageUrls = await resolveImageUrls(images);
-      await createPostMutation.mutateAsync({ content, imageUrls, skillIds });
-      toast.success("Post published!");
-    } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Failed to create post.",
-      );
-    } finally {
-      setIsUploadingImages(false);
-    }
+    publishPost({
+      communityId: profile.id,
+      communityHandle: handle,
+      content,
+      images,
+      skillIds,
+    });
   };
 
   const handleFollow = async () => {
@@ -500,6 +499,14 @@ export default function CommunityDashboard({
               </Link>
             )}
           </div>
+
+          <PublishingProgressBanner
+            currentCommunityHandle={handle}
+            onEditDraft={(draft) => {
+              localStorage.setItem("community_post_draft", JSON.stringify(draft));
+              setIsCreatingPost(true);
+            }}
+          />
 
           {postsLoading ? (
             <PostFeedSkeleton />

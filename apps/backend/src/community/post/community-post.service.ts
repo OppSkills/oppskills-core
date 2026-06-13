@@ -49,6 +49,7 @@ type PostWithRelations = {
   repostCount: number;
   postKind: 'ORIGINAL' | 'REPOST' | 'QUOTE_REPOST';
   createdAt: Date;
+  skills: string[];
   community: {
     id: string;
     name: string;
@@ -69,6 +70,7 @@ type PostWithRelations = {
     commentCount: number;
     repostCount: number;
     createdAt: Date;
+    skills: string[];
     community: {
       id: string;
       name: string;
@@ -94,7 +96,7 @@ export class CommunityPostService {
     private readonly repostService: CommunityPostRepostService,
     private readonly analyticsService: AnalyticsService,
     private readonly skillsService: SkillsService,
-  ) {}
+  ) { }
 
   encodeCursor(createdAt: Date, id: string): string {
     return `${createdAt.toISOString()}::${id}`;
@@ -120,9 +122,24 @@ export class CommunityPostService {
       communityId,
     );
 
-    const content = dto.content.trim();
-    if (content.length === 0) {
-      throw new BadRequestException('Post content cannot be empty.');
+    const content = dto.content?.trim() ?? '';
+    const hasImages = dto.imageUrls && dto.imageUrls.length > 0;
+    if (content.length === 0 && !hasImages) {
+      throw new BadRequestException(
+        'Post must contain either text content or at least one image.',
+      );
+    }
+
+    let skillNames: string[] = [];
+    if (dto.skillIds && dto.skillIds.length > 0) {
+      if (dto.skillIds.length > 5) {
+        throw new BadRequestException('Cannot associate more than 5 skills with a post.');
+      }
+      const skills = await prisma.skillEntity.findMany({
+        where: { id: { in: dto.skillIds } },
+        select: { name: true },
+      });
+      skillNames = skills.map((s) => s.name);
     }
 
     const post = await prisma.communityPostEntity.create({
@@ -131,6 +148,7 @@ export class CommunityPostService {
         authorId: userId,
         content,
         postKind: 'ORIGINAL',
+        skills: skillNames,
         images: {
           create: (dto.imageUrls ?? []).map((url, index) => ({
             url: url.trim(),
@@ -169,6 +187,9 @@ export class CommunityPostService {
         status: 'PUBLISHED',
         postKind: 'ORIGINAL',
       },
+      include: {
+        images: true,
+      },
     });
     if (!existing) {
       throw new NotFoundException('Post not found.');
@@ -176,8 +197,15 @@ export class CommunityPostService {
 
     const content =
       dto.content !== undefined ? dto.content.trim() : existing.content;
-    if (content.length === 0) {
-      throw new BadRequestException('Post content cannot be empty.');
+    const hasImages =
+      dto.imageUrls !== undefined
+        ? dto.imageUrls.length > 0
+        : existing.images.length > 0;
+
+    if (content.length === 0 && !hasImages) {
+      throw new BadRequestException(
+        'Post must contain either text content or at least one image.',
+      );
     }
 
     const post = await prisma.$transaction(async (tx) => {
@@ -564,9 +592,9 @@ export class CommunityPostService {
     const repostedMap =
       originalPostIds.length > 0
         ? await this.repostService.batchIsReposted(
-            originalPostIds,
-            viewerUserId,
-          )
+          originalPostIds,
+          viewerUserId,
+        )
         : {};
 
     return items.map((item) => ({
@@ -622,20 +650,22 @@ export class CommunityPostService {
       commentCount: post.commentCount,
       repostCount: post.repostCount,
       postKind: post.postKind,
+      skills: post.skills,
       ...(post.repostedFrom
         ? {
-            repostedFrom: {
-              id: post.repostedFrom.id,
-              content: post.repostedFrom.content,
-              images: post.repostedFrom.images.map((img) => img.url),
-              likeCount: post.repostedFrom.likeCount,
-              commentCount: post.repostedFrom.commentCount,
-              repostCount: post.repostedFrom.repostCount,
-              createdAt: post.repostedFrom.createdAt,
-              author: post.repostedFrom.author,
-              community: post.repostedFrom.community,
-            },
-          }
+          repostedFrom: {
+            id: post.repostedFrom.id,
+            content: post.repostedFrom.content,
+            images: post.repostedFrom.images.map((img) => img.url),
+            likeCount: post.repostedFrom.likeCount,
+            commentCount: post.repostedFrom.commentCount,
+            repostCount: post.repostedFrom.repostCount,
+            createdAt: post.repostedFrom.createdAt,
+            author: post.repostedFrom.author,
+            community: post.repostedFrom.community,
+            skills: post.repostedFrom.skills,
+          },
+        }
         : {}),
       ...(isLikedByMe !== undefined ? { isLikedByMe } : {}),
       ...(isRepostedByMe !== undefined ? { isRepostedByMe } : {}),

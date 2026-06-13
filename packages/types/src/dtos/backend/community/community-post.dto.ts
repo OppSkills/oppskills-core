@@ -39,8 +39,8 @@ export interface CommunityPostRepostedFromSummary {
   createdAt: string;
   author: CommunityPostAuthorInfo;
   community: CommunityPostCommunityInfo;
+  skills?: string[];
 }
-
 export interface CommunityPostFeedItem {
   id: string;
   content: string;
@@ -55,6 +55,7 @@ export interface CommunityPostFeedItem {
   author: CommunityPostAuthorInfo;
   createdAt: string;
   community: CommunityPostCommunityInfo;
+  skills?: string[];
 }
 
 export interface CommunityPostFeedResponse {

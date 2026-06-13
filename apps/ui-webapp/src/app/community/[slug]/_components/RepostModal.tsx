@@ -5,15 +5,8 @@ import dynamic from "next/dynamic";
 import { Repeat2 } from "lucide-react";
 import CustomModal from "./CustomModal";
 import { Button } from "@/components/ui/button";
-import { isPostContentEmpty } from "./PostContent";
 import { COMMUNITY_POST_CONTENT_MAX_LENGTH } from "@oppskills/types/constants";
-import { getPlainTextLengthFromHtml } from "@/lib/community/textUtils";
 import { toast } from "sonner";
-
-const RichTextEditor = dynamic(
-  () => import("@/components/ui/editor/RichtextEditor"),
-  { ssr: false },
-);
 
 interface RepostModalProps {
   isOpen: boolean;
@@ -54,9 +47,9 @@ export default function RepostModal({
   };
 
   const handleQuote = async () => {
-    if (isPostContentEmpty(caption)) return;
+    if (!caption.trim()) return;
     if (
-      getPlainTextLengthFromHtml(caption) > COMMUNITY_POST_CONTENT_MAX_LENGTH
+      caption.length > COMMUNITY_POST_CONTENT_MAX_LENGTH
     ) {
       toast.error(
         `Caption cannot exceed ${COMMUNITY_POST_CONTENT_MAX_LENGTH} characters.`,
@@ -97,7 +90,7 @@ export default function RepostModal({
         </Button>
         <Button
           onClick={handleQuote}
-          disabled={isProcessing || isPostContentEmpty(caption)}
+          disabled={isProcessing || !caption.trim()}
           className="bg-[#2E1E66] hover:bg-[#1E1146] text-white rounded-full"
         >
           {isProcessing ? "Reposting..." : "Repost with caption"}
@@ -155,12 +148,13 @@ export default function RepostModal({
           </button>
         </div>
       ) : (
-        <RichTextEditor
+        <textarea
           value={caption}
-          onChange={setCaption}
+          onChange={(e) => setCaption(e.target.value)}
           placeholder="Add a caption..."
           maxLength={COMMUNITY_POST_CONTENT_MAX_LENGTH}
-          className="min-h-[160px] rounded-2xl"
+          rows={6}
+          className="w-full min-h-[160px] bg-white border border-neutral-200 focus:border-[#5D3EBB]/60 focus:ring-1 focus:ring-[#5D3EBB]/60 text-sm p-4 rounded-2xl outline-none resize-none transition-all placeholder:text-neutral-400 font-semibold text-neutral-700 leading-relaxed"
         />
       )}
     </CustomModal>

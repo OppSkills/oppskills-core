@@ -42,6 +42,18 @@ export default function QuotedPostCard({
         </span>
       </div>
       <PostContent content={post.content} />
+      {post.skills && post.skills.length > 0 && (
+        <div className="flex flex-wrap gap-2 mt-2">
+          {post.skills.map((skillName, idx) => (
+            <span
+              key={`${skillName}-${idx}`}
+              className="inline-flex items-center bg-[#E6E0FA]/40 text-[#2E1E66] text-xs font-semibold px-2 py-0.5 rounded-full"
+            >
+              #{skillName}
+            </span>
+          ))}
+        </div>
+      )}
       {post.images.length > 0 && (
         <div className="relative w-full h-32 mt-3 rounded-xl overflow-hidden">
           <Image

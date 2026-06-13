@@ -5,6 +5,7 @@ import { CommunityPostCacheService } from './community-post-cache.service';
 import { CommunityPostLikeService } from './community-post-like.service';
 import { CommunityPostRepostService } from './community-post-repost.service';
 import { AnalyticsService } from 'src/analytics/analytics.service';
+import { SkillsService } from 'src/skills/skills.service';
 
 describe('CommunityPostService', () => {
   let service: CommunityPostService;
@@ -34,6 +35,10 @@ describe('CommunityPostService', () => {
     batchIsReposted: jest.fn(async () => ({})),
   };
 
+  const mockSkillsService = {
+    incrementSkillScores: jest.fn(),
+  };
+
   beforeEach(async () => {
     const mockAnalyticsService = {
       trackServedPosts: jest.fn(),
@@ -47,6 +52,7 @@ describe('CommunityPostService', () => {
         { provide: CommunityPostLikeService, useValue: mockLikeService },
         { provide: CommunityPostRepostService, useValue: mockRepostService },
         { provide: AnalyticsService, useValue: mockAnalyticsService },
+        { provide: SkillsService, useValue: mockSkillsService },
       ],
     }).compile();
 

@@ -15,16 +15,15 @@ import {
 import { MaxPlainTextLength } from '../../../common/validators/max-plain-text-length.validator';
 
 export class CreateCommunityPostDto {
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Post content (plain-text length limit)',
-    minLength: 1,
     maxLength: COMMUNITY_POST_CONTENT_MAX_LENGTH,
   })
+  @IsOptional()
   @IsString()
-  @MinLength(1)
   @MaxPlainTextLength(COMMUNITY_POST_CONTENT_MAX_LENGTH)
   @MaxLength(65535)
-  content: string;
+  content?: string;
 
   @ApiPropertyOptional({
     description: 'Image URLs uploaded via media presign',

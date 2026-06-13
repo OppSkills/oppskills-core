@@ -193,6 +193,19 @@ export default function PostCard({
         <PostContent content={post.content} />
       )}
 
+      {post.skills && post.skills.length > 0 && (
+        <div className="flex flex-wrap gap-2 mt-1">
+          {post.skills.map((skillName, idx) => (
+            <span
+              key={`${skillName}-${idx}`}
+              className="inline-flex items-center bg-[#E6E0FA]/60 text-[#2E1E66] text-xs font-semibold px-2.5 py-1 rounded-full border border-[#D4C9F5]/40"
+            >
+              #{skillName}
+            </span>
+          ))}
+        </div>
+      )}
+
       {post.images && post.images.length > 0 && post.postKind !== "REPOST" && (
         <PostImagesGrid images={post.images} onImageClick={handleImageClick} />
       )}
