@@ -142,7 +142,7 @@ export function useCommunityPosts(
 export function useCommunityPost(
   handle: string,
   postId: string,
-  options?: { enabled?: boolean },
+  options?: { enabled?: boolean; initialData?: CommunityPostDetailResponse },
 ) {
   const { getToken, isSignedIn } = useAuth();
 
@@ -153,6 +153,7 @@ export function useCommunityPost(
       return getCommunityPost(handle, postId, token ?? undefined);
     },
     enabled: options?.enabled !== false && !!handle && !!postId,
+    initialData: options?.initialData,
   });
 }
 

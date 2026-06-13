@@ -7,7 +7,10 @@ import { formatDistanceToNow } from "date-fns";
 import { Loader2, ArrowLeft, Share } from "lucide-react";
 import { useAuth } from "@clerk/nextjs";
 import { toast } from "sonner";
-import type { CommunityPostFeedItem } from "@oppskills/types";
+import type {
+  CommunityPostFeedItem,
+  CommunityPostDetailResponse,
+} from "@oppskills/types";
 import PostContent from "./PostContent";
 import PostEngagementBar from "./PostEngagementBar";
 import QuotedPostCard from "./QuotedPostCard";
@@ -40,6 +43,7 @@ interface PostDetailViewProps {
   handle: string;
   postId: string;
   communityId: string;
+  initialPost?: CommunityPostDetailResponse;
 }
 
 function PostBody({
@@ -101,6 +105,7 @@ export default function PostDetailView({
   handle,
   postId,
   communityId,
+  initialPost,
 }: PostDetailViewProps) {
   const { isSignedIn, getToken } = useAuth();
   const loadMoreRef = useRef<HTMLDivElement>(null);
@@ -109,7 +114,13 @@ export default function PostDetailView({
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [isRepostOpen, setIsRepostOpen] = useState(false);
 
-  const { data: post, isLoading, error } = useCommunityPost(handle, postId);
+  const {
+    data: post,
+    isLoading,
+    error,
+  } = useCommunityPost(handle, postId, {
+    initialData: initialPost,
+  });
   const {
     data: commentsData,
     fetchNextPage,
