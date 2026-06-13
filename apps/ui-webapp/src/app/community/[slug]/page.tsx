@@ -5,6 +5,7 @@ import { getPublicCommunityByHandle } from "@/lib/api/communityApi";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { SITE_URL } from "@/lib/constants";
 import CommunityDashboard from "./_components/CommunityDashboard";
+import CommunityNotFound from "./_components/CommunityNotFound";
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -26,12 +27,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const profile = await getCommunity(slug);
   if (!profile) {
     return {
-      title: "Community Not Found | OppSkills",
-      description: "The requested community could not be found.",
+      title: `@${slug.toLowerCase()} is up for grabs! | OppSkills`,
+      description: `Create a new community on OppSkills to claim the @${slug} handle.`,
     };
   }
 
-  const title = `${profile.name} Community | OppSkills`;
+  const title = `${profile.name.charAt(0).toUpperCase() + profile.name.slice(1)} @${profile.handle.toLowerCase()}`;
   const description = profile.description
     ? profile.description.slice(0, 160)
     : `Join the ${profile.name} community on OppSkills. Connect with members, view upcoming events, and participate in discussions.`;
@@ -77,7 +78,7 @@ export default async function CommunityProfilePage({ params }: Props) {
 
   const profile = await getCommunity(slug);
   if (!profile) {
-    notFound();
+    return <CommunityNotFound handle={slug} />;
   }
 
   const communitySchema = {

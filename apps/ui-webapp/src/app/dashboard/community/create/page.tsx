@@ -2,7 +2,7 @@
 
 import React, { useMemo, useRef, useState, useCallback } from "react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { useForm } from "@tanstack/react-form";
 import { z } from "zod";
@@ -85,6 +85,8 @@ type FieldName = keyof CreateCommunityFormValues;
 export default function CreateCommunityPage() {
   const router = useRouter();
   const { getToken } = useAuth();
+  const searchParams = useSearchParams();
+  const prefilledHandle = searchParams.get("handle") || "";
 
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -153,7 +155,7 @@ export default function CreateCommunityPage() {
   const form = useForm({
     defaultValues: {
       name: "",
-      handle: "",
+      handle: prefilledHandle,
       description: "",
       website: "",
       industry: "" as CommunityIndustryValue | "",

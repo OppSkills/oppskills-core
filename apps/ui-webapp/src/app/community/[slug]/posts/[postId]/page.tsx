@@ -1,59 +1,156 @@
-"use client";
-
-import React, { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
-import { Loader2 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
-import { useAuth } from "@clerk/nextjs";
-import PostDetailView from "../../_components/PostDetailView";
+import React from "react";
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { getPublicCommunityByHandle } from "@/lib/api/communityApi";
+import { getCommunityPost } from "@/lib/api/communityPostApi";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { SITE_URL } from "@/lib/constants";
+import PostDetailView from "../../_components/PostDetailView";
 
-export default function CommunityPostPage() {
-  const params = useParams();
-  const handle = params.slug as string;
-  const postId = params.postId as string;
-  const { getToken, isSignedIn } = useAuth();
-  const [ready, setReady] = useState(false);
+type Props = {
+  params: Promise<{ slug: string; postId: string }>;
+};
 
-  useEffect(() => {
-    const t = setTimeout(() => setReady(true), 200);
-    return () => clearTimeout(t);
-  }, []);
+async function getCommunity(handle: string) {
+  try {
+    return await getPublicCommunityByHandle(handle);
+  } catch (error) {
+    console.error("Error fetching community profile on SSR:", error);
+    return null;
+  }
+}
 
-  const { data: profile, isLoading } = useQuery({
-    queryKey: ["community-profile", handle, isSignedIn],
-    queryFn: async () => {
-      const token = isSignedIn ? await getToken() : undefined;
-      return getPublicCommunityByHandle(handle, token ?? undefined);
+async function getPost(handle: string, postId: string) {
+  try {
+    return await getCommunityPost(handle, postId);
+  } catch (error) {
+    console.error("Error fetching community post on SSR:", error);
+    return null;
+  }
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug, postId } = await params;
+  if (!slug || !postId) return {};
+
+  const [profile, post] = await Promise.all([
+    getCommunity(slug),
+    getPost(slug, postId),
+  ]);
+
+  if (!profile || !post) {
+    return {
+      title: "Post Not Found",
+      description: "The requested post could not be found.",
+    };
+  }
+
+  const authorName =
+    `${post.author.firstName || ""} ${post.author.lastName || ""}`.trim() ||
+    "Member";
+  const title = `Post by ${authorName} @${profile.handle.toLowerCase()}`;
+
+  const plainTextContent = post.content
+    ? post.content.replace(/<[^>]+>/g, "")
+    : "";
+  const description = plainTextContent
+    ? plainTextContent.slice(0, 160)
+    : `View post by ${authorName} in the ${profile.name} community on OppSkills.`;
+
+  let ogImageUrl = `${SITE_URL}/og_poster.png`;
+  if (post.images && post.images.length > 0) {
+    ogImageUrl = post.images[0];
+  } else if (profile.avatarImage) {
+    ogImageUrl = profile.avatarImage;
+  }
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      url: `${SITE_URL}/community/${profile.handle}/posts/${post.id}`,
+      siteName: "OppSkills",
+      images: [
+        {
+          url: ogImageUrl,
+          width: 1200,
+          height: 630,
+          alt: `${profile.name} community post`,
+        },
+      ],
+      type: "article",
+      publishedTime: post.createdAt,
+      authors: [authorName],
     },
-    enabled: !!handle && ready,
-  });
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [ogImageUrl],
+    },
+    alternates: {
+      canonical: `${SITE_URL}/community/${profile.handle}/posts/${post.id}`,
+    },
+  };
+}
 
-  if (!ready || isLoading) {
-    return (
-      <div className="w-full flex justify-center py-24">
-        <Loader2 className="w-8 h-8 animate-spin text-[#5D3EBB]" />
-      </div>
-    );
+export default async function CommunityPostPage({ params }: Props) {
+  const { slug, postId } = await params;
+  if (!slug || !postId) {
+    notFound();
   }
 
-  if (!profile) {
-    return (
-      <div className="w-full max-w-3xl mx-auto px-4 py-16 text-center">
-        <p className="text-lg font-bold text-neutral-700">
-          Community not found.
-        </p>
-      </div>
-    );
+  const [profile, post] = await Promise.all([
+    getCommunity(slug),
+    getPost(slug, postId),
+  ]);
+
+  if (!profile || !post) {
+    notFound();
   }
+
+  const authorName =
+    `${post.author.firstName || ""} ${post.author.lastName || ""}`.trim() ||
+    "Member";
+
+  const postSchema = {
+    "@context": "https://schema.org",
+    "@type": "SocialMediaPosting",
+    headline: `Post by ${authorName} in ${profile.name}`,
+    articleBody: post.content || "",
+    datePublished: post.createdAt,
+    dateModified: post.createdAt,
+    image:
+      post.images && post.images.length > 0
+        ? post.images
+        : [profile.avatarImage || `${SITE_URL}/logo.svg`],
+    url: `${SITE_URL}/community/${profile.handle}/posts/${post.id}`,
+    author: {
+      "@type": "Person",
+      name: authorName,
+      image: post.author.imageUrl || undefined,
+    },
+    publisher: {
+      "@type": "Organization",
+      name: profile.name,
+      logo: profile.avatarImage || `${SITE_URL}/logo.svg`,
+      url: `${SITE_URL}/community/${profile.handle}`,
+    },
+  };
 
   return (
-    <div className="w-full px-4 py-8 animate-in fade-in duration-500">
-      <PostDetailView
-        handle={handle}
-        postId={postId}
-        communityId={profile.id}
-      />
-    </div>
+    <>
+      <JsonLd data={postSchema} />
+      <div className="w-full px-4 py-8 animate-in fade-in duration-500">
+        <PostDetailView
+          handle={slug}
+          postId={postId}
+          communityId={profile.id}
+          initialPost={post}
+        />
+      </div>
+    </>
   );
 }
