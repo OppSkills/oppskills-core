@@ -23,6 +23,7 @@ import CommunityDashboardFallback from "./CommunityDashboardFallback";
 import { Skeleton } from "@/components/ui/skeleton";
 import ImageCropDialog from "@/app/dashboard/community/create/_components/ImageCropDialog";
 import FollowersModal from "./FollowersModal";
+import type { PublicCommunityProfile } from "@oppskills/types";
 
 import {
   followCommunity,
@@ -45,6 +46,7 @@ import { uploadImageToS3PresignedPost } from "@/lib/uploads/uploadImageToS3";
 
 interface CommunityDashboardProps {
   handle: string;
+  initialProfile?: PublicCommunityProfile;
 }
 
 function canManageCommunity(myRole: string | null | undefined): boolean {
@@ -76,6 +78,7 @@ function PostFeedSkeleton() {
 
 export default function CommunityDashboard({
   handle,
+  initialProfile,
 }: CommunityDashboardProps) {
   const { getToken, isSignedIn } = useAuth();
   const queryClient = useQueryClient();
@@ -112,6 +115,7 @@ export default function CommunityDashboard({
       return getPublicCommunityByHandle(handle, token ?? undefined);
     },
     enabled: !!handle,
+    initialData: initialProfile,
   });
 
   const {
@@ -503,7 +507,10 @@ export default function CommunityDashboard({
           <PublishingProgressBanner
             currentCommunityHandle={handle}
             onEditDraft={(draft) => {
-              localStorage.setItem("community_post_draft", JSON.stringify(draft));
+              localStorage.setItem(
+                "community_post_draft",
+                JSON.stringify(draft),
+              );
               setIsCreatingPost(true);
             }}
           />
