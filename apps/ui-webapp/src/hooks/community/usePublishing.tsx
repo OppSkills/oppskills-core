@@ -122,6 +122,7 @@ export function PublishingProvider({ children }: { children: React.ReactNode }) 
           if (img.startsWith("blob:")) {
             const res = await fetch(img);
             const blob = await res.blob();
+            URL.revokeObjectURL(img);
             const file = new File([blob], "post-image.jpg", {
               type: blob.type || "image/jpeg",
             });
