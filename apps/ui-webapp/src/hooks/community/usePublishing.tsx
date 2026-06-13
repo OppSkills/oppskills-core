@@ -135,6 +135,9 @@ export function PublishingProvider({ children }: { children: React.ReactNode }) 
             // Upload
             await uploadImageToS3PresignedPost({ presign, file });
 
+            if (!presign?.publicUrl) {
+              throw new Error("Failed to generate S3 upload URL.");
+            }
             url = presign.publicUrl.startsWith("http")
               ? presign.publicUrl
               : presign.publicUrl.startsWith("//")

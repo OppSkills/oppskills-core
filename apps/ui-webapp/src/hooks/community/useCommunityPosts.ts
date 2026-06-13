@@ -31,22 +31,28 @@ import type {
 import { useCallback } from "react";
 import { useOptimisticToggleLike } from "@/hooks/ui/useOptimisticToggleLike";
 
-function updatePostInCache(queryClient: any, postId: string, updater: (post: any) => any) {
+function updatePostInCache(
+  queryClient: any,
+  postId: string,
+  updater: (post: any) => any,
+) {
   // Update detail queries
-  queryClient.getQueriesData({ queryKey: ["community-post"] }).forEach(([key]: any) => {
-    if (key.includes(postId)) {
-      queryClient.setQueryData(key, (oldData: any) => {
-        if (!oldData) return oldData;
-        return updater(oldData);
-      });
-    }
-  });
+  queryClient
+    .getQueriesData({ queryKey: ["community-post"] })
+    .forEach(([key]: any) => {
+      if (key.includes(postId)) {
+        queryClient.setQueryData(key, (oldData: any) => {
+          if (!oldData) return oldData;
+          return updater(oldData);
+        });
+      }
+    });
 
   // Update lists
   const prefixes = [
     ["community-posts"],
     ["global-feed-posts"],
-    ["community-user-feed"]
+    ["community-user-feed"],
   ];
   prefixes.forEach((prefix) => {
     queryClient.getQueriesData({ queryKey: prefix }).forEach(([key]: any) => {
@@ -73,27 +79,37 @@ function updatePostInCache(queryClient: any, postId: string, updater: (post: any
 }
 
 async function cancelAndSnapshotQueries(queryClient: any, postId: string) {
-  const affectedQueries: [any, any][] = [];
+  const affectedKeys: any[] = [];
 
-  queryClient.getQueriesData({ queryKey: ["community-post"] }).forEach(([key]: any) => {
-    if (key.includes(postId)) {
-      affectedQueries.push([key, queryClient.getQueryData(key)]);
-    }
-  });
+  queryClient
+    .getQueriesData({ queryKey: ["community-post"] })
+    .forEach(([key]: any) => {
+      if (key.includes(postId)) {
+        affectedKeys.push(key);
+      }
+    });
 
   const prefixes = [
     ["community-posts"],
     ["global-feed-posts"],
-    ["community-user-feed"]
+    ["community-user-feed"],
   ];
   prefixes.forEach((prefix) => {
     queryClient.getQueriesData({ queryKey: prefix }).forEach(([key]: any) => {
-      affectedQueries.push([key, queryClient.getQueryData(key)]);
+      affectedKeys.push(key);
     });
   });
 
-  for (const [key] of affectedQueries) {
+  // In React Query optimistic updates, outgoing queries should be cancelled before snapshotting the
+  // current query data. If we snapshot first and then cancel, any in-flight query that resolves
+  // in between could overwrite the snapshot or optimistic state, leading to race conditions.
+  for (const key of affectedKeys) {
     await queryClient.cancelQueries({ queryKey: key });
+  }
+
+  const affectedQueries: [any, any][] = [];
+  for (const key of affectedKeys) {
+    affectedQueries.push([key, queryClient.getQueryData(key)]);
   }
 
   return affectedQueries;
@@ -306,9 +322,12 @@ export function useToggleCommunityPostLike(
     onSettled: (_data, _error, postId) => {
       void queryClient.invalidateQueries({
         predicate: (query) =>
-          query.queryKey[0] === "community-post" && query.queryKey.includes(postId),
+          query.queryKey[0] === "community-post" &&
+          query.queryKey.includes(postId),
       });
-      void queryClient.invalidateQueries({ queryKey: ["community-posts", handle] });
+      void queryClient.invalidateQueries({
+        queryKey: ["community-posts", handle],
+      });
       void queryClient.invalidateQueries({ queryKey: ["global-feed-posts"] });
       void queryClient.invalidateQueries({ queryKey: ["community-user-feed"] });
     },
@@ -465,10 +484,13 @@ export function useRepostPost(communityId: string, handle: string) {
       }
     },
     onSettled: (_data, _error, { postId }) => {
-      void queryClient.invalidateQueries({ queryKey: ["community-posts", handle] });
+      void queryClient.invalidateQueries({
+        queryKey: ["community-posts", handle],
+      });
       void queryClient.invalidateQueries({
         predicate: (query) =>
-          query.queryKey[0] === "community-post" && query.queryKey.includes(postId),
+          query.queryKey[0] === "community-post" &&
+          query.queryKey.includes(postId),
       });
       void queryClient.invalidateQueries({
         queryKey: ["community-user-feed", handle],
@@ -505,10 +527,13 @@ export function useUndoRepost(communityId: string, handle: string) {
       }
     },
     onSettled: (_data, _error, postId) => {
-      void queryClient.invalidateQueries({ queryKey: ["community-posts", handle] });
+      void queryClient.invalidateQueries({
+        queryKey: ["community-posts", handle],
+      });
       void queryClient.invalidateQueries({
         predicate: (query) =>
-          query.queryKey[0] === "community-post" && query.queryKey.includes(postId),
+          query.queryKey[0] === "community-post" &&
+          query.queryKey.includes(postId),
       });
       void queryClient.invalidateQueries({
         queryKey: ["community-user-feed", handle],
@@ -555,9 +580,12 @@ export function useCreateFeedPostComment(communityId: string, handle: string) {
       });
       void queryClient.invalidateQueries({
         predicate: (query) =>
-          query.queryKey[0] === "community-post" && query.queryKey.includes(postId),
+          query.queryKey[0] === "community-post" &&
+          query.queryKey.includes(postId),
       });
-      void queryClient.invalidateQueries({ queryKey: ["community-posts", handle] });
+      void queryClient.invalidateQueries({
+        queryKey: ["community-posts", handle],
+      });
       void queryClient.invalidateQueries({ queryKey: ["global-feed-posts"] });
       void queryClient.invalidateQueries({ queryKey: ["community-user-feed"] });
     },
