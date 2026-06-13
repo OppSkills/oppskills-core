@@ -20,7 +20,6 @@ import {
   COMMUNITY_POST_CONTENT_MAX_LENGTH,
   COMMUNITY_POST_IMAGES_MAX_COUNT,
 } from "@oppskills/types/constants";
-import { getPlainTextLengthFromHtml } from "@/lib/community/textUtils";
 import { getDisplayUrl } from "./communityUtils";
 import { useDebounce } from "@/hooks/ui/use-debounce";
 import { useAuth } from "@clerk/nextjs";
@@ -56,11 +55,6 @@ function saveSkillsHistory(skills: Skill[]) {
     /* localStorage may be unavailable in SSR/sandboxed environments */
   }
 }
-
-const RichTextEditor = dynamic(
-  () => import("@/components/ui/editor/RichtextEditor"),
-  { ssr: false },
-);
 
 interface CreatePostModalProps {
   isOpen: boolean;
@@ -327,7 +321,6 @@ export default function CreatePostModal({
     if (selectedSkills.some((s) => s.id === skill.id)) return;
     const next = [...selectedSkills, skill];
     setSelectedSkills(next);
-    setSkillSearchQuery("");
     saveSkillsHistory(next);
   };
 
@@ -336,12 +329,15 @@ export default function CreatePostModal({
   };
 
   const handlePublishSubmit = async () => {
-    if (isPostContentEmpty(content)) {
-      toast.error("Please enter some content for your post.");
+    const hasContent = content.trim().length > 0;
+    const hasImages = images.length > 0;
+
+    if (!hasContent && !hasImages) {
+      toast.error("Please enter a caption or attach an image to publish.");
       return;
     }
     if (
-      getPlainTextLengthFromHtml(content) > COMMUNITY_POST_CONTENT_MAX_LENGTH
+      content.length > COMMUNITY_POST_CONTENT_MAX_LENGTH
     ) {
       toast.error(
         `Post content cannot exceed ${COMMUNITY_POST_CONTENT_MAX_LENGTH} characters.`,
@@ -387,14 +383,13 @@ export default function CreatePostModal({
         className="max-w-2xl"
       >
         <div className="flex flex-col gap-5 select-none">
-          <RichTextEditor
-            key={isOpen ? "post-editor-open" : "post-editor-closed"}
+          <textarea
             value={content}
-            onChange={setContent}
+            onChange={(e) => setContent(e.target.value)}
             placeholder="Share an update with your community..."
             maxLength={COMMUNITY_POST_CONTENT_MAX_LENGTH}
-            scrollable
-            className="rounded-[28px] border-neutral-200 focus-within:border-[#5D3EBB]/60"
+            rows={6}
+            className="w-full min-h-[160px] bg-white border border-neutral-200 focus:border-[#5D3EBB]/60 focus:ring-1 focus:ring-[#5D3EBB]/60 text-sm p-4 rounded-2xl outline-none resize-none transition-all placeholder:text-neutral-400 font-semibold text-neutral-700 leading-relaxed"
           />
 
           {/* ── Tags Section ─────────────────────────────────────────── */}

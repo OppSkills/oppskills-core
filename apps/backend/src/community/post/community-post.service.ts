@@ -49,6 +49,7 @@ type PostWithRelations = {
   repostCount: number;
   postKind: 'ORIGINAL' | 'REPOST' | 'QUOTE_REPOST';
   createdAt: Date;
+  skills: string[];
   community: {
     id: string;
     name: string;
@@ -69,6 +70,7 @@ type PostWithRelations = {
     commentCount: number;
     repostCount: number;
     createdAt: Date;
+    skills: string[];
     community: {
       id: string;
       name: string;
@@ -120,9 +122,21 @@ export class CommunityPostService {
       communityId,
     );
 
-    const content = dto.content.trim();
-    if (content.length === 0) {
-      throw new BadRequestException('Post content cannot be empty.');
+    const content = dto.content?.trim() ?? '';
+    const hasImages = dto.imageUrls && dto.imageUrls.length > 0;
+    if (content.length === 0 && !hasImages) {
+      throw new BadRequestException(
+        'Post must contain either text content or at least one image.',
+      );
+    }
+
+    let skillNames: string[] = [];
+    if (dto.skillIds && dto.skillIds.length > 0) {
+      const skills = await prisma.skillEntity.findMany({
+        where: { id: { in: dto.skillIds } },
+        select: { name: true },
+      });
+      skillNames = skills.map((s) => s.name);
     }
 
     const post = await prisma.communityPostEntity.create({
@@ -131,6 +145,7 @@ export class CommunityPostService {
         authorId: userId,
         content,
         postKind: 'ORIGINAL',
+        skills: skillNames,
         images: {
           create: (dto.imageUrls ?? []).map((url, index) => ({
             url: url.trim(),
@@ -169,6 +184,9 @@ export class CommunityPostService {
         status: 'PUBLISHED',
         postKind: 'ORIGINAL',
       },
+      include: {
+        images: true,
+      },
     });
     if (!existing) {
       throw new NotFoundException('Post not found.');
@@ -176,8 +194,15 @@ export class CommunityPostService {
 
     const content =
       dto.content !== undefined ? dto.content.trim() : existing.content;
-    if (content.length === 0) {
-      throw new BadRequestException('Post content cannot be empty.');
+    const hasImages =
+      dto.imageUrls !== undefined
+        ? dto.imageUrls.length > 0
+        : existing.images.length > 0;
+
+    if (content.length === 0 && !hasImages) {
+      throw new BadRequestException(
+        'Post must contain either text content or at least one image.',
+      );
     }
 
     const post = await prisma.$transaction(async (tx) => {
@@ -622,6 +647,7 @@ export class CommunityPostService {
       commentCount: post.commentCount,
       repostCount: post.repostCount,
       postKind: post.postKind,
+      skills: post.skills,
       ...(post.repostedFrom
         ? {
             repostedFrom: {
@@ -634,6 +660,7 @@ export class CommunityPostService {
               createdAt: post.repostedFrom.createdAt,
               author: post.repostedFrom.author,
               community: post.repostedFrom.community,
+              skills: post.repostedFrom.skills,
             },
           }
         : {}),

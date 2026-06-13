@@ -22,6 +22,8 @@ import {
 import { ShareModal } from "@/components/common/ShareModal";
 import RepostModal from "@/app/community/[slug]/_components/RepostModal";
 import CreatePostModal from "@/app/community/[slug]/_components/CreatePostModal";
+import { usePublishing } from "@/hooks/community/usePublishing";
+import PublishingProgressBanner from "@/app/community/[slug]/_components/PublishingProgressBanner";
 
 import {
   useTrendingCommunities,
@@ -86,6 +88,8 @@ export default function FeedsPage() {
   const repostMutation = useRepostPostGeneral();
   const undoRepostMutation = useUndoRepostGeneral();
   const commentMutation = useCreateFeedPostCommentGeneral();
+
+  const { publishPost } = usePublishing();
 
   // Local state for modals & post actions
   const [isCreatingPost, setIsCreatingPost] = useState(false);
@@ -201,7 +205,7 @@ export default function FeedsPage() {
     }
   };
 
-  const handleCreatePost = async (
+  const handleCreatePost = (
     content: string,
     images: string[],
     skillIds?: string[],
@@ -210,22 +214,17 @@ export default function FeedsPage() {
       toast.error("No target community selected.");
       return;
     }
-    setIsUploadingImages(true);
-    try {
-      const imageUrls = await resolveImageUrls(images);
-      await createPostMutation.mutateAsync({
-        communityId: selectedCommunityId,
-        data: { content, imageUrls, skillIds },
-      });
-      toast.success("Post published!");
-      setIsCreatingPost(false);
-    } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Failed to create post.",
-      );
-    } finally {
-      setIsUploadingImages(false);
-    }
+    const targetComm = postableCommunities?.find((c) => c.id === selectedCommunityId);
+    const targetHandle = targetComm?.handle || "";
+
+    publishPost({
+      communityId: selectedCommunityId,
+      communityHandle: targetHandle,
+      content,
+      images,
+      skillIds,
+    });
+    setIsCreatingPost(false);
   };
 
   // Map backend global feed items to frontend Post structure
@@ -253,6 +252,7 @@ export default function FeedsPage() {
         communityHandle: item.community.handle,
         communityId: item.community.id,
         authorId: item.author.id,
+        skills: item.skills,
       })),
     );
   }, [globalFeedData]);
@@ -551,6 +551,13 @@ export default function FeedsPage() {
 
             {/* Posts Feed */}
             <div className="flex flex-col gap-6">
+              <PublishingProgressBanner
+                showAll={true}
+                onEditDraft={(draft) => {
+                  localStorage.setItem("community_post_draft", JSON.stringify(draft));
+                  setIsCreatingPost(true);
+                }}
+              />
               {isLoadingFeed ? (
                 // Skeletons
                 Array.from({ length: 3 }).map((_, idx) => (

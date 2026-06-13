@@ -219,6 +219,7 @@ model CommunityPostEntity {
   status             CommunityPostStatus @default(PUBLISHED)
   createdAt          DateTime            @default(now()) @map("created_at")
   updatedAt          DateTime            @updatedAt @map("updated_at")
+  skills             String[]            @default([])
 
   community    CommunityEntity              @relation(fields: [communityId], references: [id], onDelete: Cascade)
   author       UserEntity                   @relation("CommunityPostAuthor", fields: [authorId], references: [id])

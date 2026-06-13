@@ -41,4 +41,5 @@ export interface Post {
   isLiked?: boolean;
   isReposted?: boolean;
   communityHandle?: string;
+  skills?: string[];
 }

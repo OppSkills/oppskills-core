@@ -31,6 +31,74 @@ import type {
 import { useCallback } from "react";
 import { useOptimisticToggleLike } from "@/hooks/ui/useOptimisticToggleLike";
 
+function updatePostInCache(queryClient: any, postId: string, updater: (post: any) => any) {
+  // Update detail queries
+  queryClient.getQueriesData({ queryKey: ["community-post"] }).forEach(([key]: any) => {
+    if (key.includes(postId)) {
+      queryClient.setQueryData(key, (oldData: any) => {
+        if (!oldData) return oldData;
+        return updater(oldData);
+      });
+    }
+  });
+
+  // Update lists
+  const prefixes = [
+    ["community-posts"],
+    ["global-feed-posts"],
+    ["community-user-feed"]
+  ];
+  prefixes.forEach((prefix) => {
+    queryClient.getQueriesData({ queryKey: prefix }).forEach(([key]: any) => {
+      queryClient.setQueryData(key, (oldData: any) => {
+        if (!oldData || !oldData.pages) return oldData;
+        return {
+          ...oldData,
+          pages: oldData.pages.map((page: any) => {
+            if (!page || !page.items) return page;
+            return {
+              ...page,
+              items: page.items.map((item: any) => {
+                if (item.id === postId) {
+                  return updater(item);
+                }
+                return item;
+              }),
+            };
+          }),
+        };
+      });
+    });
+  });
+}
+
+async function cancelAndSnapshotQueries(queryClient: any, postId: string) {
+  const affectedQueries: [any, any][] = [];
+
+  queryClient.getQueriesData({ queryKey: ["community-post"] }).forEach(([key]: any) => {
+    if (key.includes(postId)) {
+      affectedQueries.push([key, queryClient.getQueryData(key)]);
+    }
+  });
+
+  const prefixes = [
+    ["community-posts"],
+    ["global-feed-posts"],
+    ["community-user-feed"]
+  ];
+  prefixes.forEach((prefix) => {
+    queryClient.getQueriesData({ queryKey: prefix }).forEach(([key]: any) => {
+      affectedQueries.push([key, queryClient.getQueryData(key)]);
+    });
+  });
+
+  for (const [key] of affectedQueries) {
+    await queryClient.cancelQueries({ queryKey: key });
+  }
+
+  return affectedQueries;
+}
+
 export function useCommunityPosts(
   handle: string,
   options?: { enabled?: boolean; take?: number },
@@ -216,11 +284,33 @@ export function useToggleCommunityPostLike(
       if (!token) throw new Error("Sign in to like posts.");
       return toggleCommunityPostLike(token, communityId, postId);
     },
-    onSuccess: (_data, postId) => {
-      queryClient.invalidateQueries({ queryKey: ["community-posts", handle] });
-      queryClient.invalidateQueries({
-        queryKey: ["community-post", handle, postId],
+    onMutate: async (postId) => {
+      const prevData = await cancelAndSnapshotQueries(queryClient, postId);
+      updatePostInCache(queryClient, postId, (post) => {
+        const isLiked = !post.isLikedByMe;
+        return {
+          ...post,
+          isLikedByMe: isLiked,
+          likeCount: post.likeCount + (isLiked ? 1 : -1),
+        };
       });
+      return { previousQueriesData: prevData };
+    },
+    onError: (_err, _postId, context) => {
+      if (context?.previousQueriesData) {
+        context.previousQueriesData.forEach(([key, oldData]: any) => {
+          queryClient.setQueryData(key, oldData);
+        });
+      }
+    },
+    onSettled: (_data, _error, postId) => {
+      void queryClient.invalidateQueries({
+        predicate: (query) =>
+          query.queryKey[0] === "community-post" && query.queryKey.includes(postId),
+      });
+      void queryClient.invalidateQueries({ queryKey: ["community-posts", handle] });
+      void queryClient.invalidateQueries({ queryKey: ["global-feed-posts"] });
+      void queryClient.invalidateQueries({ queryKey: ["community-user-feed"] });
     },
   });
 }
@@ -253,6 +343,12 @@ export function useCreatePostComment(
         });
       }
 
+      // Optimistically update lists
+      updatePostInCache(queryClient, postId, (post) => ({
+        ...post,
+        commentCount: post.commentCount + 1,
+      }));
+
       if (data.parentId) {
         queryClient.setQueriesData<
           InfiniteData<CommunityPostCommentListResponse>
@@ -281,6 +377,11 @@ export function useCreatePostComment(
           context.previousPost,
         );
       }
+      // Trigger list update on rollback
+      updatePostInCache(queryClient, postId, (post) => ({
+        ...post,
+        commentCount: Math.max(0, post.commentCount - 1),
+      }));
     },
     onSuccess: (_comment, data) => {
       queryClient.invalidateQueries({
@@ -300,6 +401,8 @@ export function useCreatePostComment(
         queryKey: ["community-post", handle, postId],
       });
       queryClient.invalidateQueries({ queryKey: ["community-posts", handle] });
+      queryClient.invalidateQueries({ queryKey: ["global-feed-posts"] });
+      queryClient.invalidateQueries({ queryKey: ["community-user-feed"] });
     },
   });
 }
@@ -345,14 +448,32 @@ export function useRepostPost(communityId: string, handle: string) {
       if (!token) throw new Error("Sign in to repost.");
       return createRepost(token, communityId, postId, data);
     },
-    onSuccess: (_data, { postId }) => {
-      queryClient.invalidateQueries({ queryKey: ["community-posts", handle] });
-      queryClient.invalidateQueries({
-        queryKey: ["community-post", handle, postId],
+    onMutate: async ({ postId }) => {
+      const prevData = await cancelAndSnapshotQueries(queryClient, postId);
+      updatePostInCache(queryClient, postId, (post) => ({
+        ...post,
+        isRepostedByMe: true,
+        repostCount: post.repostCount + 1,
+      }));
+      return { previousQueriesData: prevData };
+    },
+    onError: (_err, _variables, context) => {
+      if (context?.previousQueriesData) {
+        context.previousQueriesData.forEach(([key, oldData]: any) => {
+          queryClient.setQueryData(key, oldData);
+        });
+      }
+    },
+    onSettled: (_data, _error, { postId }) => {
+      void queryClient.invalidateQueries({ queryKey: ["community-posts", handle] });
+      void queryClient.invalidateQueries({
+        predicate: (query) =>
+          query.queryKey[0] === "community-post" && query.queryKey.includes(postId),
       });
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: ["community-user-feed", handle],
       });
+      void queryClient.invalidateQueries({ queryKey: ["global-feed-posts"] });
     },
   });
 }
@@ -367,14 +488,32 @@ export function useUndoRepost(communityId: string, handle: string) {
       if (!token) throw new Error("Sign in to undo repost.");
       return undoRepost(token, communityId, postId);
     },
-    onSuccess: (_data, postId) => {
-      queryClient.invalidateQueries({ queryKey: ["community-posts", handle] });
-      queryClient.invalidateQueries({
-        queryKey: ["community-post", handle, postId],
+    onMutate: async (postId) => {
+      const prevData = await cancelAndSnapshotQueries(queryClient, postId);
+      updatePostInCache(queryClient, postId, (post) => ({
+        ...post,
+        isRepostedByMe: false,
+        repostCount: Math.max(0, post.repostCount - 1),
+      }));
+      return { previousQueriesData: prevData };
+    },
+    onError: (_err, _postId, context) => {
+      if (context?.previousQueriesData) {
+        context.previousQueriesData.forEach(([key, oldData]: any) => {
+          queryClient.setQueryData(key, oldData);
+        });
+      }
+    },
+    onSettled: (_data, _error, postId) => {
+      void queryClient.invalidateQueries({ queryKey: ["community-posts", handle] });
+      void queryClient.invalidateQueries({
+        predicate: (query) =>
+          query.queryKey[0] === "community-post" && query.queryKey.includes(postId),
       });
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: ["community-user-feed", handle],
       });
+      void queryClient.invalidateQueries({ queryKey: ["global-feed-posts"] });
     },
   });
 }
@@ -395,14 +534,32 @@ export function useCreateFeedPostComment(communityId: string, handle: string) {
       if (!token) throw new Error("Sign in to comment.");
       return createPostComment(token, communityId, postId, { content });
     },
-    onSuccess: (_comment, { postId }) => {
-      queryClient.invalidateQueries({
+    onMutate: async ({ postId }) => {
+      const prevData = await cancelAndSnapshotQueries(queryClient, postId);
+      updatePostInCache(queryClient, postId, (post) => ({
+        ...post,
+        commentCount: post.commentCount + 1,
+      }));
+      return { previousQueriesData: prevData };
+    },
+    onError: (_err, _variables, context) => {
+      if (context?.previousQueriesData) {
+        context.previousQueriesData.forEach(([key, oldData]: any) => {
+          queryClient.setQueryData(key, oldData);
+        });
+      }
+    },
+    onSettled: (_comment, _error, { postId }) => {
+      void queryClient.invalidateQueries({
         queryKey: ["community-post-comments", handle, postId],
       });
-      queryClient.invalidateQueries({
-        queryKey: ["community-post", handle, postId],
+      void queryClient.invalidateQueries({
+        predicate: (query) =>
+          query.queryKey[0] === "community-post" && query.queryKey.includes(postId),
       });
-      queryClient.invalidateQueries({ queryKey: ["community-posts", handle] });
+      void queryClient.invalidateQueries({ queryKey: ["community-posts", handle] });
+      void queryClient.invalidateQueries({ queryKey: ["global-feed-posts"] });
+      void queryClient.invalidateQueries({ queryKey: ["community-user-feed"] });
     },
   });
 }
@@ -492,14 +649,34 @@ export function useTogglePostLikeGeneral() {
       if (!token) throw new Error("Sign in to like posts.");
       return toggleCommunityPostLike(token, communityId, postId);
     },
-    onSuccess: (_data, { postId }) => {
-      queryClient.invalidateQueries({ queryKey: ["global-feed-posts"] });
-      queryClient.invalidateQueries({ queryKey: ["community-posts"] });
-      queryClient.invalidateQueries({
+    onMutate: async ({ postId }) => {
+      const prevData = await cancelAndSnapshotQueries(queryClient, postId);
+      updatePostInCache(queryClient, postId, (post) => {
+        const isLiked = !post.isLikedByMe;
+        return {
+          ...post,
+          isLikedByMe: isLiked,
+          likeCount: post.likeCount + (isLiked ? 1 : -1),
+        };
+      });
+      return { previousQueriesData: prevData };
+    },
+    onError: (_err, _variables, context) => {
+      if (context?.previousQueriesData) {
+        context.previousQueriesData.forEach(([key, oldData]: any) => {
+          queryClient.setQueryData(key, oldData);
+        });
+      }
+    },
+    onSettled: (_data, _error, { postId }) => {
+      void queryClient.invalidateQueries({ queryKey: ["global-feed-posts"] });
+      void queryClient.invalidateQueries({ queryKey: ["community-posts"] });
+      void queryClient.invalidateQueries({
         predicate: (query) =>
           query.queryKey[0] === "community-post" &&
           query.queryKey.includes(postId),
       });
+      void queryClient.invalidateQueries({ queryKey: ["community-user-feed"] });
     },
   });
 }
@@ -522,15 +699,31 @@ export function useRepostPostGeneral() {
       if (!token) throw new Error("Sign in to repost.");
       return createRepost(token, communityId, postId, data);
     },
-    onSuccess: (_data, { postId }) => {
-      queryClient.invalidateQueries({ queryKey: ["global-feed-posts"] });
-      queryClient.invalidateQueries({ queryKey: ["community-posts"] });
-      queryClient.invalidateQueries({
+    onMutate: async ({ postId }) => {
+      const prevData = await cancelAndSnapshotQueries(queryClient, postId);
+      updatePostInCache(queryClient, postId, (post) => ({
+        ...post,
+        isRepostedByMe: true,
+        repostCount: post.repostCount + 1,
+      }));
+      return { previousQueriesData: prevData };
+    },
+    onError: (_err, _variables, context) => {
+      if (context?.previousQueriesData) {
+        context.previousQueriesData.forEach(([key, oldData]: any) => {
+          queryClient.setQueryData(key, oldData);
+        });
+      }
+    },
+    onSettled: (_data, _error, { postId }) => {
+      void queryClient.invalidateQueries({ queryKey: ["global-feed-posts"] });
+      void queryClient.invalidateQueries({ queryKey: ["community-posts"] });
+      void queryClient.invalidateQueries({
         predicate: (query) =>
           query.queryKey[0] === "community-post" &&
           query.queryKey.includes(postId),
       });
-      queryClient.invalidateQueries({ queryKey: ["community-user-feed"] });
+      void queryClient.invalidateQueries({ queryKey: ["community-user-feed"] });
     },
   });
 }
@@ -551,15 +744,31 @@ export function useUndoRepostGeneral() {
       if (!token) throw new Error("Sign in to undo repost.");
       return undoRepost(token, communityId, postId);
     },
-    onSuccess: (_data, { postId }) => {
-      queryClient.invalidateQueries({ queryKey: ["global-feed-posts"] });
-      queryClient.invalidateQueries({ queryKey: ["community-posts"] });
-      queryClient.invalidateQueries({
+    onMutate: async ({ postId }) => {
+      const prevData = await cancelAndSnapshotQueries(queryClient, postId);
+      updatePostInCache(queryClient, postId, (post) => ({
+        ...post,
+        isRepostedByMe: false,
+        repostCount: Math.max(0, post.repostCount - 1),
+      }));
+      return { previousQueriesData: prevData };
+    },
+    onError: (_err, _variables, context) => {
+      if (context?.previousQueriesData) {
+        context.previousQueriesData.forEach(([key, oldData]: any) => {
+          queryClient.setQueryData(key, oldData);
+        });
+      }
+    },
+    onSettled: (_data, _error, { postId }) => {
+      void queryClient.invalidateQueries({ queryKey: ["global-feed-posts"] });
+      void queryClient.invalidateQueries({ queryKey: ["community-posts"] });
+      void queryClient.invalidateQueries({
         predicate: (query) =>
           query.queryKey[0] === "community-post" &&
           query.queryKey.includes(postId),
       });
-      queryClient.invalidateQueries({ queryKey: ["community-user-feed"] });
+      void queryClient.invalidateQueries({ queryKey: ["community-user-feed"] });
     },
   });
 }
@@ -582,19 +791,35 @@ export function useCreateFeedPostCommentGeneral() {
       if (!token) throw new Error("Sign in to comment.");
       return createPostComment(token, communityId, postId, { content });
     },
-    onSuccess: (_comment, { postId }) => {
-      queryClient.invalidateQueries({
+    onMutate: async ({ postId }) => {
+      const prevData = await cancelAndSnapshotQueries(queryClient, postId);
+      updatePostInCache(queryClient, postId, (post) => ({
+        ...post,
+        commentCount: post.commentCount + 1,
+      }));
+      return { previousQueriesData: prevData };
+    },
+    onError: (_err, _variables, context) => {
+      if (context?.previousQueriesData) {
+        context.previousQueriesData.forEach(([key, oldData]: any) => {
+          queryClient.setQueryData(key, oldData);
+        });
+      }
+    },
+    onSettled: (_comment, _error, { postId }) => {
+      void queryClient.invalidateQueries({
         predicate: (query) =>
           query.queryKey[0] === "community-post-comments" &&
           query.queryKey.includes(postId),
       });
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         predicate: (query) =>
           query.queryKey[0] === "community-post" &&
           query.queryKey.includes(postId),
       });
-      queryClient.invalidateQueries({ queryKey: ["global-feed-posts"] });
-      queryClient.invalidateQueries({ queryKey: ["community-posts"] });
+      void queryClient.invalidateQueries({ queryKey: ["global-feed-posts"] });
+      void queryClient.invalidateQueries({ queryKey: ["community-posts"] });
+      void queryClient.invalidateQueries({ queryKey: ["community-user-feed"] });
     },
   });
 }
