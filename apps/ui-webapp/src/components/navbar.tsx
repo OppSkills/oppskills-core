@@ -156,6 +156,7 @@ const Navbar = () => {
               <button
                 type="submit"
                 disabled={isSearching}
+                aria-label="Search"
                 onMouseDown={(e) => e.stopPropagation()}
                 className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-primary-500 transition-colors disabled:opacity-50"
               >
@@ -228,6 +229,7 @@ const Navbar = () => {
             variant="ghost"
             size="icon"
             className="lg:hidden"
+            aria-label={isOpen ? "Close menu" : "Open menu"}
             onClick={() => setIsOpen(!isOpen)}
           >
             {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
@@ -259,6 +261,7 @@ const Navbar = () => {
               <button
                 type="submit"
                 disabled={isSearching}
+                aria-label="Search"
                 onMouseDown={(e) => e.stopPropagation()}
                 className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 disabled:opacity-50"
               >

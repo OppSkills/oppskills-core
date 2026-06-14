@@ -1,6 +1,15 @@
 import Image from "next/image";
 import React from "react";
 
+const ALT_TEXTS: Record<string, string> = {
+  "all-in-one.png": "All in one platform details",
+  "transparent-details.png": "Transparent details illustration",
+  "quick-participation.png": "Quick participation steps",
+  "same-day-approval.png": "Same day approval process",
+  "quick-secure-payout.png": "Quick and secure payout information",
+  "campus-life.png": "Campus life and student engagement",
+};
+
 export default function WhyChoose() {
   return (
     <div className="pb-20 flex flex-col gap-4">
@@ -21,10 +30,13 @@ export default function WhyChoose() {
         ].map((e, i) => {
           return (
             <div key={i}>
-              <img
+              <Image
                 src={`/illustrations/hustlers/${e}`}
-                alt={e}
-                width={"100%"}
+                alt={ALT_TEXTS[e] || e}
+                width={848}
+                height={634}
+                sizes="(max-width: 768px) 100vw, 33vw"
+                className="w-full h-auto"
               />
             </div>
           );

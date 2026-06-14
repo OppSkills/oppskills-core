@@ -36,7 +36,7 @@ export default function FollowersSidebar({ followers }: FollowersSidebarProps) {
               <span className="font-bold text-neutral-800 text-sm truncate group-hover:text-[#5D3EBB] transition-colors">
                 {follower.name}
               </span>
-              <div className="flex items-center gap-1.5 text-xs text-neutral-400 font-bold">
+              <div className="flex items-center gap-1.5 text-xs text-neutral-500 font-bold">
                 <span>{follower.followersCount} Followers</span>
                 <span className="text-neutral-300">•</span>
                 <span>{follower.timeframe}</span>
