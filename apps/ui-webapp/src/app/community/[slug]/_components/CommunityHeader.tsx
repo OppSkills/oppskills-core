@@ -129,11 +129,11 @@ export default function CommunityHeader({
                   className="inline-flex items-center justify-center bg-[#10B981] text-white rounded-full p-0.5 w-4 h-4 shadow-sm"
                   title="Verified Community"
                 >
-                  <Check className="w-2.5 h-2.5 stroke-[4]" />
+                  <Check className="w-2.5 h-2.5 stroke-4" />
                 </span>
               )}
             </div>
-            <span className="text-sm font-semibold text-neutral-400">
+            <span className="text-sm font-semibold text-neutral-500">
               @{details.handle}
             </span>
           </div>

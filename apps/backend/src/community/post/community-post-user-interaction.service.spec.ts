@@ -9,6 +9,7 @@ jest.mock('@oppskills/db', () => ({
       findMany: jest.fn(),
     },
     communityPostUserInteraction: {
+      findFirst: jest.fn(),
       create: jest.fn(),
     },
     $transaction: jest.fn((promises) => Promise.all(promises)),
@@ -26,6 +27,9 @@ describe('CommunityPostUserInteractionService', () => {
   });
 
   it('records interactions across post skills successfully', async () => {
+    (
+      prisma.communityPostUserInteraction.findFirst as jest.Mock
+    ).mockResolvedValue(null);
     (prisma.communityPostEntity.findUnique as jest.Mock).mockResolvedValue({
       id: 'post-123',
       skills: ['TypeScript', 'React'],
@@ -86,6 +90,9 @@ describe('CommunityPostUserInteractionService', () => {
   });
 
   it('skips interaction if post not found', async () => {
+    (
+      prisma.communityPostUserInteraction.findFirst as jest.Mock
+    ).mockResolvedValue(null);
     (prisma.communityPostEntity.findUnique as jest.Mock).mockResolvedValue(
       null,
     );
@@ -101,6 +108,9 @@ describe('CommunityPostUserInteractionService', () => {
   });
 
   it('skips interaction if post has no skills', async () => {
+    (
+      prisma.communityPostUserInteraction.findFirst as jest.Mock
+    ).mockResolvedValue(null);
     (prisma.communityPostEntity.findUnique as jest.Mock).mockResolvedValue({
       id: 'post-123',
       skills: [],
@@ -112,7 +122,32 @@ describe('CommunityPostUserInteractionService', () => {
     expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 
+  it('skips interaction if it already exists in the database', async () => {
+    (
+      prisma.communityPostUserInteraction.findFirst as jest.Mock
+    ).mockResolvedValue({
+      id: 'existing-id',
+    });
+
+    await (service as any).runRecordInteraction('post-123', 'user-456', 'LIKE');
+
+    expect(prisma.communityPostUserInteraction.findFirst).toHaveBeenCalledWith({
+      where: {
+        postId: 'post-123',
+        userId: 'user-456',
+        interactionType: 'LIKE',
+      },
+      select: { id: true },
+    });
+
+    expect(prisma.communityPostEntity.findUnique).not.toHaveBeenCalled();
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
   it('catches and logs transaction errors in recordInteraction without throwing', async () => {
+    (
+      prisma.communityPostUserInteraction.findFirst as jest.Mock
+    ).mockResolvedValue(null);
     (prisma.communityPostEntity.findUnique as jest.Mock).mockRejectedValue(
       new Error('DB Connection Timeout'),
     );

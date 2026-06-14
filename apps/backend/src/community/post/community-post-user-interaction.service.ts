@@ -50,6 +50,22 @@ export class CommunityPostUserInteractionService {
       `Recording post interaction [${type}] for user ${userId} on post ${postId}`,
     );
 
+    const existing = await prisma.communityPostUserInteraction.findFirst({
+      where: {
+        postId,
+        userId,
+        interactionType: type,
+      },
+      select: { id: true },
+    });
+
+    if (existing) {
+      this.logger.info(
+        `Interaction of type [${type}] already exists for user ${userId} on post ${postId}. Skipping insertion.`,
+      );
+      return;
+    }
+
     const post = await prisma.communityPostEntity.findUnique({
       where: { id: postId },
       select: { skills: true },

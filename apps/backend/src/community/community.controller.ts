@@ -18,6 +18,7 @@ import {
   ApiBearerAuth,
   ApiBody,
   ApiOperation,
+  ApiQuery,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
@@ -40,11 +41,19 @@ import {
   SuggestCommunityHandlesResponseDto,
 } from './dto/check-community-handle.dto';
 import { CommunityStatsResponseDto } from './dto/community-stats-response.dto';
+import { CommunityPostService } from './post/community-post.service';
+import { OptionalAuthService } from '../common/optional-auth.service';
+import { CommunityPostFeedQueryDto } from './post/dto/community-post-feed-query.dto';
+import { CommunityPostFeedResponseDto } from './post/dto/community-post-response.dto';
 
 @ApiTags('Communities')
 @Controller('communities')
 export class CommunityController {
-  constructor(private readonly communityService: CommunityService) {}
+  constructor(
+    private readonly communityService: CommunityService,
+    private readonly postService: CommunityPostService,
+    private readonly optionalAuth: OptionalAuthService,
+  ) {}
 
   @Get('my')
   @UseGuards(ClerkAuthGuard)
@@ -118,6 +127,23 @@ export class CommunityController {
   ): Promise<SuggestCommunityHandlesResponseDto> {
     const suggestions = await this.communityService.suggestHandles(name ?? '');
     return { suggestions };
+  }
+
+  @Get('public-posts')
+  @ApiOperation({ summary: 'List mixed/global public community feed posts' })
+  @ApiQuery({ name: 'cursor', required: false })
+  @ApiQuery({ name: 'take', required: false, type: Number })
+  @ApiResponse({ status: 200, type: CommunityPostFeedResponseDto })
+  async listGlobalFeed(
+    @Query() query: CommunityPostFeedQueryDto,
+    @Req() req: Request,
+  ): Promise<CommunityPostFeedResponseDto> {
+    const viewerUserId = await this.optionalAuth.resolveUserId(req);
+    return this.postService.listGlobalPublicFeed(
+      query.cursor,
+      query.take ?? 20,
+      viewerUserId,
+    );
   }
 
   @Get(':id')

@@ -1,9 +1,8 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { CommunityPostController } from './community-post.controller';
 import {
   CommunityPostPublicController,
   CommunityPostUserFeedController,
-  CommunityPostGlobalFeedController,
 } from './community-post-public.controller';
 import { CommunityPostService } from './community-post.service';
 import { CommunityPostLikeService } from './community-post-like.service';
@@ -17,11 +16,10 @@ import { AnalyticsModule } from '../../analytics/analytics.module';
 import { SkillsModule } from '../../skills/skills.module';
 
 @Module({
-  imports: [CommunityModule, AnalyticsModule, SkillsModule],
+  imports: [forwardRef(() => CommunityModule), AnalyticsModule, SkillsModule],
   controllers: [
     CommunityPostPublicController,
     CommunityPostUserFeedController,
-    CommunityPostGlobalFeedController,
     CommunityPostController,
   ],
   providers: [

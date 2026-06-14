@@ -128,7 +128,7 @@ export default function PostCard({
             <span className="font-extrabold text-neutral-800 text-sm sm:text-base leading-none truncate">
               {post.authorName}
             </span>
-            <div className="flex items-center gap-1.5 text-xs text-neutral-400 font-bold">
+            <div className="flex items-center gap-1.5 text-xs text-neutral-500 font-bold">
               <span className="whitespace-nowrap">
                 {formatK(post.followersCount)} Followers
               </span>

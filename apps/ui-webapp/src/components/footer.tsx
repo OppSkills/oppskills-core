@@ -99,9 +99,9 @@ const Footer = () => {
           <div className="grid grid-cols-3 md:grid-cols-4 gap-8 md:gap-16 lg:gap-24 grow">
             {/* Account Links */}
             <div className="space-y-6">
-              <h4 className="text-lg font-semibold text-gray-200">
+              <h2 className="text-lg font-semibold text-gray-200">
                 Your Account
-              </h4>
+              </h2>
               <ul className="space-y-4">
                 <SignedOut>
                   <li>
@@ -146,9 +146,9 @@ const Footer = () => {
 
             {Object.entries(footerLinks).map(([category, links]) => (
               <div key={category} className="space-y-6">
-                <h4 className="text-lg font-semibold text-gray-200">
+                <h2 className="text-lg font-semibold text-gray-200">
                   {category}
-                </h4>
+                </h2>
                 <ul className="space-y-4">
                   {links.map((link, index) => (
                     <li key={index}>
@@ -169,7 +169,7 @@ const Footer = () => {
           {/* Social Links Box */}
           <div className="lg:w-auto self-start">
             <div className="border border-background/10 rounded-2xl p-6 bg-background/5 backdrop-blur-sm pr-12 min-w-[280px]">
-              <h4 className="text-lg font-semibold mb-6">Follow Us On</h4>
+              <h2 className="text-lg font-semibold mb-6">Follow Us On</h2>
               <div className="flex items-center gap-4">
                 {socialLinks.map((social, index) => {
                   const Icon = social.icon;
