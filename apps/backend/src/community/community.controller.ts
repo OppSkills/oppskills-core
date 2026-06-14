@@ -53,7 +53,7 @@ export class CommunityController {
     private readonly communityService: CommunityService,
     private readonly postService: CommunityPostService,
     private readonly optionalAuth: OptionalAuthService,
-  ) {}
+  ) { }
 
   @Get('my')
   @UseGuards(ClerkAuthGuard)
@@ -139,9 +139,12 @@ export class CommunityController {
     @Req() req: Request,
   ): Promise<CommunityPostFeedResponseDto> {
     const viewerUserId = await this.optionalAuth.resolveUserId(req);
+    const parsedTake = query.take
+      ? Math.min(100, Math.max(1, parseInt(query.take as any, 10) || 20))
+      : 20;
     return this.postService.listGlobalPublicFeed(
       query.cursor,
-      query.take ?? 20,
+      parsedTake,
       viewerUserId,
     );
   }

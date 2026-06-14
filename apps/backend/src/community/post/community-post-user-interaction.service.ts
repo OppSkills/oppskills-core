@@ -50,22 +50,6 @@ export class CommunityPostUserInteractionService {
       `Recording post interaction [${type}] for user ${userId} on post ${postId}`,
     );
 
-    const existing = await prisma.communityPostUserInteraction.findFirst({
-      where: {
-        postId,
-        userId,
-        interactionType: type,
-      },
-      select: { id: true },
-    });
-
-    if (existing) {
-      this.logger.info(
-        `Interaction of type [${type}] already exists for user ${userId} on post ${postId}. Skipping insertion.`,
-      );
-      return;
-    }
-
     const post = await prisma.communityPostEntity.findUnique({
       where: { id: postId },
       select: { skills: true },
@@ -97,22 +81,19 @@ export class CommunityPostUserInteractionService {
 
     const score = this.getScore(type);
 
-    await prisma.$transaction(
-      skills.map((skill) =>
-        prisma.communityPostUserInteraction.create({
-          data: {
-            postId,
-            userId,
-            skillId: skill.id,
-            interactionType: type,
-            score,
-          },
-        }),
-      ),
-    );
+    const result = await prisma.communityPostUserInteraction.createMany({
+      data: skills.map((skill) => ({
+        postId,
+        userId,
+        skillId: skill.id,
+        interactionType: type,
+        score,
+      })),
+      skipDuplicates: true,
+    });
 
     this.logger.info(
-      `Successfully recorded interaction [${type}] (score ${score}) for user ${userId} across ${skills.length} skills on post ${postId}`,
+      `Successfully recorded interaction [${type}] (score ${score}) for user ${userId} across ${result.count} new skills on post ${postId} (attempted ${skills.length})`,
     );
   }
 }
