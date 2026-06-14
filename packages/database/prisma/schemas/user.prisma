@@ -56,7 +56,7 @@ model UserEntity {
   chatParticipants                 ConversationParticipantEntity[]         @relation("UserChatParticipants")
   sentChatMessages                 MessageEntity[]                         @relation("UserSentChatMessages")
   messageDeliveries                MessageDeliveryEntity[]                 @relation("UserMessageDeliveries")
-  communityPostUserInteractions    CommunityPostUserInteraction[]          @relation("CommunityPostLikes")
+  communityPostUserInteractions    CommunityPostUserInteraction[]          @relation("CommunityPostUserInteractions")
 
   @@map("user")
   @@schema("user")

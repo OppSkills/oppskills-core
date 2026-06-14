@@ -276,7 +276,7 @@ model CommunityPostUserInteraction {
   createdAt       DateTime        @default(now()) @map("created_at")
 
   post  CommunityPostEntity @relation(fields: [postId], references: [id], onDelete: Cascade)
-  user  UserEntity          @relation("CommunityPostLikes", fields: [userId], references: [id], onDelete: Cascade)
+  user  UserEntity          @relation("CommunityPostUserInteractions", fields: [userId], references: [id], onDelete: Cascade)
   skill SkillEntity         @relation(fields: [skillId], references: [id], onDelete: Cascade)
 
   @@index([userId, skillId])
