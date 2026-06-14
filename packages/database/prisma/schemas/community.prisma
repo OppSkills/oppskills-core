@@ -279,6 +279,7 @@ model CommunityPostUserInteraction {
   user  UserEntity          @relation("CommunityPostUserInteractions", fields: [userId], references: [id], onDelete: Cascade)
   skill SkillEntity         @relation(fields: [skillId], references: [id], onDelete: Cascade)
 
+  @@unique([postId, userId, interactionType, skillId])
   @@index([userId, skillId])
   @@map("community_post_user_interaction")
   @@schema("community")

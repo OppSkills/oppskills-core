@@ -9,10 +9,8 @@ jest.mock('@oppskills/db', () => ({
       findMany: jest.fn(),
     },
     communityPostUserInteraction: {
-      findFirst: jest.fn(),
-      create: jest.fn(),
+      createMany: jest.fn(),
     },
-    $transaction: jest.fn((promises) => Promise.all(promises)),
   },
 }));
 
@@ -26,10 +24,7 @@ describe('CommunityPostUserInteractionService', () => {
     jest.clearAllMocks();
   });
 
-  it('records interactions across post skills successfully', async () => {
-    (
-      prisma.communityPostUserInteraction.findFirst as jest.Mock
-    ).mockResolvedValue(null);
+  it('records interactions across post skills successfully using createMany', async () => {
     (prisma.communityPostEntity.findUnique as jest.Mock).mockResolvedValue({
       id: 'post-123',
       skills: ['TypeScript', 'React'],
@@ -39,6 +34,12 @@ describe('CommunityPostUserInteractionService', () => {
       { id: 'skill-ts', name: 'TypeScript' },
       { id: 'skill-react', name: 'React' },
     ]);
+
+    (
+      prisma.communityPostUserInteraction.createMany as jest.Mock
+    ).mockResolvedValue({
+      count: 2,
+    });
 
     await (service as any).runRecordInteraction('post-123', 'user-456', 'LIKE');
 
@@ -52,33 +53,27 @@ describe('CommunityPostUserInteractionService', () => {
       select: { id: true, name: true },
     });
 
-    expect(prisma.communityPostUserInteraction.create).toHaveBeenCalledTimes(2);
-    expect(prisma.communityPostUserInteraction.create).toHaveBeenNthCalledWith(
-      1,
+    expect(prisma.communityPostUserInteraction.createMany).toHaveBeenCalledWith(
       {
-        data: {
-          postId: 'post-123',
-          userId: 'user-456',
-          skillId: 'skill-ts',
-          interactionType: 'LIKE',
-          score: 5,
-        },
+        data: [
+          {
+            postId: 'post-123',
+            userId: 'user-456',
+            skillId: 'skill-ts',
+            interactionType: 'LIKE',
+            score: 5,
+          },
+          {
+            postId: 'post-123',
+            userId: 'user-456',
+            skillId: 'skill-react',
+            interactionType: 'LIKE',
+            score: 5,
+          },
+        ],
+        skipDuplicates: true,
       },
     );
-    expect(prisma.communityPostUserInteraction.create).toHaveBeenNthCalledWith(
-      2,
-      {
-        data: {
-          postId: 'post-123',
-          userId: 'user-456',
-          skillId: 'skill-react',
-          interactionType: 'LIKE',
-          score: 5,
-        },
-      },
-    );
-
-    expect(prisma.$transaction).toHaveBeenCalled();
   });
 
   it('handles score mapping correctly for all types', () => {
@@ -90,9 +85,6 @@ describe('CommunityPostUserInteractionService', () => {
   });
 
   it('skips interaction if post not found', async () => {
-    (
-      prisma.communityPostUserInteraction.findFirst as jest.Mock
-    ).mockResolvedValue(null);
     (prisma.communityPostEntity.findUnique as jest.Mock).mockResolvedValue(
       null,
     );
@@ -104,13 +96,12 @@ describe('CommunityPostUserInteractionService', () => {
     );
 
     expect(prisma.skillEntity.findMany).not.toHaveBeenCalled();
-    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(
+      prisma.communityPostUserInteraction.createMany,
+    ).not.toHaveBeenCalled();
   });
 
   it('skips interaction if post has no skills', async () => {
-    (
-      prisma.communityPostUserInteraction.findFirst as jest.Mock
-    ).mockResolvedValue(null);
     (prisma.communityPostEntity.findUnique as jest.Mock).mockResolvedValue({
       id: 'post-123',
       skills: [],
@@ -119,35 +110,12 @@ describe('CommunityPostUserInteractionService', () => {
     await (service as any).runRecordInteraction('post-123', 'user-456', 'LIKE');
 
     expect(prisma.skillEntity.findMany).not.toHaveBeenCalled();
-    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(
+      prisma.communityPostUserInteraction.createMany,
+    ).not.toHaveBeenCalled();
   });
 
-  it('skips interaction if it already exists in the database', async () => {
-    (
-      prisma.communityPostUserInteraction.findFirst as jest.Mock
-    ).mockResolvedValue({
-      id: 'existing-id',
-    });
-
-    await (service as any).runRecordInteraction('post-123', 'user-456', 'LIKE');
-
-    expect(prisma.communityPostUserInteraction.findFirst).toHaveBeenCalledWith({
-      where: {
-        postId: 'post-123',
-        userId: 'user-456',
-        interactionType: 'LIKE',
-      },
-      select: { id: true },
-    });
-
-    expect(prisma.communityPostEntity.findUnique).not.toHaveBeenCalled();
-    expect(prisma.$transaction).not.toHaveBeenCalled();
-  });
-
-  it('catches and logs transaction errors in recordInteraction without throwing', async () => {
-    (
-      prisma.communityPostUserInteraction.findFirst as jest.Mock
-    ).mockResolvedValue(null);
+  it('catches and logs errors in recordInteraction without throwing', async () => {
     (prisma.communityPostEntity.findUnique as jest.Mock).mockRejectedValue(
       new Error('DB Connection Timeout'),
     );
