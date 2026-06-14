@@ -79,6 +79,7 @@ export function CommunitiesTable({
                   fill
                   className="object-cover"
                   unoptimized={c.coverImage.startsWith("http")}
+                  sizes="80px"
                 />
               ) : (
                 <div className="flex h-full w-full items-center justify-center bg-linear-to-br from-slate-900 to-slate-800">

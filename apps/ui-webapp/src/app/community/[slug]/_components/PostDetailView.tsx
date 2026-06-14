@@ -92,6 +92,11 @@ function PostBody({
                 alt={`Post image ${index + 1}`}
                 fill
                 className="object-cover"
+                sizes={
+                  post.images.length > 1
+                    ? "(max-width: 768px) 50vw, 320px"
+                    : "(max-width: 768px) 100vw, 640px"
+                }
               />
             </div>
           ))}
@@ -229,6 +234,7 @@ export default function PostDetailView({
                   alt={authorName}
                   fill
                   className="object-cover"
+                  sizes="48px"
                 />
               ) : (
                 getAuthorInitials(post.author)

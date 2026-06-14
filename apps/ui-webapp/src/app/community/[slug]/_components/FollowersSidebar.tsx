@@ -28,6 +28,7 @@ export default function FollowersSidebar({ followers }: FollowersSidebarProps) {
                 alt={follower.name}
                 fill
                 className="object-cover"
+                sizes="48px"
               />
             </div>
 

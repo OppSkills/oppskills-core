@@ -29,6 +29,7 @@ export default function QuotedPostCard({
               alt={formatAuthorName(post.author)}
               fill
               className="object-cover"
+              sizes="32px"
             />
           ) : (
             formatAuthorName(post.author).slice(0, 2).toUpperCase()
@@ -61,6 +62,7 @@ export default function QuotedPostCard({
             alt="Quoted post"
             fill
             className="object-cover"
+            sizes="(max-width: 768px) 100vw, 500px"
           />
         </div>
       )}

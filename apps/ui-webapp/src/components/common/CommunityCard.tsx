@@ -28,7 +28,7 @@ export function CommunityCard({
     <Link href={href} prefetch={false} className="h-full block">
       <div
         className={cn(
-          "group h-[280px] flex flex-col overflow-hidden border border-neutral-200/50 bg-white hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 rounded-3xl relative",
+          "group h-70 flex flex-col overflow-hidden border border-neutral-200/50 bg-white hover:shadow-md hover:-translate-y-1.5 transition-all duration-300 rounded-3xl relative",
         )}
       >
         {/* Role Badge Overlay */}
@@ -68,11 +68,12 @@ export function CommunityCard({
           <Image
             src={normalizeUrl(
               bannerUrl ||
-                "/illustrations/community/community_banner_placeholder.png",
+              "/illustrations/community/community_banner_placeholder.png",
             )}
             alt={`${title} banner`}
             fill
             className="object-cover transition-transform duration-500 group-hover:scale-105"
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 370px"
           />
         </div>
 
@@ -86,6 +87,7 @@ export function CommunityCard({
                   alt={`${title} logo`}
                   fill
                   className="object-cover"
+                  sizes="56px"
                 />
               </div>
             ) : (
