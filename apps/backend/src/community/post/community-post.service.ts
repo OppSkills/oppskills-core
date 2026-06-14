@@ -22,7 +22,15 @@ import type {
 
 const postInclude = {
   community: {
-    select: { id: true, name: true, handle: true, avatarImage: true },
+    select: {
+      id: true,
+      name: true,
+      handle: true,
+      avatarImage: true,
+      _count: {
+        select: { members: true },
+      },
+    },
   },
   author: {
     select: { id: true, firstName: true, lastName: true, imageUrl: true },
@@ -31,7 +39,15 @@ const postInclude = {
   repostedFrom: {
     include: {
       community: {
-        select: { id: true, name: true, handle: true, avatarImage: true },
+        select: {
+          id: true,
+          name: true,
+          handle: true,
+          avatarImage: true,
+          _count: {
+            select: { members: true },
+          },
+        },
       },
       author: {
         select: { id: true, firstName: true, lastName: true, imageUrl: true },
@@ -55,6 +71,9 @@ type PostWithRelations = {
     name: string;
     handle: string;
     avatarImage: string | null;
+    _count?: {
+      members: number;
+    };
   };
   author: {
     id: string;
@@ -76,6 +95,9 @@ type PostWithRelations = {
       name: string;
       handle: string;
       avatarImage: string | null;
+      _count?: {
+        members: number;
+      };
     };
     author: {
       id: string;
@@ -664,7 +686,13 @@ export class CommunityPostService {
               repostCount: post.repostedFrom.repostCount,
               createdAt: post.repostedFrom.createdAt,
               author: post.repostedFrom.author,
-              community: post.repostedFrom.community,
+              community: {
+                id: post.repostedFrom.community.id,
+                name: post.repostedFrom.community.name,
+                handle: post.repostedFrom.community.handle,
+                avatarImage: post.repostedFrom.community.avatarImage,
+                memberCount: post.repostedFrom.community._count?.members ?? 0,
+              },
               skills: post.repostedFrom.skills,
             },
           }
@@ -673,7 +701,13 @@ export class CommunityPostService {
       ...(isRepostedByMe !== undefined ? { isRepostedByMe } : {}),
       author: post.author,
       createdAt: post.createdAt,
-      community: post.community,
+      community: {
+        id: post.community.id,
+        name: post.community.name,
+        handle: post.community.handle,
+        avatarImage: post.community.avatarImage,
+        memberCount: post.community._count?.members ?? 0,
+      },
     };
   }
 }
