@@ -219,7 +219,7 @@ model CommunityPostEntity {
   status             CommunityPostStatus @default(PUBLISHED)
   createdAt          DateTime            @default(now()) @map("created_at")
   updatedAt          DateTime            @updatedAt @map("updated_at")
-  skills             String[]            @default([])
+  skills             CommunityPostSkillEntity[]
 
   community    CommunityEntity                @relation(fields: [communityId], references: [id], onDelete: Cascade)
   author       UserEntity                     @relation("CommunityPostAuthor", fields: [authorId], references: [id])
@@ -377,3 +377,18 @@ model CommunityPostRepostEntity {
   @@map("community_post_repost")
   @@schema("community")
 }
+
+model CommunityPostSkillEntity {
+  postId  String @map("post_id")
+  skillId String @map("skill_id")
+
+  post  CommunityPostEntity @relation(fields: [postId], references: [id], onDelete: Cascade)
+  skill SkillEntity         @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@id([postId, skillId])
+  @@index([postId])
+  @@index([skillId])
+  @@map("community_post_skill")
+  @@schema("community")
+}
+

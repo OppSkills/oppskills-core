@@ -36,6 +36,15 @@ const postInclude = {
     select: { id: true, firstName: true, lastName: true, imageUrl: true },
   },
   images: { orderBy: { sortOrder: 'asc' as const } },
+  skills: {
+    include: {
+      skill: {
+        select: {
+          name: true,
+        },
+      },
+    },
+  },
   repostedFrom: {
     include: {
       community: {
@@ -53,6 +62,15 @@ const postInclude = {
         select: { id: true, firstName: true, lastName: true, imageUrl: true },
       },
       images: { orderBy: { sortOrder: 'asc' as const } },
+      skills: {
+        include: {
+          skill: {
+            select: {
+              name: true,
+            },
+          },
+        },
+      },
     },
   },
 };
@@ -65,13 +83,19 @@ type PostWithRelations = {
   repostCount: number;
   postKind: 'ORIGINAL' | 'REPOST' | 'QUOTE_REPOST';
   createdAt: Date;
-  skills: string[];
+  skills: Array<{
+    postId: string;
+    skillId: string;
+    skill: {
+      name: string;
+    };
+  }>;
   community: {
     id: string;
     name: string;
     handle: string;
     avatarImage: string | null;
-    _count?: {
+    _count: {
       members: number;
     };
   };
@@ -81,21 +105,27 @@ type PostWithRelations = {
     lastName: string | null;
     imageUrl: string | null;
   };
-  images: Array<{ url: string; sortOrder: number }>;
-  repostedFrom?: {
+  images: Array<{ id: string; postId: string; url: string; sortOrder: number }>;
+  repostedFrom: {
     id: string;
     content: string;
     likeCount: number;
     commentCount: number;
     repostCount: number;
     createdAt: Date;
-    skills: string[];
+    skills: Array<{
+      postId: string;
+      skillId: string;
+      skill: {
+        name: string;
+      };
+    }>;
     community: {
       id: string;
       name: string;
       handle: string;
       avatarImage: string | null;
-      _count?: {
+      _count: {
         members: number;
       };
     };
@@ -105,7 +135,7 @@ type PostWithRelations = {
       lastName: string | null;
       imageUrl: string | null;
     };
-    images: Array<{ url: string; sortOrder: number }>;
+    images: Array<{ id: string; postId: string; url: string; sortOrder: number }>;
   } | null;
 };
 
@@ -134,6 +164,23 @@ export class CommunityPostService {
     return { createdAt, id };
   }
 
+  encodePersonalizedCursor(score: number, createdAt: Date, id: string): string {
+    return `${score}::${createdAt.toISOString()}::${id}`;
+  }
+
+  decodePersonalizedCursor(
+    cursor: string,
+  ): { score: number; createdAt: Date; id: string } | null {
+    const parts = cursor.split('::');
+    if (parts.length !== 3) return null;
+    const score = Number(parts[0]);
+    const createdAt = new Date(parts[1]);
+    const id = parts[2];
+    if (Number.isNaN(score) || Number.isNaN(createdAt.getTime()) || !id)
+      return null;
+    return { score, createdAt, id };
+  }
+
   async createPost(
     userId: string,
     communityId: string,
@@ -152,18 +199,12 @@ export class CommunityPostService {
       );
     }
 
-    let skillNames: string[] = [];
     if (dto.skillIds && dto.skillIds.length > 0) {
       if (dto.skillIds.length > 5) {
         throw new BadRequestException(
           'Cannot associate more than 5 skills with a post.',
         );
       }
-      const skills = await prisma.skillEntity.findMany({
-        where: { id: { in: dto.skillIds } },
-        select: { name: true },
-      });
-      skillNames = skills.map((s) => s.name);
     }
 
     const post = await prisma.communityPostEntity.create({
@@ -172,7 +213,11 @@ export class CommunityPostService {
         authorId: userId,
         content,
         postKind: 'ORIGINAL',
-        skills: skillNames,
+        skills: {
+          create: (dto.skillIds ?? []).map((skillId) => ({
+            skillId,
+          })),
+        },
         images: {
           create: (dto.imageUrls ?? []).map((url, index) => ({
             url: url.trim(),
@@ -427,24 +472,148 @@ export class CommunityPostService {
     take = 20,
     viewerUserId?: string,
   ): Promise<CommunityPostFeedResponseDto> {
-    const posts = await this.fetchGlobalFeedPosts(cursor, take + 1);
-    const hasMore = posts.length > take;
-    const pagePosts = hasMore ? posts.slice(0, take) : posts;
+    let usePersonalized = false;
+    let userInteractions: any = [];
 
-    const items = await Promise.all(
-      pagePosts.map((post) => this.hydrateFeedItem(post, viewerUserId)),
+    if (viewerUserId) {
+      userInteractions = await prisma.communityPostUserInteraction.groupBy({
+        by: ['skillId'],
+        where: { userId: viewerUserId },
+        _sum: { score: true },
+      });
+      if (userInteractions.length > 0) {
+        usePersonalized = true;
+      }
+    }
+
+    if (!usePersonalized) {
+      let fallbackCursor = cursor;
+      if (cursor && cursor.split('::').length === 3) {
+        const decodedPersonalized = this.decodePersonalizedCursor(cursor);
+        if (decodedPersonalized) {
+          fallbackCursor = this.encodeCursor(
+            decodedPersonalized.createdAt,
+            decodedPersonalized.id,
+          );
+        }
+      }
+
+      const posts = await this.fetchGlobalFeedPosts(fallbackCursor, take + 1);
+      const hasMore = posts.length > take;
+      const pagePosts = hasMore ? posts.slice(0, take) : posts;
+
+      const items = await Promise.all(
+        pagePosts.map((post) => this.hydrateFeedItem(post, viewerUserId)),
+      );
+
+      const lastPost = pagePosts[pagePosts.length - 1];
+      const nextCursor =
+        hasMore && lastPost
+          ? this.encodeCursor(lastPost.createdAt, lastPost.id)
+          : null;
+
+      const result = { items, nextCursor, hasMore };
+      if (viewerUserId) {
+        const postIds = result.items.map((item) => item.id);
+        await this.analyticsService.trackServedPosts(viewerUserId, postIds);
+      }
+
+      return result;
+    }
+
+    // Personalized Feed path
+    let decodedCursor: { score: number; createdAt: Date; id: string } | null =
+      null;
+    if (cursor) {
+      decodedCursor = this.decodePersonalizedCursor(cursor);
+      if (!decodedCursor) {
+        const decodedDefault = this.decodeCursor(cursor);
+        if (decodedDefault) {
+          decodedCursor = {
+            score: 0,
+            createdAt: decodedDefault.createdAt,
+            id: decodedDefault.id,
+          };
+        }
+      }
+    }
+
+    const limit = take + 1;
+    const scoresJson = JSON.stringify(
+      userInteractions.map((ui) => ({
+        skillId: ui.skillId,
+        score: ui._sum.score ?? 0,
+      })),
     );
 
-    const lastPost = pagePosts[pagePosts.length - 1];
+    let cursorFilterSql = Prisma.empty;
+    if (decodedCursor) {
+      cursorFilterSql = Prisma.sql`
+        AND (score, "createdAt", id) < (${decodedCursor.score}, ${decodedCursor.createdAt}, ${decodedCursor.id})
+      `;
+    }
+
+    interface RawPostScore {
+      id: string;
+      createdAt: Date;
+      score: number;
+    }
+
+    const rawResults = await prisma.$queryRaw<RawPostScore[]>`
+      WITH post_scores AS (
+        SELECT 
+          p.id, 
+          p.created_at AS "createdAt", 
+          COALESCE(SUM(s.score), 0)::int AS score
+        FROM community.community_post p
+        LEFT JOIN community.community_post_skill ps ON ps.post_id = p.id
+        LEFT JOIN (
+          SELECT (elem->>'skillId')::text AS skill_id, (elem->>'score')::int AS score
+          FROM jsonb_array_elements(${scoresJson}::jsonb) elem
+        ) s ON ps.skill_id = s.skill_id
+        WHERE p.status = 'PUBLISHED' AND p.post_kind = 'ORIGINAL'
+        GROUP BY p.id, p.created_at
+      )
+      SELECT id, "createdAt", score
+      FROM post_scores
+      WHERE 1=1
+      ${cursorFilterSql}
+      ORDER BY score DESC, "createdAt" DESC, id DESC
+      LIMIT ${limit};
+    `;
+
+    const hasMore = rawResults.length > take;
+    const pageResults = hasMore ? rawResults.slice(0, take) : rawResults;
+    const postIds = pageResults.map((r) => r.id);
+
+    const posts = await prisma.communityPostEntity.findMany({
+      where: { id: { in: postIds } },
+      include: postInclude,
+    });
+
+    const postsMap = new Map(posts.map((p) => [p.id, p]));
+    const orderedPosts = postIds
+      .map((id) => postsMap.get(id))
+      .filter((p) => p !== undefined) as PostWithRelations[];
+
+    const items = await Promise.all(
+      orderedPosts.map((post) => this.hydrateFeedItem(post, viewerUserId)),
+    );
+
+    const lastResult = pageResults[pageResults.length - 1];
     const nextCursor =
-      hasMore && lastPost
-        ? this.encodeCursor(lastPost.createdAt, lastPost.id)
+      hasMore && lastResult
+        ? this.encodePersonalizedCursor(
+            lastResult.score,
+            lastResult.createdAt,
+            lastResult.id,
+          )
         : null;
 
     const result = { items, nextCursor, hasMore };
     if (viewerUserId) {
-      const postIds = result.items.map((item) => item.id);
-      await this.analyticsService.trackServedPosts(viewerUserId, postIds);
+      const servedIds = result.items.map((item) => item.id);
+      await this.analyticsService.trackServedPosts(viewerUserId, servedIds);
     }
 
     return result;
@@ -674,7 +843,7 @@ export class CommunityPostService {
       commentCount: post.commentCount,
       repostCount: post.repostCount,
       postKind: post.postKind,
-      skills: post.skills,
+      skills: post.skills.map((s) => s.skill.name),
       ...(post.repostedFrom
         ? {
             repostedFrom: {
@@ -693,7 +862,7 @@ export class CommunityPostService {
                 avatarImage: post.repostedFrom.community.avatarImage,
                 memberCount: post.repostedFrom.community._count?.members ?? 0,
               },
-              skills: post.repostedFrom.skills,
+              skills: post.repostedFrom.skills.map((s) => s.skill.name),
             },
           }
         : {}),

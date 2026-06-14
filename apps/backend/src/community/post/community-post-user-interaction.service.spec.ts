@@ -5,9 +5,6 @@ jest.mock('@oppskills/db', () => ({
     communityPostEntity: {
       findUnique: jest.fn(),
     },
-    skillEntity: {
-      findMany: jest.fn(),
-    },
     communityPostUserInteraction: {
       createMany: jest.fn(),
     },
@@ -27,13 +24,8 @@ describe('CommunityPostUserInteractionService', () => {
   it('records interactions across post skills successfully using createMany', async () => {
     (prisma.communityPostEntity.findUnique as jest.Mock).mockResolvedValue({
       id: 'post-123',
-      skills: ['TypeScript', 'React'],
+      skills: [{ skillId: 'skill-ts' }, { skillId: 'skill-react' }],
     });
-
-    (prisma.skillEntity.findMany as jest.Mock).mockResolvedValue([
-      { id: 'skill-ts', name: 'TypeScript' },
-      { id: 'skill-react', name: 'React' },
-    ]);
 
     (
       prisma.communityPostUserInteraction.createMany as jest.Mock
@@ -45,12 +37,13 @@ describe('CommunityPostUserInteractionService', () => {
 
     expect(prisma.communityPostEntity.findUnique).toHaveBeenCalledWith({
       where: { id: 'post-123' },
-      select: { skills: true },
-    });
-
-    expect(prisma.skillEntity.findMany).toHaveBeenCalledWith({
-      where: { name: { in: ['TypeScript', 'React'] } },
-      select: { id: true, name: true },
+      select: {
+        skills: {
+          select: {
+            skillId: true,
+          },
+        },
+      },
     });
 
     expect(prisma.communityPostUserInteraction.createMany).toHaveBeenCalledWith(
@@ -95,7 +88,6 @@ describe('CommunityPostUserInteractionService', () => {
       'LIKE',
     );
 
-    expect(prisma.skillEntity.findMany).not.toHaveBeenCalled();
     expect(
       prisma.communityPostUserInteraction.createMany,
     ).not.toHaveBeenCalled();
@@ -109,7 +101,6 @@ describe('CommunityPostUserInteractionService', () => {
 
     await (service as any).runRecordInteraction('post-123', 'user-456', 'LIKE');
 
-    expect(prisma.skillEntity.findMany).not.toHaveBeenCalled();
     expect(
       prisma.communityPostUserInteraction.createMany,
     ).not.toHaveBeenCalled();

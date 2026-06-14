@@ -74,4 +74,25 @@ describe('CommunityPostService', () => {
       expect(service.decodeCursor('invalid')).toBeNull();
     });
   });
+
+  describe('personalized cursor encoding/decoding', () => {
+    it('round-trips personalized cursor values', () => {
+      const createdAt = new Date('2026-06-06T12:00:00.000Z');
+      const id = 'post_abc123';
+      const score = 15;
+      const cursor = service.encodePersonalizedCursor(score, createdAt, id);
+      const decoded = service.decodePersonalizedCursor(cursor);
+      expect(decoded).not.toBeNull();
+      expect(decoded!.score).toBe(score);
+      expect(decoded!.id).toBe(id);
+      expect(decoded!.createdAt.toISOString()).toBe(createdAt.toISOString());
+    });
+
+    it('returns null for invalid personalized cursor', () => {
+      expect(service.decodePersonalizedCursor('invalid')).toBeNull();
+      expect(
+        service.decodePersonalizedCursor('15::invalid-date::post-123'),
+      ).toBeNull();
+    });
+  });
 });
