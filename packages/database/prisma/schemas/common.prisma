@@ -104,6 +104,7 @@ model SkillEntity {
   updatedAt                  DateTime                       @updatedAt @map("updated_at")
   skillCategorySkillEntities SkillCategorySkillEntity[]
   postInteractions           CommunityPostUserInteraction[]
+  communityPosts             CommunityPostSkillEntity[]
 
   @@map("skill")
   @@schema("common")

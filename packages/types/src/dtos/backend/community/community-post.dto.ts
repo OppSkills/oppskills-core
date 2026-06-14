@@ -27,6 +27,7 @@ export interface CommunityPostCommunityInfo {
   name: string;
   handle: string;
   avatarImage: string | null;
+  memberCount?: number;
 }
 
 export interface CommunityPostRepostedFromSummary {

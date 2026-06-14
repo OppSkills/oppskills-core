@@ -52,7 +52,13 @@ export class CommunityPostUserInteractionService {
 
     const post = await prisma.communityPostEntity.findUnique({
       where: { id: postId },
-      select: { skills: true },
+      select: {
+        skills: {
+          select: {
+            skillId: true,
+          },
+        },
+      },
     });
 
     if (!post) {
@@ -67,25 +73,13 @@ export class CommunityPostUserInteractionService {
       return;
     }
 
-    const skills = await prisma.skillEntity.findMany({
-      where: { name: { in: post.skills } },
-      select: { id: true, name: true },
-    });
-
-    if (skills.length === 0) {
-      this.logger.info(
-        `No matching skill entities found for names: ${post.skills.join(', ')}`,
-      );
-      return;
-    }
-
     const score = this.getScore(type);
 
     const result = await prisma.communityPostUserInteraction.createMany({
-      data: skills.map((skill) => ({
+      data: post.skills.map((s) => ({
         postId,
         userId,
-        skillId: skill.id,
+        skillId: s.skillId,
         interactionType: type,
         score,
       })),
@@ -93,7 +87,7 @@ export class CommunityPostUserInteractionService {
     });
 
     this.logger.info(
-      `Successfully recorded interaction [${type}] (score ${score}) for user ${userId} across ${result.count} new skills on post ${postId} (attempted ${skills.length})`,
+      `Successfully recorded interaction [${type}] (score ${score}) for user ${userId} across ${result.count} new skills on post ${postId} (attempted ${post.skills.length})`,
     );
   }
 }

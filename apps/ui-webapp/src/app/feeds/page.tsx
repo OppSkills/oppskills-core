@@ -237,7 +237,7 @@ export default function FeedsPage() {
         id: item.id,
         authorName: item.community.name,
         authorAvatar: item.community.avatarImage || "",
-        followersCount: 0,
+        followersCount: item.community.memberCount ?? 0,
         timeframe: formatDistanceToNow(new Date(item.createdAt), {
           addSuffix: true,
         }),

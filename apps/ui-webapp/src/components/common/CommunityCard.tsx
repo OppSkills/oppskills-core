@@ -68,7 +68,7 @@ export function CommunityCard({
           <Image
             src={normalizeUrl(
               bannerUrl ||
-              "/illustrations/community/community_banner_placeholder.png",
+                "/illustrations/community/community_banner_placeholder.png",
             )}
             alt={`${title} banner`}
             fill
