@@ -119,6 +119,7 @@ export default function PostCard({
                 alt={post.authorName}
                 fill
                 className="object-cover"
+                sizes="48px"
               />
             ) : (
               "AI"

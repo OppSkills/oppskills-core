@@ -235,9 +235,8 @@ export default function FeedsPage() {
     return globalFeedData.pages.flatMap((page) =>
       page.items.map((item) => ({
         id: item.id,
-        authorName:
-          `${item.author.firstName} ${item.author.lastName || ""}`.trim(),
-        authorAvatar: item.author.imageUrl || "",
+        authorName: item.community.name,
+        authorAvatar: item.community.avatarImage || "",
         followersCount: 0,
         timeframe: formatDistanceToNow(new Date(item.createdAt), {
           addSuffix: true,
@@ -439,7 +438,7 @@ export default function FeedsPage() {
                     const isFollowed =
                       c.myRole !== null && c.myRole !== undefined;
                     return (
-                      <div key={c.handle} className="relative group">
+                      <div key={c.handle} className="relative group p-1">
                         <CommunityCard
                           href={`/community/${c.handle}`}
                           title={c.name}

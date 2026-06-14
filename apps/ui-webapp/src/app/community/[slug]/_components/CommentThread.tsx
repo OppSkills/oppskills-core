@@ -76,6 +76,7 @@ function ReplyItem({
             alt={formatAuthorName(reply.author)}
             fill
             className="object-cover"
+            sizes="28px"
           />
         ) : (
           getAuthorInitials(reply.author)
@@ -146,6 +147,7 @@ export default function CommentThread({
               alt={formatAuthorName(comment.author)}
               fill
               className="object-cover"
+              sizes="36px"
             />
           ) : (
             getAuthorInitials(comment.author)

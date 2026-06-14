@@ -60,6 +60,7 @@ export default function CommunityHeader({
           alt="Community Banner"
           fill
           className={cn("object-cover", isCoverUploading && "opacity-50")}
+          sizes="(max-width: 768px) 100vw, (max-width: 1280px) 100vw, 1000px"
         />
 
         {isCoverUploading && (
@@ -94,6 +95,7 @@ export default function CommunityHeader({
                   "object-cover",
                   isAvatarUploading && "opacity-45",
                 )}
+                sizes="(max-width: 640px) 96px, 128px"
               />
             ) : (
               <div className="w-full h-full bg-neutral-900 text-white font-bold font-serif text-3xl sm:text-4xl flex items-center justify-center">

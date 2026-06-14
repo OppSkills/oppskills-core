@@ -53,7 +53,7 @@ export class CommunityController {
     private readonly communityService: CommunityService,
     private readonly postService: CommunityPostService,
     private readonly optionalAuth: OptionalAuthService,
-  ) { }
+  ) {}
 
   @Get('my')
   @UseGuards(ClerkAuthGuard)

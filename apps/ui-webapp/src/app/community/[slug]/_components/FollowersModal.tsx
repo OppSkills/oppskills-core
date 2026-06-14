@@ -98,6 +98,7 @@ export default function FollowersModal({
                         alt={member.name}
                         fill
                         className="object-cover"
+                        sizes="44px"
                       />
                     ) : (
                       getInitials(member.name)
