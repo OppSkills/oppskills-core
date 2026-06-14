@@ -202,12 +202,11 @@ export class CommunityPostLikeService implements OnModuleDestroy {
       throw new NotFoundException('Post not found.');
     }
 
-    // Invalidate post cache and community feed cache so that subsequent requests fetch fresh values
-    await this.postCacheService.invalidatePost(postId);
-    await this.postCacheService.invalidateCommunityFeed(post.communityId);
-
     if (!this.redis) {
-      return this.toggleLikeDb(postId, userId, post.likeCount);
+      const result = await this.toggleLikeDb(postId, userId, post.likeCount);
+      await this.postCacheService.invalidatePost(postId);
+      await this.postCacheService.invalidateCommunityFeed(post.communityId);
+      return result;
     }
 
     const likedKey = this.likedKey(postId);
@@ -229,6 +228,11 @@ export class CommunityPostLikeService implements OnModuleDestroy {
     }
 
     const delta = Number((await this.redis.get(this.deltaKey(postId))) || 0);
+
+    // Invalidate post cache and community feed cache so that subsequent requests fetch fresh values
+    await this.postCacheService.invalidatePost(postId);
+    await this.postCacheService.invalidateCommunityFeed(post.communityId);
+
     return {
       liked: !wasLiked,
       likeCount: Math.max(0, post.likeCount + delta),

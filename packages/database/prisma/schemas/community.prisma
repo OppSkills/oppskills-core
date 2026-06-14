@@ -271,7 +271,7 @@ model CommunityPostUserInteraction {
   postId          String          @map("post_id")
   userId          String          @map("user_id")
   skillId         String          @map("skill_id")
-  intercationType intercationType @map("interaction_type")
+  interactionType interactionType @map("interaction_type")
   score           Int             @default(1)
   createdAt       DateTime        @default(now()) @map("created_at")
 
@@ -284,7 +284,7 @@ model CommunityPostUserInteraction {
   @@schema("community")
 }
 
-enum intercationType {
+enum interactionType {
   LIKE
   COMMENT
   REPOST

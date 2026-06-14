@@ -130,7 +130,6 @@ export function PublishingProvider({
           if (img.startsWith("blob:")) {
             const res = await fetch(img);
             const blob = await res.blob();
-            URL.revokeObjectURL(img);
             const file = new File([blob], "post-image.jpg", {
               type: blob.type || "image/jpeg",
             });
@@ -172,6 +171,17 @@ export function PublishingProvider({
         // Done!
         updatePostStatus(post.id, { status: "success", progress: 100 });
         toast.success("Post published successfully!");
+
+        // Revoke all blob URLs now that post is successfully created
+        post.images.forEach((img) => {
+          if (img.startsWith("blob:")) {
+            try {
+              URL.revokeObjectURL(img);
+            } catch (e) {
+              console.error("Failed to revoke object URL:", e);
+            }
+          }
+        });
 
         // Invalidate React Query Cache so it displays
         void queryClient.invalidateQueries({
@@ -248,9 +258,21 @@ export function PublishingProvider({
 
   const cancelPublish = useCallback(
     (id: string) => {
+      const post = publishingPosts.find((p) => p.id === id);
+      if (post) {
+        post.images.forEach((img) => {
+          if (img.startsWith("blob:")) {
+            try {
+              URL.revokeObjectURL(img);
+            } catch (e) {
+              console.error("Failed to revoke object URL:", e);
+            }
+          }
+        });
+      }
       removePost(id);
     },
-    [removePost],
+    [publishingPosts, removePost],
   );
 
   return (
