@@ -285,6 +285,7 @@ export class CommunityPostCommentService {
     });
 
     await this.cacheService.invalidatePost(postId);
+    await this.cacheService.invalidateCommunityFeed(communityId);
 
     return this.toCommentItem(comment, false, comment.likeCount);
   }
@@ -342,6 +343,7 @@ export class CommunityPostCommentService {
     });
 
     await this.cacheService.invalidatePost(postId);
+    await this.cacheService.invalidateCommunityFeed(communityId);
 
     return { success: true };
   }

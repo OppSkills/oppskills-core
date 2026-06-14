@@ -7,6 +7,7 @@ import {
 import { prisma, Prisma } from '@oppskills/db';
 import type Redis from 'ioredis';
 import { CacheService } from '../../common/cache.service';
+import { CommunityPostCacheService } from './community-post-cache.service';
 
 @Injectable()
 export class CommunityPostLikeService implements OnModuleDestroy {
@@ -14,7 +15,10 @@ export class CommunityPostLikeService implements OnModuleDestroy {
   private readonly redis: Redis | null;
   private readonly flushInterval: NodeJS.Timeout;
 
-  constructor(cacheService: CacheService) {
+  constructor(
+    cacheService: CacheService,
+    private readonly postCacheService: CommunityPostCacheService,
+  ) {
     this.redis = cacheService.tryGetClient();
     this.flushInterval = setInterval(() => {
       this.flushToDb().catch((err) =>
@@ -132,12 +136,13 @@ export class CommunityPostLikeService implements OnModuleDestroy {
           }
         }
 
-        if (netDelta !== 0) {
-          await tx.communityPostEntity.update({
-            where: { id: postId },
-            data: { likeCount: { increment: netDelta } },
-          });
-        }
+        const count = await tx.communityPostLikeEntity.count({
+          where: { postId },
+        });
+        await tx.communityPostEntity.update({
+          where: { id: postId },
+          data: { likeCount: count },
+        });
       });
 
       if (netDelta !== 0) {
@@ -191,11 +196,15 @@ export class CommunityPostLikeService implements OnModuleDestroy {
   ): Promise<{ liked: boolean; likeCount: number }> {
     const post = await prisma.communityPostEntity.findFirst({
       where: { id: postId, status: 'PUBLISHED' },
-      select: { id: true, likeCount: true },
+      select: { id: true, communityId: true, likeCount: true },
     });
     if (!post) {
       throw new NotFoundException('Post not found.');
     }
+
+    // Invalidate post cache and community feed cache so that subsequent requests fetch fresh values
+    await this.postCacheService.invalidatePost(postId);
+    await this.postCacheService.invalidateCommunityFeed(post.communityId);
 
     if (!this.redis) {
       return this.toggleLikeDb(postId, userId, post.likeCount);
@@ -236,28 +245,36 @@ export class CommunityPostLikeService implements OnModuleDestroy {
     });
 
     if (existing) {
-      await prisma.$transaction([
-        prisma.communityPostLikeEntity.delete({
+      const updatedCount = await prisma.$transaction(async (tx) => {
+        await tx.communityPostLikeEntity.delete({
           where: { postId_userId: { postId, userId } },
-        }),
-        prisma.communityPostEntity.update({
+        });
+        const count = await tx.communityPostLikeEntity.count({
+          where: { postId },
+        });
+        await tx.communityPostEntity.update({
           where: { id: postId },
-          data: { likeCount: { decrement: 1 } },
-        }),
-      ]);
-      return { liked: false, likeCount: Math.max(0, currentCount - 1) };
+          data: { likeCount: count },
+        });
+        return count;
+      });
+      return { liked: false, likeCount: updatedCount };
     }
 
-    await prisma.$transaction([
-      prisma.communityPostLikeEntity.create({
+    const updatedCount = await prisma.$transaction(async (tx) => {
+      await tx.communityPostLikeEntity.create({
         data: { postId, userId },
-      }),
-      prisma.communityPostEntity.update({
+      });
+      const count = await tx.communityPostLikeEntity.count({
+        where: { postId },
+      });
+      await tx.communityPostEntity.update({
         where: { id: postId },
-        data: { likeCount: { increment: 1 } },
-      }),
-    ]);
-    return { liked: true, likeCount: currentCount + 1 };
+        data: { likeCount: count },
+      });
+      return count;
+    });
+    return { liked: true, likeCount: updatedCount };
   }
 
   async batchIsLiked(

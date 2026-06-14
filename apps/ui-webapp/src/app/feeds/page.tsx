@@ -214,7 +214,9 @@ export default function FeedsPage() {
       toast.error("No target community selected.");
       return;
     }
-    const targetComm = postableCommunities?.find((c) => c.id === selectedCommunityId);
+    const targetComm = postableCommunities?.find(
+      (c) => c.id === selectedCommunityId,
+    );
     const targetHandle = targetComm?.handle || "";
 
     publishPost({
@@ -554,7 +556,10 @@ export default function FeedsPage() {
               <PublishingProgressBanner
                 showAll={true}
                 onEditDraft={(draft) => {
-                  localStorage.setItem("community_post_draft", JSON.stringify(draft));
+                  localStorage.setItem(
+                    "community_post_draft",
+                    JSON.stringify(draft),
+                  );
                   setIsCreatingPost(true);
                 }}
               />

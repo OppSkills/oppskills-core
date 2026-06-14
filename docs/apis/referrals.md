@@ -19,7 +19,7 @@ These endpoints are public and do not require authentication. They are used when
   ```json
   {
     "entityType": "HACKATHON", // "HACKATHON", "EVENT", "FESTIVAL", or "COMMUNITY"
-    "slug": "buildathon-2026",  // The unique slug/handle for the target listing
+    "slug": "buildathon-2026", // The unique slug/handle for the target listing
     "isActive": true
   }
   ```

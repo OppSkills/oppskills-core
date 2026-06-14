@@ -221,15 +221,16 @@ model CommunityPostEntity {
   updatedAt          DateTime            @updatedAt @map("updated_at")
   skills             String[]            @default([])
 
-  community    CommunityEntity              @relation(fields: [communityId], references: [id], onDelete: Cascade)
-  author       UserEntity                   @relation("CommunityPostAuthor", fields: [authorId], references: [id])
+  community    CommunityEntity                @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  author       UserEntity                     @relation("CommunityPostAuthor", fields: [authorId], references: [id])
   images       CommunityPostImageEntity[]
   likes        CommunityPostLikeEntity[]
   comments     CommunityPostCommentEntity[]
-  repostedFrom CommunityPostEntity?         @relation("PostReposts", fields: [repostedFromPostId], references: [id], onDelete: SetNull)
-  reposts      CommunityPostEntity[]        @relation("PostReposts")
-  repostRecord CommunityPostRepostEntity?   @relation("RepostPostRow")
-  repostsOf    CommunityPostRepostEntity[]  @relation("OriginalPostReposts")
+  repostedFrom CommunityPostEntity?           @relation("PostReposts", fields: [repostedFromPostId], references: [id], onDelete: SetNull)
+  reposts      CommunityPostEntity[]          @relation("PostReposts")
+  repostRecord CommunityPostRepostEntity?     @relation("RepostPostRow")
+  repostsOf    CommunityPostRepostEntity[]    @relation("OriginalPostReposts")
+  interactions CommunityPostUserInteraction[]
 
   @@index([communityId, status, postKind, createdAt(sort: Desc), id(sort: Desc)])
   @@index([authorId, status, createdAt(sort: Desc), id(sort: Desc)])
@@ -262,6 +263,35 @@ model CommunityPostLikeEntity {
   @@unique([postId, userId])
   @@index([userId])
   @@map("community_post_like")
+  @@schema("community")
+}
+
+model CommunityPostUserInteraction {
+  id              String          @id @default(cuid())
+  postId          String          @map("post_id")
+  userId          String          @map("user_id")
+  skillId         String          @map("skill_id")
+  intercationType intercationType @map("interaction_type")
+  score           Int             @default(1)
+  createdAt       DateTime        @default(now()) @map("created_at")
+
+  post  CommunityPostEntity @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user  UserEntity          @relation("CommunityPostLikes", fields: [userId], references: [id], onDelete: Cascade)
+  skill SkillEntity         @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@index([userId, skillId])
+  @@map("community_post_user_interaction")
+  @@schema("community")
+}
+
+enum intercationType {
+  LIKE
+  COMMENT
+  REPOST
+  SAVE
+  SHARE
+
+  @@map("interaction_type")
   @@schema("community")
 }
 

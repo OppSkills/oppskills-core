@@ -45,7 +45,11 @@ const PublishingContext = createContext<PublishingContextType | undefined>(
 
 const LOCAL_STORAGE_KEY = "oppskills_publishing_posts";
 
-export function PublishingProvider({ children }: { children: React.ReactNode }) {
+export function PublishingProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const { getToken } = useAuth();
   const queryClient = useQueryClient();
   const [publishingPosts, setPublishingPosts] = useState<PublishingPost[]>([]);
@@ -66,7 +70,9 @@ export function PublishingProvider({ children }: { children: React.ReactNode }) 
           return {
             ...post,
             status: isPending ? ("failed" as const) : post.status,
-            error: isPending ? "Publish interrupted by page reload." : post.error,
+            error: isPending
+              ? "Publish interrupted by page reload."
+              : post.error,
             images: post.images.filter((img) => !img.startsWith("blob:")),
           };
         });
@@ -92,7 +98,9 @@ export function PublishingProvider({ children }: { children: React.ReactNode }) 
   const updatePostStatus = useCallback(
     (
       id: string,
-      updates: Partial<Omit<PublishingPost, "id" | "communityId" | "communityHandle">>,
+      updates: Partial<
+        Omit<PublishingPost, "id" | "communityId" | "communityHandle">
+      >,
     ) => {
       setPublishingPosts((prev) =>
         prev.map((post) => (post.id === id ? { ...post, ...updates } : post)),
@@ -149,9 +157,7 @@ export function PublishingProvider({ children }: { children: React.ReactNode }) 
           uploadedUrls.push(url);
 
           // Update progress (from 10% to 80% based on image uploads)
-          const percent = Math.round(
-            10 + ((i + 1) / post.images.length) * 70,
-          );
+          const percent = Math.round(10 + ((i + 1) / post.images.length) * 70);
           updatePostStatus(post.id, { progress: percent });
         }
 

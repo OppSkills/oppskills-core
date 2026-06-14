@@ -22,9 +22,13 @@ import { prisma } from '@oppskills/db';
 
 describe('CommunityPostRepostService', () => {
   let service: CommunityPostRepostService;
+  const mockPostCacheService = {
+    invalidatePost: jest.fn(),
+    invalidateCommunityFeed: jest.fn(),
+  };
 
   beforeEach(() => {
-    service = new CommunityPostRepostService();
+    service = new CommunityPostRepostService(mockPostCacheService as any);
     jest.clearAllMocks();
   });
 

@@ -336,9 +336,7 @@ export default function CreatePostModal({
       toast.error("Please enter a caption or attach an image to publish.");
       return;
     }
-    if (
-      content.length > COMMUNITY_POST_CONTENT_MAX_LENGTH
-    ) {
+    if (content.length > COMMUNITY_POST_CONTENT_MAX_LENGTH) {
       toast.error(
         `Post content cannot exceed ${COMMUNITY_POST_CONTENT_MAX_LENGTH} characters.`,
       );
