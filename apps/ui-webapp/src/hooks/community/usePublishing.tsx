@@ -227,7 +227,7 @@ export function PublishingProvider({
           if (!publishingPostsRef.current.some((p) => p.id === post.id)) return;
           removePost(post.id);
         }, 3000);
-      } catch (err: any) {
+      } catch (err: unknown) {
         if (!publishingPostsRef.current.some((p) => p.id === post.id)) {
           return;
         }
