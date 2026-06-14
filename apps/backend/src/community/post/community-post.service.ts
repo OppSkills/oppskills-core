@@ -96,7 +96,7 @@ export class CommunityPostService {
     private readonly repostService: CommunityPostRepostService,
     private readonly analyticsService: AnalyticsService,
     private readonly skillsService: SkillsService,
-  ) { }
+  ) {}
 
   encodeCursor(createdAt: Date, id: string): string {
     return `${createdAt.toISOString()}::${id}`;
@@ -133,7 +133,9 @@ export class CommunityPostService {
     let skillNames: string[] = [];
     if (dto.skillIds && dto.skillIds.length > 0) {
       if (dto.skillIds.length > 5) {
-        throw new BadRequestException('Cannot associate more than 5 skills with a post.');
+        throw new BadRequestException(
+          'Cannot associate more than 5 skills with a post.',
+        );
       }
       const skills = await prisma.skillEntity.findMany({
         where: { id: { in: dto.skillIds } },
@@ -592,9 +594,9 @@ export class CommunityPostService {
     const repostedMap =
       originalPostIds.length > 0
         ? await this.repostService.batchIsReposted(
-          originalPostIds,
-          viewerUserId,
-        )
+            originalPostIds,
+            viewerUserId,
+          )
         : {};
 
     return items.map((item) => ({
@@ -653,19 +655,19 @@ export class CommunityPostService {
       skills: post.skills,
       ...(post.repostedFrom
         ? {
-          repostedFrom: {
-            id: post.repostedFrom.id,
-            content: post.repostedFrom.content,
-            images: post.repostedFrom.images.map((img) => img.url),
-            likeCount: post.repostedFrom.likeCount,
-            commentCount: post.repostedFrom.commentCount,
-            repostCount: post.repostedFrom.repostCount,
-            createdAt: post.repostedFrom.createdAt,
-            author: post.repostedFrom.author,
-            community: post.repostedFrom.community,
-            skills: post.repostedFrom.skills,
-          },
-        }
+            repostedFrom: {
+              id: post.repostedFrom.id,
+              content: post.repostedFrom.content,
+              images: post.repostedFrom.images.map((img) => img.url),
+              likeCount: post.repostedFrom.likeCount,
+              commentCount: post.repostedFrom.commentCount,
+              repostCount: post.repostedFrom.repostCount,
+              createdAt: post.repostedFrom.createdAt,
+              author: post.repostedFrom.author,
+              community: post.repostedFrom.community,
+              skills: post.repostedFrom.skills,
+            },
+          }
         : {}),
       ...(isLikedByMe !== undefined ? { isLikedByMe } : {}),
       ...(isRepostedByMe !== undefined ? { isRepostedByMe } : {}),

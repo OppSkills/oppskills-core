@@ -5,9 +5,15 @@ import {
 } from '@nestjs/common';
 import { prisma } from '@oppskills/db';
 import type { CreateCommunityPostRepostDto } from './dto/create-community-post-comment.dto';
+import { CommunityPostCacheService } from './community-post-cache.service';
+import { CommunityPostUserInteractionService } from './community-post-user-interaction.service';
 
 @Injectable()
 export class CommunityPostRepostService {
+  constructor(
+    private readonly postCacheService: CommunityPostCacheService,
+    private readonly interactionService: CommunityPostUserInteractionService,
+  ) {}
   async createRepost(
     userId: string,
     communityId: string,
@@ -67,6 +73,11 @@ export class CommunityPostRepostService {
       return { repostPostId: repostPost.id, repostCount: updated.repostCount };
     });
 
+    await this.postCacheService.invalidatePost(originalPostId);
+    await this.postCacheService.invalidateCommunityFeed(communityId);
+
+    this.interactionService.recordInteraction(originalPostId, userId, 'REPOST');
+
     return result;
   }
 
@@ -112,6 +123,10 @@ export class CommunityPostRepostService {
       });
       return { success: true, repostCount: Math.max(0, updated.repostCount) };
     });
+
+    await this.postCacheService.invalidatePost(originalPostId);
+    await this.postCacheService.invalidatePost(repostRecord.repostPostId);
+    await this.postCacheService.invalidateCommunityFeed(communityId);
 
     return result;
   }

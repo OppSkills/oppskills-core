@@ -48,9 +48,7 @@ export default function RepostModal({
 
   const handleQuote = async () => {
     if (!caption.trim()) return;
-    if (
-      caption.length > COMMUNITY_POST_CONTENT_MAX_LENGTH
-    ) {
+    if (caption.length > COMMUNITY_POST_CONTENT_MAX_LENGTH) {
       toast.error(
         `Caption cannot exceed ${COMMUNITY_POST_CONTENT_MAX_LENGTH} characters.`,
       );

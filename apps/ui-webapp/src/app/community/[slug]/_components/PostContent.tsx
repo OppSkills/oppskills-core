@@ -18,9 +18,8 @@ export default function PostContent({ content, className }: PostContentProps) {
   if (!content) return null;
 
   const shouldTruncate = content.length > 200;
-  const displayedText = shouldTruncate && !expanded
-    ? `${content.slice(0, 200)}...`
-    : content;
+  const displayedText =
+    shouldTruncate && !expanded ? `${content.slice(0, 200)}...` : content;
 
   return (
     <div className={cn("relative flex flex-col gap-1.5", className)}>

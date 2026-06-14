@@ -2,14 +2,25 @@
 
 import React from "react";
 import { usePublishing, PublishingPost } from "@/hooks/community/usePublishing";
-import { Loader2, RefreshCw, X, FileText, CheckCircle2, AlertCircle } from "lucide-react";
+import {
+  Loader2,
+  RefreshCw,
+  X,
+  FileText,
+  CheckCircle2,
+  AlertCircle,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface PublishingProgressBannerProps {
   currentCommunityHandle?: string;
   // If true, shows posts for all communities. If false, shows posts matching currentCommunityHandle.
   showAll?: boolean;
-  onEditDraft?: (draft: { content: string; images: string[]; skillIds?: string[] }) => void;
+  onEditDraft?: (draft: {
+    content: string;
+    images: string[];
+    skillIds?: string[];
+  }) => void;
 }
 
 export default function PublishingProgressBanner({

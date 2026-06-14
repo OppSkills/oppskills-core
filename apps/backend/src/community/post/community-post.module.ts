@@ -11,6 +11,7 @@ import { CommunityPostCommentService } from './community-post-comment.service';
 import { CommunityPostCommentLikeService } from './community-post-comment-like.service';
 import { CommunityPostRepostService } from './community-post-repost.service';
 import { CommunityPostCacheService } from './community-post-cache.service';
+import { CommunityPostUserInteractionService } from './community-post-user-interaction.service';
 import { CommunityModule } from '../community.module';
 import { AnalyticsModule } from '../../analytics/analytics.module';
 import { SkillsModule } from '../../skills/skills.module';
@@ -30,7 +31,8 @@ import { SkillsModule } from '../../skills/skills.module';
     CommunityPostCommentLikeService,
     CommunityPostRepostService,
     CommunityPostCacheService,
+    CommunityPostUserInteractionService,
   ],
-  exports: [CommunityPostService],
+  exports: [CommunityPostService, CommunityPostUserInteractionService],
 })
 export class CommunityPostModule {}

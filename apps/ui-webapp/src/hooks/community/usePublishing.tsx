@@ -6,6 +6,7 @@ import React, {
   useState,
   useEffect,
   useCallback,
+  useRef,
 } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { useQueryClient } from "@tanstack/react-query";
@@ -45,11 +46,20 @@ const PublishingContext = createContext<PublishingContextType | undefined>(
 
 const LOCAL_STORAGE_KEY = "oppskills_publishing_posts";
 
-export function PublishingProvider({ children }: { children: React.ReactNode }) {
+export function PublishingProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const { getToken } = useAuth();
   const queryClient = useQueryClient();
   const [publishingPosts, setPublishingPosts] = useState<PublishingPost[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
+
+  const publishingPostsRef = useRef<PublishingPost[]>(publishingPosts);
+  useEffect(() => {
+    publishingPostsRef.current = publishingPosts;
+  }, [publishingPosts]);
 
   // Load drafts on mount
   useEffect(() => {
@@ -66,7 +76,9 @@ export function PublishingProvider({ children }: { children: React.ReactNode }) 
           return {
             ...post,
             status: isPending ? ("failed" as const) : post.status,
-            error: isPending ? "Publish interrupted by page reload." : post.error,
+            error: isPending
+              ? "Publish interrupted by page reload."
+              : post.error,
             images: post.images.filter((img) => !img.startsWith("blob:")),
           };
         });
@@ -92,7 +104,9 @@ export function PublishingProvider({ children }: { children: React.ReactNode }) 
   const updatePostStatus = useCallback(
     (
       id: string,
-      updates: Partial<Omit<PublishingPost, "id" | "communityId" | "communityHandle">>,
+      updates: Partial<
+        Omit<PublishingPost, "id" | "communityId" | "communityHandle">
+      >,
     ) => {
       setPublishingPosts((prev) =>
         prev.map((post) => (post.id === id ? { ...post, ...updates } : post)),
@@ -111,21 +125,30 @@ export function PublishingProvider({ children }: { children: React.ReactNode }) 
         const token = await getToken();
         if (!token) throw new Error("Please sign in to publish.");
 
+        if (!publishingPostsRef.current.some((p) => p.id === post.id)) return;
+
         updatePostStatus(post.id, { status: "uploading", progress: 10 });
         const uploadedUrls: string[] = [];
 
         // Upload images one by one
         for (let i = 0; i < post.images.length; i++) {
+          if (!publishingPostsRef.current.some((p) => p.id === post.id)) return;
+
           const img = post.images[i];
           let url = img;
 
           if (img.startsWith("blob:")) {
             const res = await fetch(img);
+            if (!publishingPostsRef.current.some((p) => p.id === post.id))
+              return;
+
             const blob = await res.blob();
-            URL.revokeObjectURL(img);
             const file = new File([blob], "post-image.jpg", {
               type: blob.type || "image/jpeg",
             });
+
+            if (!publishingPostsRef.current.some((p) => p.id === post.id))
+              return;
 
             // Get presign url
             const presign = await presignImageUpload(token, {
@@ -133,8 +156,14 @@ export function PublishingProvider({ children }: { children: React.ReactNode }) 
               mimeType: file.type,
             });
 
+            if (!publishingPostsRef.current.some((p) => p.id === post.id))
+              return;
+
             // Upload
             await uploadImageToS3PresignedPost({ presign, file });
+
+            if (!publishingPostsRef.current.some((p) => p.id === post.id))
+              return;
 
             if (!presign?.publicUrl) {
               throw new Error("Failed to generate S3 upload URL.");
@@ -148,12 +177,14 @@ export function PublishingProvider({ children }: { children: React.ReactNode }) 
 
           uploadedUrls.push(url);
 
+          if (!publishingPostsRef.current.some((p) => p.id === post.id)) return;
+
           // Update progress (from 10% to 80% based on image uploads)
-          const percent = Math.round(
-            10 + ((i + 1) / post.images.length) * 70,
-          );
+          const percent = Math.round(10 + ((i + 1) / post.images.length) * 70);
           updatePostStatus(post.id, { progress: percent });
         }
+
+        if (!publishingPostsRef.current.some((p) => p.id === post.id)) return;
 
         // Post creation request
         updatePostStatus(post.id, { status: "creating", progress: 85 });
@@ -163,9 +194,22 @@ export function PublishingProvider({ children }: { children: React.ReactNode }) 
           skillIds: post.skillIds,
         });
 
+        if (!publishingPostsRef.current.some((p) => p.id === post.id)) return;
+
         // Done!
         updatePostStatus(post.id, { status: "success", progress: 100 });
         toast.success("Post published successfully!");
+
+        // Revoke all blob URLs now that post is successfully created
+        post.images.forEach((img) => {
+          if (img.startsWith("blob:")) {
+            try {
+              URL.revokeObjectURL(img);
+            } catch (e) {
+              console.error("Failed to revoke object URL:", e);
+            }
+          }
+        });
 
         // Invalidate React Query Cache so it displays
         void queryClient.invalidateQueries({
@@ -180,9 +224,13 @@ export function PublishingProvider({ children }: { children: React.ReactNode }) 
 
         // Remove from UI after a small delay
         setTimeout(() => {
+          if (!publishingPostsRef.current.some((p) => p.id === post.id)) return;
           removePost(post.id);
         }, 3000);
-      } catch (err: any) {
+      } catch (err: unknown) {
+        if (!publishingPostsRef.current.some((p) => p.id === post.id)) {
+          return;
+        }
         console.error("Background publishing failed:", err);
         const errorMsg =
           err instanceof Error
@@ -242,9 +290,21 @@ export function PublishingProvider({ children }: { children: React.ReactNode }) 
 
   const cancelPublish = useCallback(
     (id: string) => {
+      const post = publishingPosts.find((p) => p.id === id);
+      if (post) {
+        post.images.forEach((img) => {
+          if (img.startsWith("blob:")) {
+            try {
+              URL.revokeObjectURL(img);
+            } catch (e) {
+              console.error("Failed to revoke object URL:", e);
+            }
+          }
+        });
+      }
       removePost(id);
     },
-    [removePost],
+    [publishingPosts, removePost],
   );
 
   return (
