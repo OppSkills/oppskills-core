@@ -8,6 +8,7 @@ import { prisma } from '@oppskills/db';
 import { CommunityService } from '../community.service';
 import { CommunityPostCacheService } from './community-post-cache.service';
 import { CommunityPostCommentLikeService } from './community-post-comment-like.service';
+import { CommunityPostUserInteractionService } from './community-post-user-interaction.service';
 import type { CreateCommunityPostCommentDto } from './dto/create-community-post-comment.dto';
 import type { CommunityPostCommentListResponseDto } from './dto/community-post-comment-response.dto';
 
@@ -33,6 +34,7 @@ export class CommunityPostCommentService {
     private readonly communityService: CommunityService,
     private readonly commentLikeService: CommunityPostCommentLikeService,
     private readonly cacheService: CommunityPostCacheService,
+    private readonly interactionService: CommunityPostUserInteractionService,
   ) {}
 
   encodeCursor(createdAt: Date, id: string): string {
@@ -286,6 +288,8 @@ export class CommunityPostCommentService {
 
     await this.cacheService.invalidatePost(postId);
     await this.cacheService.invalidateCommunityFeed(communityId);
+
+    this.interactionService.recordInteraction(postId, userId, 'COMMENT');
 
     return this.toCommentItem(comment, false, comment.likeCount);
   }

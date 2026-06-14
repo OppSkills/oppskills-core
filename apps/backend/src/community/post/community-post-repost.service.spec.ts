@@ -26,9 +26,15 @@ describe('CommunityPostRepostService', () => {
     invalidatePost: jest.fn(),
     invalidateCommunityFeed: jest.fn(),
   };
+  const mockInteractionService = {
+    recordInteraction: jest.fn(),
+  };
 
   beforeEach(() => {
-    service = new CommunityPostRepostService(mockPostCacheService as any);
+    service = new CommunityPostRepostService(
+      mockPostCacheService as any,
+      mockInteractionService as any,
+    );
     jest.clearAllMocks();
   });
 

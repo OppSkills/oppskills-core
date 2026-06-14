@@ -3,6 +3,7 @@ import { CommunityPostCommentService } from './community-post-comment.service';
 import { CommunityService } from '../community.service';
 import { CommunityPostCommentLikeService } from './community-post-comment-like.service';
 import { CommunityPostCacheService } from './community-post-cache.service';
+import { CommunityPostUserInteractionService } from './community-post-user-interaction.service';
 
 describe('CommunityPostCommentService', () => {
   let service: CommunityPostCommentService;
@@ -28,6 +29,10 @@ describe('CommunityPostCommentService', () => {
         {
           provide: CommunityPostCacheService,
           useValue: { invalidatePost: jest.fn() },
+        },
+        {
+          provide: CommunityPostUserInteractionService,
+          useValue: { recordInteraction: jest.fn() },
         },
       ],
     }).compile();

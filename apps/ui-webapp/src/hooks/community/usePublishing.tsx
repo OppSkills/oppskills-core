@@ -6,6 +6,7 @@ import React, {
   useState,
   useEffect,
   useCallback,
+  useRef,
 } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { useQueryClient } from "@tanstack/react-query";
@@ -54,6 +55,11 @@ export function PublishingProvider({
   const queryClient = useQueryClient();
   const [publishingPosts, setPublishingPosts] = useState<PublishingPost[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
+
+  const publishingPostsRef = useRef<PublishingPost[]>(publishingPosts);
+  useEffect(() => {
+    publishingPostsRef.current = publishingPosts;
+  }, [publishingPosts]);
 
   // Load drafts on mount
   useEffect(() => {
@@ -119,20 +125,30 @@ export function PublishingProvider({
         const token = await getToken();
         if (!token) throw new Error("Please sign in to publish.");
 
+        if (!publishingPostsRef.current.some((p) => p.id === post.id)) return;
+
         updatePostStatus(post.id, { status: "uploading", progress: 10 });
         const uploadedUrls: string[] = [];
 
         // Upload images one by one
         for (let i = 0; i < post.images.length; i++) {
+          if (!publishingPostsRef.current.some((p) => p.id === post.id)) return;
+
           const img = post.images[i];
           let url = img;
 
           if (img.startsWith("blob:")) {
             const res = await fetch(img);
+            if (!publishingPostsRef.current.some((p) => p.id === post.id))
+              return;
+
             const blob = await res.blob();
             const file = new File([blob], "post-image.jpg", {
               type: blob.type || "image/jpeg",
             });
+
+            if (!publishingPostsRef.current.some((p) => p.id === post.id))
+              return;
 
             // Get presign url
             const presign = await presignImageUpload(token, {
@@ -140,8 +156,14 @@ export function PublishingProvider({
               mimeType: file.type,
             });
 
+            if (!publishingPostsRef.current.some((p) => p.id === post.id))
+              return;
+
             // Upload
             await uploadImageToS3PresignedPost({ presign, file });
+
+            if (!publishingPostsRef.current.some((p) => p.id === post.id))
+              return;
 
             if (!presign?.publicUrl) {
               throw new Error("Failed to generate S3 upload URL.");
@@ -155,10 +177,14 @@ export function PublishingProvider({
 
           uploadedUrls.push(url);
 
+          if (!publishingPostsRef.current.some((p) => p.id === post.id)) return;
+
           // Update progress (from 10% to 80% based on image uploads)
           const percent = Math.round(10 + ((i + 1) / post.images.length) * 70);
           updatePostStatus(post.id, { progress: percent });
         }
+
+        if (!publishingPostsRef.current.some((p) => p.id === post.id)) return;
 
         // Post creation request
         updatePostStatus(post.id, { status: "creating", progress: 85 });
@@ -167,6 +193,8 @@ export function PublishingProvider({
           imageUrls: uploadedUrls,
           skillIds: post.skillIds,
         });
+
+        if (!publishingPostsRef.current.some((p) => p.id === post.id)) return;
 
         // Done!
         updatePostStatus(post.id, { status: "success", progress: 100 });
@@ -196,9 +224,13 @@ export function PublishingProvider({
 
         // Remove from UI after a small delay
         setTimeout(() => {
+          if (!publishingPostsRef.current.some((p) => p.id === post.id)) return;
           removePost(post.id);
         }, 3000);
       } catch (err: any) {
+        if (!publishingPostsRef.current.some((p) => p.id === post.id)) {
+          return;
+        }
         console.error("Background publishing failed:", err);
         const errorMsg =
           err instanceof Error

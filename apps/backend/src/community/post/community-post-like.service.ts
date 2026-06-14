@@ -8,6 +8,7 @@ import { prisma, Prisma } from '@oppskills/db';
 import type Redis from 'ioredis';
 import { CacheService } from '../../common/cache.service';
 import { CommunityPostCacheService } from './community-post-cache.service';
+import { CommunityPostUserInteractionService } from './community-post-user-interaction.service';
 
 @Injectable()
 export class CommunityPostLikeService implements OnModuleDestroy {
@@ -18,6 +19,7 @@ export class CommunityPostLikeService implements OnModuleDestroy {
   constructor(
     cacheService: CacheService,
     private readonly postCacheService: CommunityPostCacheService,
+    private readonly interactionService: CommunityPostUserInteractionService,
   ) {
     this.redis = cacheService.tryGetClient();
     this.flushInterval = setInterval(() => {
@@ -206,6 +208,9 @@ export class CommunityPostLikeService implements OnModuleDestroy {
       const result = await this.toggleLikeDb(postId, userId, post.likeCount);
       await this.postCacheService.invalidatePost(postId);
       await this.postCacheService.invalidateCommunityFeed(post.communityId);
+      if (result.liked) {
+        this.interactionService.recordInteraction(postId, userId, 'LIKE');
+      }
       return result;
     }
 
@@ -225,6 +230,7 @@ export class CommunityPostLikeService implements OnModuleDestroy {
       await this.redis.sadd(likedKey, userId);
       await this.redis.incr(this.deltaKey(postId));
       await this.redis.sadd(this.flushKey(postId), `+${userId}`);
+      this.interactionService.recordInteraction(postId, userId, 'LIKE');
     }
 
     const delta = Number((await this.redis.get(this.deltaKey(postId))) || 0);
@@ -250,8 +256,8 @@ export class CommunityPostLikeService implements OnModuleDestroy {
 
     if (existing) {
       const updatedCount = await prisma.$transaction(async (tx) => {
-        await tx.communityPostLikeEntity.delete({
-          where: { postId_userId: { postId, userId } },
+        await tx.communityPostLikeEntity.deleteMany({
+          where: { postId, userId },
         });
         const count = await tx.communityPostLikeEntity.count({
           where: { postId },
