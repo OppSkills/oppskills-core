@@ -39,22 +39,22 @@ export interface SendEmailOptions<T extends EmailType> {
   /** Local file attachments – content must be a Base64-encoded string. */
   attachments?: Array<{ filename: string; content: string }>;
   props: T extends 'welcome'
-  ? WelcomeEmailProps
-  : T extends 'onboarding-complete'
-  ? OnboardingCompleteEmailProps
-  : T extends 'event-pass-pending'
-  ? EventPassPendingEmailProps
-  : T extends 'event-pass'
-  ? EventPassEmailProps
-  : T extends 'participant-direct-message'
-  ? ParticipantDirectMessageProps
-  : T extends 'bulk-email-success'
-  ? BulkEmailSuccessEmailProps
-  : T extends 'incomplete-registration'
-  ? IncompleteRegistrationEmailProps
-  : T extends 'admin-welcome'
-  ? AdminWelcomeEmailProps
-  : never;
+    ? WelcomeEmailProps
+    : T extends 'onboarding-complete'
+      ? OnboardingCompleteEmailProps
+      : T extends 'event-pass-pending'
+        ? EventPassPendingEmailProps
+        : T extends 'event-pass'
+          ? EventPassEmailProps
+          : T extends 'participant-direct-message'
+            ? ParticipantDirectMessageProps
+            : T extends 'bulk-email-success'
+              ? BulkEmailSuccessEmailProps
+              : T extends 'incomplete-registration'
+                ? IncompleteRegistrationEmailProps
+                : T extends 'admin-welcome'
+                  ? AdminWelcomeEmailProps
+                  : never;
 }
 
 @Injectable()
@@ -182,7 +182,7 @@ export class EmailService {
       | ParticipantDirectMessageProps
       | BulkEmailSuccessEmailProps
       | IncompleteRegistrationEmailProps
-      | AdminWelcomeEmailProps
+      | AdminWelcomeEmailProps,
   ): Promise<{ subject: string; html: string }> {
     switch (type) {
       case 'welcome': {

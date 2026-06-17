@@ -57,7 +57,8 @@ export const topOpportunities: readonly HomeOpportunityItem[] = [
     host: 'Kalinga Institute of Management',
     eventDate: '20 Mar 2026',
     registerBy: '20 Dec 2024',
-    prizeLabel: 'Rs 20,000',
+    prizeLabel: '₹ 50,000',
+    modeLabel: 'Free · Offline',
   },
   {
     id: 'top-2',
@@ -67,6 +68,7 @@ export const topOpportunities: readonly HomeOpportunityItem[] = [
     eventDate: '20 Mar 2026',
     registerBy: '20 Dec 2024',
     prizeLabel: 'Free',
+    modeLabel: 'Free · Offline',
   },
   {
     id: 'top-3',
@@ -75,7 +77,8 @@ export const topOpportunities: readonly HomeOpportunityItem[] = [
     host: 'Kalinga Institute of Management',
     eventDate: '20 Mar 2026',
     registerBy: '20 Dec 2024',
-    prizeLabel: 'Free',
+    prizeLabel: '₹ 10,000',
+    modeLabel: 'Free · Offline',
   },
 ];
 
@@ -87,7 +90,8 @@ export const listedCompetitions: readonly HomeOpportunityItem[] = [
     host: 'Kalinga Institute of Management',
     eventDate: '20 Dec 2024',
     registerBy: '20 Dec 2024',
-    prizeLabel: 'Rs 20,000',
+    prizeLabel: '₹ 1,00,000',
+    modeLabel: 'Free · Offline',
   },
   {
     id: 'listed-2',
@@ -96,7 +100,8 @@ export const listedCompetitions: readonly HomeOpportunityItem[] = [
     host: 'Kalinga Institute of Management',
     eventDate: '20 Dec 2024',
     registerBy: '20 Dec 2024',
-    prizeLabel: 'Rs 20,000',
+    prizeLabel: '₹ 5,000',
+    modeLabel: 'Free · Offline',
   },
 ];
 

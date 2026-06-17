@@ -1,4 +1,4 @@
 import type { HackathonDetailRepository } from '../../domain/repositories/HackathonDetailRepository';
-import { MockHackathonDetailRepository } from './MockHackathonDetailRepository';
+import { ApiHackathonDetailRepository } from './ApiHackathonDetailRepository';
 
-export const hackathonDetailRepository: HackathonDetailRepository = new MockHackathonDetailRepository();
+export const hackathonDetailRepository: HackathonDetailRepository = new ApiHackathonDetailRepository();

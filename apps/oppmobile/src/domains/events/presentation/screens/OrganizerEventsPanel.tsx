@@ -1,8 +1,10 @@
 import { useState } from 'react';
-import { Image, Pressable, ScrollView, TextInput, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, ScrollView, TextInput, View } from 'react-native';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 import subtractPlaceholder from '../../../../../assets/Subtract.png';
 import { AppText } from '../../../../shared/ui';
+import { apiClient } from '../../../../shared/api/apiClient';
 import { OrganizerCreateEventScreen, type LiveEvent } from './OrganizerCreateEventScreen';
 import { styles } from './OrganizerEventsPanel.styles';
 
@@ -16,11 +18,21 @@ const COL_REGISTRATIONS = 130;
 const tableWidth =
   COL_SERIAL + COL_OPPORTUNITY + COL_CANDIDATES + COL_STATUS + COL_DATE + COL_DATE + COL_REGISTRATIONS;
 
-let _persistedEvents: LiveEvent[] = [];
-let _persistedRegsOpen: Record<string, boolean> = {};
 
-export function updatePersistedEvent(updated: LiveEvent) {
-  _persistedEvents = _persistedEvents.map((e) => (e.id === updated.id ? updated : e));
+interface OrganizerEventItem {
+  readonly id: string;
+  readonly name: string;
+  readonly slug: string;
+  readonly status: string;
+  readonly approvalStatus: string | null;
+  readonly startDate: string;
+  readonly endDate: string;
+  readonly registrationCount: number;
+  readonly maxUsers: number | null;
+  readonly registrationDeadline: string | null;
+  readonly isRegistrationPaused: boolean;
+  readonly bannerImageUrl: string | null;
+  readonly role: 'OWNER' | 'MANAGER';
 }
 
 interface OrganizerEventsPanelProps {
@@ -28,20 +40,94 @@ interface OrganizerEventsPanelProps {
 }
 
 export function OrganizerEventsPanel({ onSelectEvent }: OrganizerEventsPanelProps) {
-  const [events, setEvents] = useState<LiveEvent[]>(_persistedEvents);
-  const [regsOpen, setRegsOpen] = useState<Record<string, boolean>>(_persistedRegsOpen);
+  const [regsOpen, setRegsOpen] = useState<Record<string, boolean>>({});
   const [searchQuery, setSearchQuery] = useState('');
   const [showCreate, setShowCreate] = useState(false);
 
+  const { data: backendEvents = [], isLoading } = useQuery<OrganizerEventItem[]>({
+    queryKey: ['organizer', 'events'],
+    queryFn: () => apiClient.getAuth<OrganizerEventItem[]>('/events/my'),
+    staleTime: 1000 * 60 * 2,
+  });
+
+  function formatDateValue(value: string) {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  }
+
+  function formatTimeValue(value: string) {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '00:00';
+    return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  }
+
+  function mapOrganizerEvent(event: OrganizerEventItem): LiveEvent {
+    return {
+      id: event.id,
+      slug: event.slug,
+      title: event.name,
+      candidates: event.registrationCount,
+      startDate: formatDateValue(event.startDate),
+      startTime: formatTimeValue(event.startDate),
+      organizerName: event.role === 'OWNER' ? 'Owner' : 'Manager',
+      locationMode: 'online',
+      locationValue: '',
+      description: '',
+      maxAttendees: event.maxUsers ? String(event.maxUsers) : '',
+      ticketType: 'free',
+      imageUrl: event.bannerImageUrl,
+    };
+  }
+
+  const mergedEvents = backendEvents.map(mapOrganizerEvent);
+
+  const queryClient = useQueryClient();
+  const createMutation = useMutation({
+    mutationFn: (newEvent: any) => apiClient.post('/events', newEvent),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['organizer', 'events'] });
+      setShowCreate(false);
+    },
+    onError: (error) => {
+      console.error('Failed to create event', error);
+      setShowCreate(false);
+    }
+  });
+
+  function parseLocalString(dateStr: string): Date {
+    const MONTHS: Record<string, number> = { Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5, Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11 };
+    const parts = dateStr.split(' ');
+    const day = parseInt(parts[0] ?? '1', 10);
+    const month = parts[1] ? (MONTHS[parts[1]] ?? 0) : 0;
+    const year = parts[2] ? 2000 + parseInt(parts[2], 10) : new Date().getFullYear();
+    const d = new Date(year, month, isNaN(day) ? 1 : day);
+    return d;
+  }
+
   function handleHostEvent(event: LiveEvent) {
-    _persistedEvents = [..._persistedEvents, event];
-    setEvents(_persistedEvents);
-    setShowCreate(false);
+    const parsedDate = parseLocalString(event.startDate).toISOString();
+    const payload = {
+      name: event.title,
+      description: event.description,
+      location: {
+        type: event.locationMode === 'online' ? 'VIRTUAL' : 'PHYSICAL',
+        virtualLink: event.locationMode === 'online' ? event.locationValue : undefined,
+        address: event.locationMode === 'offline' ? event.locationValue : undefined,
+      },
+      startDate: parsedDate,
+      endDate: parsedDate, // Defaulting to same day
+      organizationName: event.organizerName,
+    };
+    createMutation.mutate(payload);
   }
 
   function handleToggleRegs(id: string) {
-    _persistedRegsOpen = { ..._persistedRegsOpen, [id]: !_persistedRegsOpen[id] };
     setRegsOpen({ ...regsOpen, [id]: !regsOpen[id] });
+  }
+
+  if (isLoading && mergedEvents.length === 0) {
+    return <LoadingState />;
   }
 
   if (showCreate) {
@@ -54,13 +140,13 @@ export function OrganizerEventsPanel({ onSelectEvent }: OrganizerEventsPanelProp
   }
 
   const filtered = searchQuery.trim()
-    ? events.filter((e) => e.title.toLowerCase().includes(searchQuery.toLowerCase()))
-    : events;
+    ? mergedEvents.filter((e) => e.title.toLowerCase().includes(searchQuery.toLowerCase()))
+    : mergedEvents;
 
   return (
     <View style={styles.screen}>
       <View style={styles.topBar}>
-        <AppText style={styles.eventsTitle}>Events ({events.length})</AppText>
+        <AppText style={styles.eventsTitle}>Events ({mergedEvents.length})</AppText>
         <View style={styles.topBarRight}>
           <View style={styles.searchBar}>
             <View style={styles.searchSymbolWrap}>
@@ -86,7 +172,7 @@ export function OrganizerEventsPanel({ onSelectEvent }: OrganizerEventsPanelProp
       </View>
 
       <ScrollView contentContainerStyle={styles.tableScrollContent} showsVerticalScrollIndicator={false} style={styles.tableScrollOuter}>
-        {events.length === 0 ? (
+        {mergedEvents.length === 0 ? (
           <EmptyState onHost={() => setShowCreate(true)} />
         ) : (
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -128,7 +214,7 @@ export function OrganizerEventsPanel({ onSelectEvent }: OrganizerEventsPanelProp
                     </View>
                     <View style={[styles.td, { width: COL_OPPORTUNITY, alignItems: 'flex-start' }]}>
                       <View style={styles.opportunityCell}>
-                        <Image resizeMode="cover" source={subtractPlaceholder} style={styles.thumbnail} />
+                        <Image resizeMode="cover" source={item.imageUrl ? { uri: item.imageUrl } : subtractPlaceholder} style={styles.thumbnail} />
                         <View style={styles.opportunityInfo}>
                           <AppText numberOfLines={2} style={styles.opportunityTitle}>{item.title}</AppText>
                           <AppText style={styles.eventBadge}>EVENT</AppText>
@@ -172,6 +258,17 @@ export function OrganizerEventsPanel({ onSelectEvent }: OrganizerEventsPanelProp
           </ScrollView>
         )}
       </ScrollView>
+    </View>
+  );
+}
+
+function LoadingState() {
+  return (
+    <View style={{ alignItems: 'center', flex: 1, justifyContent: 'center', paddingHorizontal: 32, paddingVertical: 80 }}>
+      <ActivityIndicator size="large" color="#6366F1" style={{ marginBottom: 24 }} />
+      <AppText style={{ color: '#100013', fontFamily: 'Aeonik Pro', fontSize: 18, fontWeight: '600', lineHeight: 24, textAlign: 'center' }}>
+        Loading your events...
+      </AppText>
     </View>
   );
 }

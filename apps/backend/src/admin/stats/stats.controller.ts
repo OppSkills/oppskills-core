@@ -5,10 +5,10 @@ import { AdminGuard } from '../admin.guard';
 @Controller('admin/stats')
 @UseGuards(AdminGuard)
 export class AdminStatsController {
-    constructor(private readonly statsService: AdminStatsService) { }
+  constructor(private readonly statsService: AdminStatsService) {}
 
-    @Get("dashboard")
-    async dashboardOverview() {
-        return this.statsService.dashboardOverview();
-    }
+  @Get('dashboard')
+  async dashboardOverview() {
+    return this.statsService.dashboardOverview();
+  }
 }

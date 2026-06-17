@@ -10,7 +10,8 @@
     "generate": "prisma generate",
     "db:generate": "prisma generate",
     "db:push": "prisma db push --skip-generate",
-    "db:migrate": "prisma migrate dev && prisma migrate deploy"
+    "db:migrate": "prisma migrate dev && prisma migrate deploy",
+    "create-dev-user": "node ./scripts/create-dev-user.js"
   },
   "exports": {
     ".": {

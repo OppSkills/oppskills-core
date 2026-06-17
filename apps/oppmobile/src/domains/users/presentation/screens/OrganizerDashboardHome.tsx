@@ -1,6 +1,10 @@
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { Image, ScrollView, StyleSheet, View } from 'react-native';
 
 import { AppText } from '../../../../shared/ui';
+import { useCurrentUser } from '../hooks/useCurrentUser';
+import { useOrganizerStats } from '../hooks/useOrganizerStats';
+import { useOrganizerTrends } from '../hooks/useOrganizerTrends';
+import { useOrganizerTopListings } from '../hooks/useOrganizerTopListings';
 
 const STAT_CARDS = [
   {
@@ -149,26 +153,56 @@ function StatCard({
   );
 }
 
-function LineChart() {
+function LineChart({ trends }: { readonly trends?: Record<string, { events: number; hackathon: number }> | undefined }) {
   const chartH = 120;
-  const maxVal = Math.max(...Object.values(LINE_DATA).flat());
+  
+  // Prepare data
+  let lineData = LINE_DATA;
+  let labels = MONTHS;
+  
+  if (trends && Object.keys(trends).length > 0) {
+    const dates = Object.keys(trends).sort((a, b) => {
+      // dates are dd-mm-yyyy
+      const [d1 = 0, m1 = 0, y1 = 0] = a.split('-').map(Number);
+      const [d2 = 0, m2 = 0, y2 = 0] = b.split('-').map(Number);
+      if (y1 !== y2) return y1 - y2;
+      if (m1 !== m2) return m1 - m2;
+      return d1 - d2;
+    });
+    
+    const events = dates.map(d => trends[d]?.events ?? 0);
+    const hackathons = dates.map(d => trends[d]?.hackathon ?? 0);
+    const total = dates.map(d => (trends[d]?.events ?? 0) + (trends[d]?.hackathon ?? 0));
+    
+    lineData = {
+      female: events, // reusing female color for events
+      male: hackathons, // reusing male color for hackathons
+      total,
+    };
+    labels = dates.map(d => d.substring(0, 5)); // dd-mm
+  }
 
+  const maxVal = Math.max(...Object.values(lineData).flat(), 10);
   const toPercent = (v: number) => (1 - v / maxVal) * 100;
 
   return (
     <View style={s.chartCard}>
       <AppText style={s.chartTitle} variant="title">
-        Registrations
+        Registrations Trend
       </AppText>
       <View style={s.legend}>
-        {(['male', 'female', 'total'] as const).map((key) => (
-          <View key={key} style={s.legendItem}>
-            <View style={[s.legendDot, { backgroundColor: LINE_COLORS[key] }]} />
-            <AppText style={s.legendLabel} variant="micro">
-              {key.charAt(0).toUpperCase() + key.slice(1)}
-            </AppText>
-          </View>
-        ))}
+        <View style={s.legendItem}>
+          <View style={[s.legendDot, { backgroundColor: LINE_COLORS.female }]} />
+          <AppText style={s.legendLabel} variant="micro">Events</AppText>
+        </View>
+        <View style={s.legendItem}>
+          <View style={[s.legendDot, { backgroundColor: LINE_COLORS.male }]} />
+          <AppText style={s.legendLabel} variant="micro">Hackathons</AppText>
+        </View>
+        <View style={s.legendItem}>
+          <View style={[s.legendDot, { backgroundColor: LINE_COLORS.total }]} />
+          <AppText style={s.legendLabel} variant="micro">Total</AppText>
+        </View>
       </View>
 
       <View style={[s.chartArea, { height: chartH }]}>
@@ -179,11 +213,11 @@ function LineChart() {
           />
         ))}
         {(['total', 'female', 'male'] as const).map((key) =>
-          LINE_DATA[key].map((val, i) => {
-            if (i === LINE_DATA[key].length - 1) return null;
-            const nextVal = LINE_DATA[key][i + 1];
+          lineData[key].map((val, i) => {
+            if (i === lineData[key].length - 1) return null;
+            const nextVal = lineData[key][i + 1];
             if (nextVal === undefined) return null;
-            const segmentW = 100 / (LINE_DATA[key].length - 1);
+            const segmentW = 100 / (lineData[key].length - 1);
             const x1 = i * segmentW;
             const y1 = toPercent(val);
             const y2 = toPercent(nextVal);
@@ -209,8 +243,8 @@ function LineChart() {
           }),
         )}
         {(['total', 'female', 'male'] as const).map((key) =>
-          LINE_DATA[key].map((val, i) => {
-            const segmentW = 100 / (LINE_DATA[key].length - 1);
+          lineData[key].map((val, i) => {
+            const segmentW = 100 / (lineData[key].length - 1);
             return (
               <View
                 key={`dot-${key}-${i}`}
@@ -229,8 +263,8 @@ function LineChart() {
       </View>
 
       <View style={s.xAxis}>
-        {MONTHS.map((m) => (
-          <AppText key={m} style={s.xLabel} variant="micro">
+        {labels.map((m, i) => (
+          <AppText key={`${m}-${i}`} style={s.xLabel} variant="micro">
             {m}
           </AppText>
         ))}
@@ -240,17 +274,33 @@ function LineChart() {
 }
 
 
-function VerticalBarChart() {
-  const maxVal = 190;
+function VerticalBarChart({ genderTrends }: { readonly genderTrends?: Record<string, { male: number; female: number }> | undefined }) {
+  let vData = VERTICAL_BAR_DATA;
+  let maxVal = 190;
+
+  if (genderTrends && Object.keys(genderTrends).length > 0) {
+    let totalMale = 0;
+    let totalFemale = 0;
+    Object.values(genderTrends).forEach((t) => {
+      totalMale += t.male;
+      totalFemale += t.female;
+    });
+    
+    vData = [
+      { label: 'Male', value: totalMale, pct: 0 },
+      { label: 'Female', value: totalFemale, pct: 0 },
+    ];
+    maxVal = Math.max(totalMale, totalFemale, 10);
+  }
 
   return (
     <View style={s.chartCard}>
       <AppText style={s.chartTitle} variant="title">
-        Events
+        Gender Demographics
       </AppText>
 
       <View style={s.vBarChartArea}>
-        {VERTICAL_BAR_DATA.map((item) => (
+        {vData.map((item) => (
           <View key={item.label} style={s.vBarRow}>
             <AppText style={s.vBarLabel} variant="micro">
               {item.label}
@@ -268,47 +318,63 @@ function VerticalBarChart() {
   );
 }
 
-function ListingsCard() {
+function ListingsCard({ listings }: { readonly listings?: any[] | undefined }) {
+  const displayListings = listings && listings.length > 0 ? listings : LISTINGS;
+
   return (
     <View style={s.chartCard}>
       <AppText style={s.chartTitle} variant="title">
         Active Listings
       </AppText>
       <View style={s.listingsList}>
-        {LISTINGS.map((item, idx) => (
-          <View key={item.key}>
-            <View style={s.listingItem}>
-              <View style={s.listingImagePlaceholder} />
-              <View style={s.listingInfo}>
-                <AppText style={s.listingName} variant="body">
-                  {item.name}
-                </AppText>
-                <AppText style={s.listingDetails} variant="caption">
-                  {item.details}
-                </AppText>
-                <View style={s.listingStats}>
-                  <View style={s.listingStat}>
-                    <AppText style={s.listingStatText} variant="micro">
-                      {item.statA.label}
-                    </AppText>
-                    <AppText style={s.listingStatText} variant="micro">
-                      {item.statA.value}
-                    </AppText>
-                  </View>
-                  <View style={s.listingStat}>
-                    <AppText style={s.listingStatText} variant="micro">
-                      {item.statB.label}
-                    </AppText>
-                    <AppText style={s.listingStatText} variant="micro">
-                      {item.statB.value}
-                    </AppText>
+        {displayListings.map((item, idx) => {
+          const isReal = !!item.title;
+          const name = isReal ? item.title : item.name;
+          const details = isReal ? `${item.type === 'EVENT' ? 'Event' : 'Hackathon'}` : item.details;
+          const statALabel = isReal ? 'Registrations' : item.statA.label;
+          const statAValue = isReal ? item.tregistrations : item.statA.value;
+          
+          return (
+            <View key={isReal ? item.slug : item.key}>
+              <View style={s.listingItem}>
+                {isReal && item.thumbnail ? (
+                  <Image source={{ uri: item.thumbnail }} style={s.listingImagePlaceholder} />
+                ) : (
+                  <View style={s.listingImagePlaceholder} />
+                )}
+                <View style={s.listingInfo}>
+                  <AppText numberOfLines={1} style={s.listingName} variant="body">
+                    {name}
+                  </AppText>
+                  <AppText style={s.listingDetails} variant="caption">
+                    {details}
+                  </AppText>
+                  <View style={s.listingStats}>
+                    <View style={s.listingStat}>
+                      <AppText style={s.listingStatText} variant="micro">
+                        {statALabel}
+                      </AppText>
+                      <AppText style={s.listingStatText} variant="micro">
+                        {statAValue}
+                      </AppText>
+                    </View>
+                    {!isReal && (
+                      <View style={s.listingStat}>
+                        <AppText style={s.listingStatText} variant="micro">
+                          {item.statB.label}
+                        </AppText>
+                        <AppText style={s.listingStatText} variant="micro">
+                          {item.statB.value}
+                        </AppText>
+                      </View>
+                    )}
                   </View>
                 </View>
               </View>
+              {idx < displayListings.length - 1 ? <View style={s.divider} /> : null}
             </View>
-            {idx < LISTINGS.length - 1 ? <View style={s.divider} /> : null}
-          </View>
-        ))}
+          );
+        })}
       </View>
     </View>
   );
@@ -356,11 +422,54 @@ interface OrganizerDashboardHomeProps {
 }
 
 export function OrganizerDashboardHome({ organizerName = 'E-Cell NoC' }: OrganizerDashboardHomeProps) {
+  const { data: currentUser } = useCurrentUser();
+  const { data: organizerStats } = useOrganizerStats();
+  const { data: trendsData } = useOrganizerTrends();
+  const { data: topListings } = useOrganizerTopListings();
+
+  const displayName = currentUser?.firstName || organizerName;
+  const statCards = organizerStats
+    ? [
+        {
+          key: 'candidates',
+          label: 'Total Candidates',
+          value: organizerStats.total_participants.toLocaleString(),
+          subLabel: 'Registered across all listings',
+          badge: `${organizerStats.event.total + organizerStats.hackathon.total + organizerStats.festival.total}`,
+          dark: true,
+        },
+        {
+          key: 'teams',
+          label: 'Team Registrations',
+          value: `${organizerStats.hackathon.total}`,
+          subLabel: 'Hackathon listings',
+          badge: `${organizerStats.hackathon.active} active`,
+          dark: false,
+        },
+        {
+          key: 'opportunities',
+          label: 'Active Opportunities',
+          value: `${organizerStats.event.active + organizerStats.hackathon.active + organizerStats.festival.active}`,
+          subLabel: 'Live opportunities',
+          badge: 'Live now',
+          dark: false,
+        },
+        {
+          key: 'festivals',
+          label: 'Festivals Listed',
+          value: `${organizerStats.festival.total}`,
+          subLabel: 'Current festival listings',
+          badge: `${organizerStats.festival.active} active`,
+          dark: false,
+        },
+      ]
+    : STAT_CARDS;
+
   return (
     <ScrollView contentContainerStyle={s.container} showsVerticalScrollIndicator={false}>
       <View style={s.welcome}>
         <AppText style={s.welcomeHeading} variant="sectionHeading">
-          Welcome back, {organizerName}
+          Welcome back, {displayName}
         </AppText>
         <AppText style={s.welcomeSub} variant="body">
           Here is the summary of overall performance
@@ -372,14 +481,14 @@ export function OrganizerDashboardHome({ organizerName = 'E-Cell NoC' }: Organiz
         horizontal
         showsHorizontalScrollIndicator={false}
       >
-        {STAT_CARDS.map(({ key, ...cardProps }) => (
+        {statCards.map(({ key, ...cardProps }) => (
           <StatCard key={key} {...cardProps} />
         ))}
       </ScrollView>
 
-      <LineChart />
-      <VerticalBarChart />
-      <ListingsCard />
+      <LineChart trends={trendsData?.registrationTrend} />
+      <VerticalBarChart genderTrends={trendsData?.genderRegistrationTrend} />
+      <ListingsCard listings={topListings} />
       <UpdatesCard />
     </ScrollView>
   );

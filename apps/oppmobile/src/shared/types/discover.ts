@@ -14,6 +14,7 @@ interface DiscoverBaseItem {
   readonly registerBy: string;
   readonly tagLabel: string;
   readonly tone: DiscoverCardTone;
+  readonly imageUrl?: string | undefined;
 }
 
 export interface DiscoverCompactItem extends DiscoverBaseItem {
@@ -39,6 +40,7 @@ export interface DiscoverCommunityItem {
   readonly members: number;
   readonly registerBy: string;
   readonly tone: DiscoverCardTone;
+  readonly imageUrl?: string | undefined;
 }
 
 export interface DiscoverFeatureEventItem {
@@ -51,6 +53,7 @@ export interface DiscoverFeatureEventItem {
   readonly registerBy: string;
   readonly entryFee: string;
   readonly tone: DiscoverCardTone;
+  readonly imageUrl?: string | undefined;
 }
 
 export type DiscoverVariantItem =

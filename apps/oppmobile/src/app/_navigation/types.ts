@@ -24,8 +24,8 @@ export type HomeStackParamList = {
   [appRoutes.organizerDashboard]: undefined;
   [appRoutes.profilePage]: undefined;
   [appRoutes.profileEditPage]: undefined;
-  [appRoutes.competitionPage]: undefined;
-  [appRoutes.hackathonPage]: undefined;
+  [appRoutes.competitionPage]: { competitionId: string };
+  [appRoutes.hackathonPage]: { hackathonId: string };
 };
 
 export type DiscoverStackParamList = {
@@ -34,21 +34,22 @@ export type DiscoverStackParamList = {
   [appRoutes.discoverCompetitions]: undefined;
   [appRoutes.discoverEventsPrimary]: undefined;
   [appRoutes.discoverEventsSecondary]: undefined;
-  [appRoutes.eventPageFree]: undefined;
-  [appRoutes.eventPagePaid]: undefined;
+  [appRoutes.eventPageFree]: { eventId: string };
+  [appRoutes.eventPagePaid]: { eventId: string };
   [appRoutes.searchRecent]: undefined;
   [appRoutes.searchPopular]: undefined;
   [appRoutes.searchTyping]: undefined;
   [appRoutes.searchResults]: undefined;
-  [appRoutes.competitionPage]: undefined;
-  [appRoutes.hackathonPage]: undefined;
-  [appRoutes.hackathonRegistration]: undefined;
+  [appRoutes.competitionPage]: { competitionId: string };
+  [appRoutes.hackathonPage]: { hackathonId: string };
+  [appRoutes.hackathonRegistration]: { hackathonId: string; title?: string; bannerImageUrl?: string | null };
 };
 
 export type AppliedStackParamList = {
   [appRoutes.appliedStack]: undefined;
-  [appRoutes.competitionPage]: undefined;
-  [appRoutes.hackathonPage]: undefined;
+  [appRoutes.competitionPage]: { competitionId: string };
+  [appRoutes.hackathonPage]: { hackathonId: string };
+  [appRoutes.eventPageFree]: { eventId: string };
 };
 
 export type MainTabParamList = {

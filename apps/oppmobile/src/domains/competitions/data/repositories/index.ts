@@ -1,5 +1,5 @@
 import type { CompetitionDetailRepository } from '../../domain/repositories/CompetitionDetailRepository';
-import { MockCompetitionDetailRepository } from './MockCompetitionDetailRepository';
+import { ApiCompetitionDetailRepository } from './ApiCompetitionDetailRepository';
 
 export const competitionDetailRepository: CompetitionDetailRepository =
-  new MockCompetitionDetailRepository();
+  new ApiCompetitionDetailRepository();

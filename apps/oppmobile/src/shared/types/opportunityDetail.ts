@@ -28,6 +28,12 @@ export interface OpportunityContactInfo {
   readonly venue: string;
 }
 
+export interface OpportunityAttachment {
+  readonly id: string;
+  readonly name: string;
+  readonly url: string;
+}
+
 export interface OpportunitySupplementarySection {
   readonly id: string;
   readonly title: string;
@@ -35,6 +41,7 @@ export interface OpportunitySupplementarySection {
 }
 
 export interface OpportunityDetailModel {
+  readonly slug?: string;
   readonly routeLabel: string;
   readonly heroLabel: string;
   readonly heroTitle: string;
@@ -52,5 +59,6 @@ export interface OpportunityDetailModel {
   readonly rounds: readonly OpportunityRoundCard[];
   readonly prizes: readonly OpportunityPrizeCard[];
   readonly contact: OpportunityContactInfo;
+  readonly attachments?: readonly OpportunityAttachment[];
   readonly supplementarySections?: readonly OpportunitySupplementarySection[];
 }

@@ -8,7 +8,7 @@ interface HackathonSettingsPanelProps {
   readonly hackathon: LiveHackathon;
 }
 
-export function HackathonSettingsPanel({ hackathon }: HackathonSettingsPanelProps) {
+export function HackathonSettingsPanel({ hackathon: _hackathon }: HackathonSettingsPanelProps) {
   const [pauseRegistrations, setPauseRegistrations] = useState(false);
 
   return (

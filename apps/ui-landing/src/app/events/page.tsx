@@ -15,7 +15,7 @@ export default function EventsPage() {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useEvents(searchTerm);
+  } = useEvents(undefined, searchTerm);
 
   // Flatten duplicate pages into a single array
   const events = data?.pages.flat() ?? [];

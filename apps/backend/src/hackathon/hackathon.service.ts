@@ -142,6 +142,8 @@ export class HackathonService {
           endDate,
           mode: dto.mode,
           ownerId: userId,
+          status: 'PUBLISHED',
+          approvalStatus: 'APPROVED',
 
           // Extended fields
           slug,
@@ -156,6 +158,9 @@ export class HackathonService {
           locationCity: dto.location?.city,
           locationVirtualLink: dto.location?.virtualLink,
 
+          registrationStartDate: dto.registrationStartDate
+            ? this.parseDate(dto.registrationStartDate, 'registrationStartDate')
+            : undefined,
           registrationDeadline: dto.registrationDeadline
             ? this.parseDate(dto.registrationDeadline, 'registrationDeadline')
             : undefined,
@@ -846,7 +851,7 @@ export class HackathonService {
       }
     }
 
-    const status = hackathon.status as LifecycleStatus;
+    const status = hackathon.status;
     if (status !== 'DRAFT') {
       throw new ForbiddenException(
         'You can only edit a hackathon in DRAFT status.',
@@ -918,6 +923,9 @@ export class HackathonService {
         locationCity: dto.location?.city,
         locationVirtualLink: dto.location?.virtualLink,
 
+        registrationStartDate: dto.registrationStartDate
+          ? this.parseDate(dto.registrationStartDate, 'registrationStartDate')
+          : undefined,
         registrationDeadline: dto.registrationDeadline
           ? this.parseDate(dto.registrationDeadline, 'registrationDeadline')
           : undefined,
@@ -992,7 +1000,7 @@ export class HackathonService {
       }
     }
 
-    const currentStatus = hackathon.status as LifecycleStatus;
+    const currentStatus = hackathon.status;
     this.assertLifecycleTransitionAllowed(
       currentStatus,
       nextStatus,
@@ -1022,11 +1030,11 @@ export class HackathonService {
     });
     if (!hackathon) throw new NotFoundException('Hackathon not found');
 
-    if (hackathon.ownerId === userId) {
-      throw new ForbiddenException(
-        'You cannot register for your own hackathon.',
-      );
-    }
+    // if (hackathon.ownerId === userId) {
+    //   throw new ForbiddenException(
+    //     'You cannot register for your own hackathon.',
+    //   );
+    // }
 
     return {
       message: 'User registered successfully for hackathon.',
@@ -1397,7 +1405,7 @@ export class HackathonService {
       }
     }
 
-    const status = hackathon.status as LifecycleStatus;
+    const status = hackathon.status;
     if (status !== 'DRAFT') {
       throw new ForbiddenException(
         'You can only edit a hackathon in DRAFT status.',
@@ -1428,7 +1436,7 @@ export class HackathonService {
       }
     }
 
-    const status = hackathon.status as LifecycleStatus;
+    const status = hackathon.status;
     if (status === 'CANCELLED' || status === 'COMPLETED') {
       throw new ForbiddenException(
         'Cannot edit rounds for a cancelled or completed hackathon.',
@@ -1944,7 +1952,7 @@ export class HackathonService {
       }
     }
 
-    const status = hackathon.status as LifecycleStatus;
+    const status = hackathon.status;
     if (status !== 'DRAFT') {
       throw new ForbiddenException(
         'You can only edit a hackathon in DRAFT status.',
@@ -1997,7 +2005,7 @@ export class HackathonService {
         firstName: r.user.firstName,
         lastName: r.user.lastName,
         imageUrl: r.user.imageUrl,
-        role: r.role as 'MANAGER' | 'EVALUATOR',
+        role: r.role,
         assignedAt: r.createdAt.toISOString(),
       }));
 
@@ -2009,7 +2017,7 @@ export class HackathonService {
         firstName: r.user.firstName,
         lastName: r.user.lastName,
         imageUrl: r.user.imageUrl,
-        role: r.role as 'MANAGER' | 'EVALUATOR',
+        role: r.role,
         assignedAt: r.createdAt.toISOString(),
       }));
 

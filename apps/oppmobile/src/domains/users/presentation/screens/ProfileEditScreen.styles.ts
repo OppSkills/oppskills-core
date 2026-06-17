@@ -116,6 +116,21 @@ export const styles = StyleSheet.create({
     lineHeight: 25,
     marginLeft: 20,
   },
+  headerTitleWrap: {
+    flex: 1,
+  },
+  saveButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: '#6366F1',
+    borderRadius: 20,
+  },
+  saveButtonText: {
+    color: '#FFFFFF',
+    fontFamily: 'Urbanist',
+    fontSize: 14,
+    fontWeight: '600',
+  },
   lastFieldWrap: {
     marginTop: 27,
   },

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { AppText } from '../../../../shared/ui';
-import { useMockSession } from '../../../user-accounts/presentation/providers/MockSessionProvider';
+import { useAppSession } from '../../../../shared/auth/useAppSession';
 import { type LiveEvent } from './OrganizerCreateEventScreen';
 
 interface EventDashboardScreenProps {
@@ -21,8 +21,8 @@ const PRESET_LABELS: Record<PresetKey, string> = {
 };
 
 export function EventDashboardScreen({ event }: EventDashboardScreenProps) {
-  const { mockProfile } = useMockSession();
-  const name = mockProfile?.fullName ?? 'Organizer';
+  const session = useAppSession();
+  const name = `${session.firstName ?? ''} ${session.lastName ?? ''}`.trim() || 'Organizer';
   const [filterVisible, setFilterVisible] = useState(false);
   const [activePreset, setActivePreset] = useState<PresetKey>('all-time');
   const [pendingPreset, setPendingPreset] = useState<PresetKey>('all-time');
@@ -202,8 +202,10 @@ function TimeFilterModal({
   const month = calMonth.getMonth();
 
   const firstDayOfMonth = new Date(year, month, 1).getDay();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const daysInPrevMonth = new Date(year, month, 0).getDate();
+  const daysInMonth = ([31, (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0 ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month])!;
+  const prevMonth = month === 0 ? 11 : month - 1;
+  const prevYear = month === 0 ? year - 1 : year;
+  const daysInPrevMonth = ([31, (prevYear % 4 === 0 && prevYear % 100 !== 0) || prevYear % 400 === 0 ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][prevMonth])!;
 
   const calCells: { date: Date; inMonth: boolean }[] = [];
   for (let i = firstDayOfMonth - 1; i >= 0; i--) {

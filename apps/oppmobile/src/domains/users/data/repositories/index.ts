@@ -1,4 +1,4 @@
 import type { HomeFeedRepository } from '../../domain/repositories/HomeFeedRepository';
-import { MockHomeFeedRepository } from './MockHomeFeedRepository';
+import { ApiHomeFeedRepository } from './ApiHomeFeedRepository';
 
-export const homeFeedRepository: HomeFeedRepository = new MockHomeFeedRepository();
+export const homeFeedRepository: HomeFeedRepository = new ApiHomeFeedRepository();

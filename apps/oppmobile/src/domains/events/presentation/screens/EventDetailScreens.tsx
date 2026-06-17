@@ -1,28 +1,56 @@
-import { ImageBackground, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useState } from 'react';
+import { ImageBackground, Pressable, ScrollView, StyleSheet, View, ActivityIndicator, Alert, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import highResEventImage from '../../../../../assets/highres_490352821 1.png';
 import { AppText } from '../../../../shared/ui';
+import { useEventDetail } from '../hooks/useEventDetail';
+import { useEventParticipation } from '../hooks/useEventParticipation';
 
 interface EventDetailPageScreenProps {
+  readonly eventId: string;
   readonly onBackToDiscover: () => void;
 }
 
-export function EventFreePageScreen({ onBackToDiscover }: EventDetailPageScreenProps) {
-  return <EventDetailTemplate isPaid={false} onBackToDiscover={onBackToDiscover} />;
+export function EventFreePageScreen({ eventId, onBackToDiscover }: EventDetailPageScreenProps) {
+  return <EventDetailTemplate eventId={eventId} isPaid={false} onBackToDiscover={onBackToDiscover} />;
 }
 
-export function EventPaidPageScreen({ onBackToDiscover }: EventDetailPageScreenProps) {
-  return <EventDetailTemplate isPaid onBackToDiscover={onBackToDiscover} />;
+export function EventPaidPageScreen({ eventId, onBackToDiscover }: EventDetailPageScreenProps) {
+  return <EventDetailTemplate eventId={eventId} isPaid onBackToDiscover={onBackToDiscover} />;
 }
 
 function EventDetailTemplate({
+  eventId,
   onBackToDiscover,
   isPaid,
 }: {
+  readonly eventId: string;
   readonly onBackToDiscover: () => void;
   readonly isPaid: boolean;
 }) {
+  const { data: event, isLoading, isError } = useEventDetail(eventId);
+  const [referralCode, setReferralCode] = useState('');
+
+  if (isLoading) {
+    return (
+      <View style={[styles.screen, styles.center]}>
+        <ActivityIndicator size="large" color="#6949AA" />
+      </View>
+    );
+  }
+
+  if (isError || !event) {
+    return (
+      <View style={[styles.screen, styles.center]}>
+        <AppText variant="body">Failed to load event details.</AppText>
+        <Pressable onPress={onBackToDiscover} style={{ marginTop: 16 }}>
+          <AppText colorToken="brandPrimaryStrong" variant="body">Go Back</AppText>
+        </Pressable>
+      </View>
+    );
+  }
+
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={styles.screen}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -58,17 +86,19 @@ function EventDetailTemplate({
           </View>
 
           <AppText style={styles.eventTitle} variant="sectionHeading">
-            Silicon Valley Funding Summit at CES 2026 - VIP Access for Investors
+            {event.heroTitle}
           </AppText>
 
           <View style={styles.infoList}>
-            <DateInfoCard
-              day="5"
-              heading="Monday, 5 January 2026"
-              month="Jan"
-              subheading="8:00 - 20:00 GMT-8"
-            />
-            <LocationInfoCard heading="College/University Name" subheading="City, State" />
+            {event.keyInfo.map((info) => (
+              <DateInfoCard
+                key={info.id}
+                day=""
+                heading={info.label}
+                month=""
+                subheading={info.value}
+              />
+            ))}
           </View>
 
           <View style={styles.filterChipRow}>
@@ -79,13 +109,13 @@ function EventDetailTemplate({
 
           <View style={styles.sectionWrap}>
             <AppText style={styles.sectionTitle} variant="title">
-              About Event
+              {event.aboutHeading}
             </AppText>
-            <AppText colorToken="textSecondary" style={styles.sectionBody} variant="body">
-              Get ready for the ultimate musical experience as Karan Aujla, the global Punjabi sensation, takes over
-              India with the P Pop Culture Tour! Known for chart-topping anthems, this event delivers a high-energy
-              production with unforgettable live moments.
-            </AppText>
+            {event.aboutParagraphs.map((paragraph, index) => (
+              <AppText key={index} colorToken="textSecondary" style={styles.sectionBody} variant="body">
+                {paragraph}
+              </AppText>
+            ))}
             <Pressable style={styles.readMoreButton}>
               <AppText colorToken="brandPrimaryStrong" variant="caption">
                 Read more
@@ -97,20 +127,28 @@ function EventDetailTemplate({
             <View style={styles.freeActionWrap}>
               <View style={styles.participantBanner}>
                 <AppText colorToken="textSecondary" variant="caption">
-                  Participant: Rohit (tstrohittiwari@gmail.com)
+                  Participant: User
                 </AppText>
               </View>
-              <Pressable style={styles.primaryActionButton}>
-                <AppText colorToken="textInverse" style={styles.primaryActionLabel} variant="body">
-                  Next
-                </AppText>
-              </Pressable>
+              <View style={styles.fieldGroup}>
+                <AppText style={styles.fieldLabel}>Referral Code (Optional)</AppText>
+                <View style={styles.inputWrap}>
+                  <TextInput
+                    onChangeText={setReferralCode}
+                    placeholder="REF_123456"
+                    placeholderTextColor="#9C8DAA"
+                    style={styles.textInput}
+                    value={referralCode}
+                  />
+                </View>
+              </View>
+              <FreeEventCTA eventId={eventId} ctaLabel={event.ctaLabel} referralCode={referralCode} />
             </View>
           ) : (
             <View style={styles.paidActionWrap}>
               <View style={styles.ticketCard}>
                 <AppText colorToken="textPrimary" style={styles.ticketAmount} variant="title">
-                  INR 499
+                  {event.keyInfo.find((k) => k.id === 'entry-fee')?.value ?? 'Paid'}
                 </AppText>
                 <AppText colorToken="textSecondary" variant="caption">
                   Includes entry pass, networking access, and event kit.
@@ -118,7 +156,7 @@ function EventDetailTemplate({
               </View>
               <Pressable style={styles.primaryActionButton}>
                 <AppText colorToken="textInverse" style={styles.primaryActionLabel} variant="body">
-                  Pay INR 499 and Continue
+                  {event.ctaLabel}
                 </AppText>
               </Pressable>
             </View>
@@ -129,8 +167,7 @@ function EventDetailTemplate({
               Contact Details
             </AppText>
             <View style={styles.contactList}>
-              <ContactCard email="emailoftheperson@gmail.com" initials="TM" name="Owner Name" phone="+91 99999 99999" />
-              <ContactCard email="emailoftheperson@gmail.com" initials="TM" name="Owner Name" phone="+91 99999 99999" />
+              <ContactCard email={event.contact.email} initials={event.contact.organizerName[0] ?? '?'} name={event.contact.organizerName} phone={event.contact.phoneNumber} />
             </View>
           </View>
 
@@ -193,7 +230,7 @@ function DateInfoCard({
   );
 }
 
-function LocationInfoCard({ heading, subheading }: { readonly heading: string; readonly subheading: string }) {
+function _LocationInfoCard({ heading, subheading }: { readonly heading: string; readonly subheading: string }) {
   return (
     <View style={styles.infoRow}>
       <View style={styles.locationIconWrap}>
@@ -264,6 +301,34 @@ function ContactCard({
   );
 }
 
+function FreeEventCTA({ eventId, ctaLabel, referralCode }: { readonly eventId: string; readonly ctaLabel: string; readonly referralCode?: string }) {
+  const mutation = useEventParticipation();
+
+  const onPress = async () => {
+    try {
+      await mutation.mutateAsync({ eventId, referralCode: referralCode || undefined });
+      // successful join; queries invalidated by hook
+    } catch (err: any) {
+      // swallow — apiClient will throw ApiError with useful message
+      // eslint-disable-next-line no-console
+      console.error('Failed to join event', err);
+      Alert.alert('Cannot Join Event', err.message || 'An error occurred while joining the event.');
+    }
+  };
+
+  return (
+    <Pressable style={styles.primaryActionButton} onPress={onPress} disabled={mutation.isPending}>
+      {mutation.isPending ? (
+        <ActivityIndicator color="#fff" />
+      ) : (
+        <AppText colorToken="textInverse" style={styles.primaryActionLabel} variant="body">
+          {ctaLabel}
+        </AppText>
+      )}
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
   backButton: {
     alignItems: 'center',
@@ -279,6 +344,10 @@ const styles = StyleSheet.create({
   backGlyph: {
     fontSize: 18,
     lineHeight: 20,
+  },
+  center: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   contactAvatar: {
     alignItems: 'center',
@@ -361,9 +430,35 @@ const styles = StyleSheet.create({
     lineHeight: 35,
   },
   featuredLabel: {
-    color: '#7C737E',
+    color: '#8A828D',
     fontSize: 14,
     lineHeight: 21,
+  },
+  fieldGroup: {
+    gap: 8,
+    marginBottom: 16,
+  },
+  fieldLabel: {
+    color: '#584D5A',
+    fontSize: 14,
+    fontWeight: '500',
+    lineHeight: 21,
+  },
+  inputWrap: {
+    backgroundColor: '#FFFFFF',
+    borderColor: '#C3BFC4',
+    borderRadius: 8,
+    borderWidth: 1,
+    height: 48,
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+  },
+  textInput: {
+    color: '#100013',
+    fontFamily: 'Inter',
+    fontSize: 16,
+    height: '100%',
+    padding: 0,
   },
   featuredPill: {
     alignItems: 'center',

@@ -256,14 +256,23 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
 
       {/* Banner Component */}
       <div className="relative aspect-[16/10] w-full overflow-hidden rounded-2xl shadow-sm">
-        <Image
-          src={competition.thumbnail || "/competition_placeholder.png"}
-          alt={competition.title}
-          fill
-          className="object-cover"
-          priority
-        />
+        {competition.thumbnail ? (
+          <Image
+            src={competition.thumbnail}
+            alt={competition.title}
+            fill
+            className="object-cover"
+            priority
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-violet-600 via-purple-700 to-indigo-800">
+            <span className="text-white font-bold opacity-20 text-6xl">
+              {competition.title.charAt(0).toUpperCase()}
+            </span>
+          </div>
+        )}
       </div>
+
 
       {/* Info Card */}
       <div className="bg-background  rounded-2xl border border-neutral-200  p-6 shadow-sm">

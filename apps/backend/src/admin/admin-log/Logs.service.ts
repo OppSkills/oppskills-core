@@ -3,76 +3,69 @@ import { prisma } from '@oppskills/db';
 import { Logger } from 'src/_utils/logger';
 
 export interface AdminLogsDto {
-    adminId: string;
-    action: string;
-    type: string;
+  adminId: string;
+  action: string;
+  type: string;
 }
 
 @Injectable()
 export class AdminLogsService {
-    private logger = new Logger('AdminLogsService');
+  private logger = new Logger('AdminLogsService');
 
-    constructor() { }
-    async createAdminLog({ adminId, action, type = "other" }: AdminLogsDto) {
-        try {
-            const log = await prisma.adminLog.create({
-                data: {
-                    adminId,
-                    action,
-                    type,
-                },
-            });
-            console.log(log);
-            this.logger.info("Admin Creation Logged Successfully")
-        } catch (error) {
-            this.logger.error("Admin Creation failed to log")
-        }
-
-        return { status: "success", action }
+  constructor() {}
+  async createAdminLog({ adminId, action, type = 'other' }: AdminLogsDto) {
+    try {
+      const log = await prisma.adminLog.create({
+        data: {
+          adminId,
+          action,
+          type,
+        },
+      });
+      console.log(log);
+      this.logger.info('Admin Creation Logged Successfully');
+    } catch (error) {
+      this.logger.error('Admin Creation failed to log');
     }
 
-    async getAdminLogs({
-        page = 1,
-        search,
-    }: {
-        page?: number;
-        search?: string;
-    }) {
-        const take = 50;
-        const skip = (page - 1) * take;
+    return { status: 'success', action };
+  }
 
-        const where = search
-            ? {
-                OR: [
-                    {
-                        action: {
-                            contains: search,
-                            mode: "insensitive" as const,
-                        },
-                    },
-                    {
-                        type: {
-                            contains: search,
-                            mode: "insensitive" as const,
-                        },
-                    },
-                ],
-            }
-            : {};
+  async getAdminLogs({ page = 1, search }: { page?: number; search?: string }) {
+    const take = 50;
+    const skip = (page - 1) * take;
 
-        const logs = await prisma.adminLog.findMany({
-            where,
-            skip,
-            take: take + 1,
-            orderBy: {
-                createdAt: "desc",
+    const where = search
+      ? {
+          OR: [
+            {
+              action: {
+                contains: search,
+                mode: 'insensitive' as const,
+              },
             },
-        })
+            {
+              type: {
+                contains: search,
+                mode: 'insensitive' as const,
+              },
+            },
+          ],
+        }
+      : {};
 
-        return {
-            data: logs.slice(0, take),
-            further: logs.length > take,
-        };
-    }
+    const logs = await prisma.adminLog.findMany({
+      where,
+      skip,
+      take: take + 1,
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
 
+    return {
+      data: logs.slice(0, take),
+      further: logs.length > take,
+    };
+  }
 }

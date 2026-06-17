@@ -1,3 +1,25 @@
 packages:
-  - "apps/*"
-  - "packages/*"
+  - apps/*
+  - packages/*
+ignoredBuiltDependencies:
+  - '@clerk/shared'
+  - '@nestjs/core'
+  - '@newrelic/fn-inspect'
+  - '@newrelic/native-metrics'
+  - '@prisma/client'
+  - '@prisma/engines'
+  - '@scarf/scarf'
+  - bcrypt
+  - browser-tabs-lock
+  - bufferutil
+  - core-js
+  - esbuild
+  - msw
+  - prisma
+  - protobufjs
+  - sharp
+  - unrs-resolver
+  - utf-8-validate
+onlyBuiltDependencies:
+  - '@prisma/client'
+  - '@prisma/engines'

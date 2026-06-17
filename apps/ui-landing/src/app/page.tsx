@@ -3,6 +3,7 @@ import OppskillsFlow from "@/components/landingpage/OppskillsFlow";
 import PromoPoster from "@/components/landingpage/PromoPoster";
 import UpcomingCompetitions from "@/components/landingpage/UpcomingCompetitions";
 import { UpcomingEvents } from "@/components/landingpage/UpcomingEvents";
+import UpcomingFestivals from "@/components/landingpage/UpcomingFestivals";
 import PastEvents from "@/components/landingpage/PastEvents";
 import UpcomingFeatures from "@/components/landingpage/UpcomingFeatures";
 import TrustedBy from "@/components/landingpage/_components/TrustedBy";
@@ -15,6 +16,7 @@ const Home = () => {
         <HeroSection />
         <UpcomingCompetitions />
         <UpcomingEvents />
+        <UpcomingFestivals />
         <PastEvents />
         {/* <ActiveCommunitypage /> */}
         <OppskillsFlow />

@@ -8,7 +8,7 @@ interface SettingsPanelProps {
   readonly event: LiveEvent;
 }
 
-export function SettingsPanel({ event }: SettingsPanelProps) {
+export function SettingsPanel({ event: _event }: SettingsPanelProps) {
   const [pauseRegistrations, setPauseRegistrations] = useState(false);
 
   return (

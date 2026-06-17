@@ -1,8 +1,12 @@
+import { apiClient } from '../../../../shared/api/apiClient';
 import type { OpportunityDetailModel } from '../../../../shared/types/opportunityDetail';
 import type { CompetitionDetailRepository } from '../../domain/repositories/CompetitionDetailRepository';
+import { mapPublicHackathonToDetail } from '../../../hackathons/data/mappers/mapHackathonDetail';
+import type { PublicHackathonResponse } from '../../../hackathons/data/repositories/ApiHackathonDetailRepository';
 
 export class ApiCompetitionDetailRepository implements CompetitionDetailRepository {
-  async getDetail(): Promise<OpportunityDetailModel> {
-    throw new Error('ApiCompetitionDetailRepository is not active in Phase 11.');
+  async getDetail(id: string): Promise<OpportunityDetailModel> {
+    const response = await apiClient.get<PublicHackathonResponse>(`/hackathons/public/${id}`);
+    return mapPublicHackathonToDetail(response);
   }
 }

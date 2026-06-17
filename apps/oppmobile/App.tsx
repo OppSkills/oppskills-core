@@ -1,5 +1,9 @@
-import { AppRoot } from './src/app/AppRoot';
+import 'react-native-gesture-handler';
+import { registerRootComponent } from 'expo';
+import { AppRoot } from './src/app/_AppRoot';
 
-export default function App() {
+function App() {
   return <AppRoot />;
 }
+
+registerRootComponent(App);

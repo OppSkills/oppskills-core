@@ -1,3 +1,4 @@
+import * as ImagePicker from 'expo-image-picker';
 import { useState } from 'react';
 import {
   Image,
@@ -10,7 +11,7 @@ import {
 } from 'react-native';
 
 import subtractPlaceholder from '../../../../../assets/Subtract.png';
-import { AppText } from '../../../../shared/ui';
+import { AppText, RegistrationSettingsPanel } from '../../../../shared/ui';
 import {
   type EligibilityKey,
   type EventContact,
@@ -56,7 +57,9 @@ const ELIGIBILITY_OPTIONS: { key: EligibilityKey; label: string; sub: string }[]
 
 interface EditEventScreenProps {
   readonly event: LiveEvent;
-  readonly onUpdateEvent: (event: LiveEvent) => void;
+  readonly mode?: 'edit' | 'create';
+  readonly onUpdateEvent?: (event: LiveEvent) => void;
+  readonly onCreateEvent?: (event: LiveEvent) => void;
 }
 
 function formatCurrentTime(): string {
@@ -69,12 +72,12 @@ function formatCurrentTime(): string {
   return `${hour}:${m}:${s} ${period}`;
 }
 
-export function EditEventScreen({ event, onUpdateEvent }: EditEventScreenProps) {
+export function EditEventScreen({ event, mode = 'edit', onUpdateEvent, onCreateEvent }: EditEventScreenProps) {
   const [activeTab, setActiveTab] = useState<EditTab>('preview');
   const [savedTime, setSavedTime] = useState<string | null>(null);
 
   function handleSave(updatedEvent: LiveEvent) {
-    onUpdateEvent(updatedEvent);
+    if (onUpdateEvent) onUpdateEvent(updatedEvent);
     setSavedTime(formatCurrentTime());
   }
 
@@ -104,22 +107,44 @@ export function EditEventScreen({ event, onUpdateEvent }: EditEventScreenProps) 
         })}
       </ScrollView>
 
-      {/* Saved status bar */}
-      <View style={styles.savedBar}>
-        <AppText style={savedTime !== null ? styles.savedText : styles.unsavedText}>
-          {savedTime !== null ? 'Saved' : 'Unsaved'}
-        </AppText>
-        {savedTime !== null && (
-          <AppText style={styles.lastSavedText}>Last saved: {savedTime}</AppText>
-        )}
-      </View>
+      {/* Saved status bar or Create Button */}
+      {mode === 'create' ? (
+        <View style={styles.savedBar}>
+          <AppText style={styles.unsavedText}>Draft Event</AppText>
+          <Pressable
+            onPress={() => onCreateEvent && onCreateEvent(event)}
+            style={{ backgroundColor: '#392160', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 100 }}
+          >
+            <AppText style={{ color: '#fff', fontSize: 13, fontWeight: '600' }}>Host Event</AppText>
+          </Pressable>
+        </View>
+      ) : (
+        <View style={styles.savedBar}>
+          <AppText style={savedTime !== null ? styles.savedText : styles.unsavedText}>
+            {savedTime !== null ? 'Saved' : 'Unsaved'}
+          </AppText>
+          {savedTime !== null && (
+            <AppText style={styles.lastSavedText}>Last saved: {savedTime}</AppText>
+          )}
+        </View>
+      )}
 
       {activeTab === 'preview' ? (
         <PreviewContent event={event} />
       ) : activeTab === 'basic-details' ? (
         <BasicDetailsContent event={event} onSave={handleSave} />
       ) : activeTab === 'registration-settings' ? (
-        <RegistrationSettingsContent event={event} onSave={handleSave} />
+        <RegistrationSettingsPanel
+          eligibleCandidates={event.eligibleCandidates || ['everyone']}
+          maxAttendees={event.maxAttendees || ''}
+          onChange={(updates) => handleSave({ ...event, ...updates })}
+          onSave={() => handleSave(event)}
+          {...(event.additionalQuestions !== undefined ? { additionalQuestions: event.additionalQuestions } : {})}
+          {...(event.registrationDeadlineDate !== undefined ? { registrationDeadlineDate: event.registrationDeadlineDate } : {})}
+          {...(event.registrationDeadlineTime !== undefined ? { registrationDeadlineTime: event.registrationDeadlineTime } : {})}
+          {...(event.registrationStartDate !== undefined ? { registrationStartDate: event.registrationStartDate } : {})}
+          {...(event.registrationStartTime !== undefined ? { registrationStartTime: event.registrationStartTime } : {})}
+        />
       ) : activeTab === 'prizes' ? (
         <PrizesContent event={event} onSave={handleSave} />
       ) : activeTab === 'additional-info' ? (
@@ -260,13 +285,26 @@ function BasicDetailsContent({
   const [locationMode, setLocationMode] = useState<LocationMode>(event.locationMode);
   const [locationValue, setLocationValue] = useState(event.locationValue);
   const [description, setDescription] = useState(event.description);
+  const [imageUrl, setImageUrl] = useState(event.imageUrl ?? null);
   const [activeModal, setActiveModal] = useState<BasicModal>(null);
 
   const parsedDate = parseDateStr(startDate);
   const timeValue = parseTimeStr(startTime);
 
+  async function pickImage() {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [16, 9],
+      quality: 0.8,
+    });
+    if (!result.canceled && result.assets && result.assets.length > 0 && result.assets[0]?.uri) {
+      setImageUrl(result.assets[0].uri);
+    }
+  }
+
   function handleSave() {
-    onSave({ ...event, title, startDate, startTime, locationMode, locationValue, description });
+    onSave({ ...event, title, startDate, startTime, locationMode, locationValue, description, imageUrl });
   }
 
   return (
@@ -276,9 +314,9 @@ function BasicDetailsContent({
       showsVerticalScrollIndicator={false}
     >
       <View style={bdStyles.bannerWrap}>
-        <Image resizeMode="cover" source={subtractPlaceholder} style={bdStyles.banner} />
-        <Pressable style={bdStyles.changeBannerBtn}>
-          <AppText style={bdStyles.changeBannerText}>Change Banner</AppText>
+        <Image resizeMode="cover" source={imageUrl ? { uri: imageUrl } : subtractPlaceholder} style={bdStyles.banner} />
+        <Pressable onPress={pickImage} style={bdStyles.changeBannerBtn}>
+          <AppText style={bdStyles.changeBannerText}>{imageUrl ? 'Change Banner' : 'Add Banner'}</AppText>
         </Pressable>
       </View>
 
@@ -1181,13 +1219,14 @@ function formatLongDate(dateStr: string): string {
 }
 
 function parseDateStr(dateStr: string): Date | null {
-  if (!dateStr) return null;
+  if (!dateStr || dateStr === 'Date TBD' || dateStr === 'Select date') return null;
   const MONTHS: Record<string, number> = {
     Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5,
     Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11,
   };
   const parts = dateStr.split(' ');
   const day = parseInt(parts[0] ?? '1', 10);
+  if (isNaN(day)) return null;
   const month = parts[1] ? (MONTHS[parts[1]] ?? 0) : 0;
   const year = parts[2] ? 2000 + parseInt(parts[2], 10) : new Date().getFullYear();
   return new Date(year, month, day);

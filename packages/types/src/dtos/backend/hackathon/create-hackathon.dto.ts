@@ -671,6 +671,10 @@ export class CreateHackathonDto {
   })
   @IsOptional()
   @IsDateString()
+  registrationStartDate?: string;
+
+  @IsOptional()
+  @IsDateString()
   registrationDeadline?: string;
 
   @ApiPropertyOptional({
@@ -925,6 +929,10 @@ export class UpdateHackathonDto {
   @ValidateNested()
   @Type(() => HackathonLocationDto)
   location?: HackathonLocationDto;
+
+  @IsOptional()
+  @IsDateString()
+  registrationStartDate?: string;
 
   @IsOptional()
   @IsDateString()

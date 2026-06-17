@@ -11,6 +11,8 @@ export interface HomeOpportunityItemEntity {
   readonly eventDate: string;
   readonly registerBy: string;
   readonly prizeLabel: string;
+  readonly modeLabel: string;
+  readonly imageUrl?: string | undefined;
 }
 
 export interface HomeEventItemEntity {
@@ -19,6 +21,7 @@ export interface HomeEventItemEntity {
   readonly venue: string;
   readonly timing: string;
   readonly attendees: number;
+  readonly imageUrl?: string | undefined;
 }
 
 export interface HomeCommunityItemEntity {

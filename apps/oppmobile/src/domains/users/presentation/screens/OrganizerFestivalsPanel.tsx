@@ -1,8 +1,10 @@
 import { useState } from 'react';
-import { Image, Pressable, ScrollView, TextInput, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, ScrollView, TextInput, View } from 'react-native';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 import subtractPlaceholder from '../../../../../assets/Subtract.png';
 import { AppText } from '../../../../shared/ui';
+import { apiClient } from '../../../../shared/api/apiClient';
 import { OrganizerCreateFestivalScreen, type LiveFestivalCreated } from './OrganizerCreateFestivalScreen';
 import { type LiveFestival } from './FestivalDetailScreen';
 import { styles } from './OrganizerFestivalsPanel.styles';
@@ -17,11 +19,22 @@ const COL_REGISTRATIONS = 130;
 const tableWidth =
   COL_SERIAL + COL_OPPORTUNITY + COL_CANDIDATES + COL_STATUS + COL_DATE + COL_DATE + COL_REGISTRATIONS;
 
-let _persistedFestivals: LiveFestivalCreated[] = [];
-let _persistedRegsOpen: Record<string, boolean> = {};
 
-export function updatePersistedFestival(updated: LiveFestivalCreated) {
-  _persistedFestivals = _persistedFestivals.map((f) => (f.id === updated.id ? updated : f));
+interface OrganizerFestivalItem {
+  readonly id: string;
+  readonly name: string;
+  readonly slug: string;
+  readonly description: string;
+  readonly status: string;
+  readonly startDate: string;
+  readonly endDate: string;
+  readonly posterImageUrl: string | null;
+  readonly locationType: string | null;
+  readonly locationCity: string | null;
+  readonly organizationName: string | null;
+  readonly organizationLogoUrl: string | null;
+  readonly hackathons: readonly { id: string; slug: string; name: string }[];
+  readonly events: readonly { id: string; slug: string; name: string }[];
 }
 
 interface OrganizerFestivalsPanelProps {
@@ -29,20 +42,89 @@ interface OrganizerFestivalsPanelProps {
 }
 
 export function OrganizerFestivalsPanel({ onSelectFestival }: OrganizerFestivalsPanelProps) {
-  const [festivals, setFestivals] = useState<LiveFestivalCreated[]>(_persistedFestivals);
-  const [regsOpen, setRegsOpen] = useState<Record<string, boolean>>(_persistedRegsOpen);
+  const [regsOpen, setRegsOpen] = useState<Record<string, boolean>>({});
   const [searchQuery, setSearchQuery] = useState('');
   const [showCreate, setShowCreate] = useState(false);
 
+  const { data: backendFestivals = [], isLoading } = useQuery<OrganizerFestivalItem[]>({
+    queryKey: ['organizer', 'festivals'],
+    queryFn: () => apiClient.getAuth<OrganizerFestivalItem[]>('/festivals/my'),
+    staleTime: 1000 * 60 * 2,
+  });
+
+  function formatDateValue(value: string) {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  }
+
+  function formatTimeValue(value: string) {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '00:00';
+    return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  }
+
+  function mapOrganizerFestival(festival: OrganizerFestivalItem): LiveFestivalCreated {
+    return {
+      id: festival.id,
+      title: festival.name,
+      typeLabel: 'FESTIVAL',
+      statusLabel: 'In Progress',
+      candidatesLabel: `${festival.events.length + festival.hackathons.length} Candidates`,
+      eventsLabel: `${festival.events.length} Events`,
+      competitionsLabel: `${festival.hackathons.length} Competitions`,
+      eligibleCandidates: ['everyone'],
+      imageUrl: festival.posterImageUrl,
+    };
+  }
+
+  const mergedFestivals = backendFestivals.map(mapOrganizerFestival);
+
+  const queryClient = useQueryClient();
+  const createMutation = useMutation({
+    mutationFn: (newFestival: any) => apiClient.post('/festivals', newFestival),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['organizer', 'festivals'] });
+      setShowCreate(false);
+    },
+    onError: (error) => {
+      console.error('Failed to create festival', error);
+      setShowCreate(false);
+    }
+  });
+
+  function parseLocalString(dateStr: string): Date {
+    const MONTHS: Record<string, number> = { Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5, Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11 };
+    const parts = dateStr.split(' ');
+    const day = parseInt(parts[0] ?? '1', 10);
+    const month = parts[1] ? (MONTHS[parts[1]] ?? 0) : 0;
+    const year = parts[2] ? 2000 + parseInt(parts[2], 10) : new Date().getFullYear();
+    const d = new Date(year, month, isNaN(day) ? 1 : day);
+    return d;
+  }
+
   function handleHostFestival(festival: LiveFestivalCreated) {
-    _persistedFestivals = [..._persistedFestivals, festival];
-    setFestivals(_persistedFestivals);
-    setShowCreate(false);
+    const payload = {
+      name: festival.title,
+      description: 'New Festival',
+      location: {
+        type: 'VIRTUAL',
+        virtualLink: '',
+        address: '',
+      },
+      startDate: new Date().toISOString(),
+      endDate: new Date().toISOString(),
+      organizationName: 'Organizer',
+    };
+    createMutation.mutate(payload);
   }
 
   function handleToggleRegs(id: string) {
-    _persistedRegsOpen = { ..._persistedRegsOpen, [id]: !_persistedRegsOpen[id] };
     setRegsOpen({ ...regsOpen, [id]: !regsOpen[id] });
+  }
+
+  if (isLoading && mergedFestivals.length === 0) {
+    return <LoadingState />;
   }
 
   if (showCreate) {
@@ -55,13 +137,13 @@ export function OrganizerFestivalsPanel({ onSelectFestival }: OrganizerFestivals
   }
 
   const filtered = searchQuery.trim()
-    ? festivals.filter((f) => f.title.toLowerCase().includes(searchQuery.toLowerCase()))
-    : festivals;
+    ? mergedFestivals.filter((f) => f.title.toLowerCase().includes(searchQuery.toLowerCase()))
+    : mergedFestivals;
 
   return (
     <View style={styles.screen}>
       <View style={styles.topBar}>
-        <AppText style={styles.festivalsTitle}>Festivals ({festivals.length})</AppText>
+        <AppText style={styles.festivalsTitle}>Festivals ({mergedFestivals.length})</AppText>
         <View style={styles.topBarRight}>
           <View style={styles.searchBar}>
             <View style={styles.searchSymbolWrap}>
@@ -87,7 +169,7 @@ export function OrganizerFestivalsPanel({ onSelectFestival }: OrganizerFestivals
       </View>
 
       <ScrollView contentContainerStyle={styles.tableScrollContent} showsVerticalScrollIndicator={false} style={styles.tableScrollOuter}>
-        {festivals.length === 0 ? (
+        {mergedFestivals.length === 0 ? (
           <EmptyState onHost={() => setShowCreate(true)} />
         ) : (
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -123,11 +205,12 @@ export function OrganizerFestivalsPanel({ onSelectFestival }: OrganizerFestivals
                 const liveFestival: LiveFestival = {
                   id: item.id,
                   title: item.title,
-                  typeLabel: item.ticketType === 'free' ? 'Free' : 'Paid',
-                  statusLabel: 'In Progress',
-                  candidatesLabel: `${item.candidates} Candidates`,
-                  eventsLabel: '0 Events',
-                  competitionsLabel: '0 Competitions',
+                  typeLabel: item.typeLabel,
+                  statusLabel: item.statusLabel,
+                  candidatesLabel: item.candidatesLabel,
+                  eventsLabel: item.eventsLabel,
+                  competitionsLabel: item.competitionsLabel,
+                  imageUrl: item.imageUrl ?? null,
                 };
                 return (
                   <Pressable key={item.id} onPress={() => onSelectFestival(liveFestival)} style={styles.row}>
@@ -136,7 +219,7 @@ export function OrganizerFestivalsPanel({ onSelectFestival }: OrganizerFestivals
                     </View>
                     <View style={[styles.td, { width: COL_OPPORTUNITY, alignItems: 'flex-start' }]}>
                       <View style={styles.opportunityCell}>
-                        <Image resizeMode="cover" source={subtractPlaceholder} style={styles.thumbnail} />
+                        <Image resizeMode="cover" source={item.imageUrl ? { uri: item.imageUrl } : subtractPlaceholder} style={styles.thumbnail} />
                         <View style={styles.opportunityInfo}>
                           <AppText numberOfLines={2} style={styles.opportunityTitle}>{item.title}</AppText>
                           <AppText style={styles.festivalBadge}>FESTIVAL</AppText>
@@ -144,23 +227,23 @@ export function OrganizerFestivalsPanel({ onSelectFestival }: OrganizerFestivals
                       </View>
                     </View>
                     <View style={[styles.td, { width: COL_CANDIDATES }]}>
-                      <AppText style={styles.candidatesText}>{item.candidates}</AppText>
+                      <AppText style={styles.candidatesText}>{item.candidatesLabel}</AppText>
                     </View>
                     <View style={[styles.td, { width: COL_STATUS }]}>
                       <View style={styles.statusChip}>
-                        <AppText style={styles.statusChipText}>In Progress</AppText>
+                        <AppText style={styles.statusChipText}>{item.statusLabel}</AppText>
                       </View>
                     </View>
                     <View style={[styles.td, { width: COL_DATE }]}>
                       <View style={styles.dateBlock}>
-                        <AppText style={styles.dateText}>{item.startDate}</AppText>
-                        <AppText style={styles.timeText}>{item.startTime}</AppText>
+                        <AppText style={styles.dateText}>TBD</AppText>
+                        <AppText style={styles.timeText}>--:--</AppText>
                       </View>
                     </View>
                     <View style={[styles.td, { width: COL_DATE }]}>
                       <View style={styles.dateBlock}>
-                        <AppText style={styles.dateText}>{item.startDate}</AppText>
-                        <AppText style={styles.timeText}>{item.startTime}</AppText>
+                        <AppText style={styles.dateText}>TBD</AppText>
+                        <AppText style={styles.timeText}>--:--</AppText>
                       </View>
                     </View>
                     <View style={[styles.td, styles.tdLast, { width: COL_REGISTRATIONS }]}>
@@ -180,6 +263,17 @@ export function OrganizerFestivalsPanel({ onSelectFestival }: OrganizerFestivals
           </ScrollView>
         )}
       </ScrollView>
+    </View>
+  );
+}
+
+function LoadingState() {
+  return (
+    <View style={{ alignItems: 'center', flex: 1, justifyContent: 'center', paddingHorizontal: 32, paddingVertical: 80 }}>
+      <ActivityIndicator size="large" color="#6366F1" style={{ marginBottom: 24 }} />
+      <AppText style={{ color: '#100013', fontFamily: 'Aeonik Pro', fontSize: 18, fontWeight: '600', lineHeight: 24, textAlign: 'center' }}>
+        Loading your festivals...
+      </AppText>
     </View>
   );
 }

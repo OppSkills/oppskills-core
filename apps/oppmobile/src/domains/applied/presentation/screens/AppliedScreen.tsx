@@ -1,6 +1,6 @@
 import { Feather } from '@expo/vector-icons';
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, ImageBackground, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, ImageBackground, Pressable, ScrollView, StyleSheet, View, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
@@ -10,12 +10,14 @@ import {
 } from '../../domain/entities/AppliedFeed';
 import appliedCardThumbnailImage from '../../../../../assets/Frame 455.png';
 import { useAppliedFeed } from '../hooks/useAppliedFeed';
+import { useCurrentUser } from '../../../users/presentation/hooks/useCurrentUser';
 import { lightTheme } from '../../../../shared/theme';
 import { AppText, FooterSignatureBlock } from '../../../../shared/ui';
 
 interface AppliedScreenProps {
-  readonly onOpenCompetition: () => void;
-  readonly onOpenHackathon: () => void;
+  readonly onOpenCompetition: (id: string) => void;
+  readonly onOpenHackathon: (id: string) => void;
+  readonly onOpenEvent: (id: string) => void;
   readonly onSignOut: () => void;
   readonly onBackToProfile?: () => void;
   readonly variant?: 'default' | 'achievements' | 'registrations';
@@ -29,10 +31,12 @@ export function AppliedScreen({
   onBackToProfile,
   onOpenCompetition,
   onOpenHackathon,
+  onOpenEvent,
   onSignOut,
   variant = 'default',
 }: AppliedScreenProps) {
   const { data: appliedFeed, isError, isLoading, refetch } = useAppliedFeed();
+  const { data: currentUser } = useCurrentUser();
   const [activeFilterId, setActiveFilterId] = useState<AppliedFilterIdEntity>('all');
   const [submittingCardId, setSubmittingCardId] = useState<string | undefined>();
   const appliedFilters = appliedFeed?.filters ?? [];
@@ -68,11 +72,15 @@ export function AppliedScreen({
     setTimeout(() => {
       setSubmittingCardId(undefined);
       if (item.category === 'hackathons') {
-        onOpenHackathon();
+        onOpenHackathon(item.id);
+        return;
+      }
+      if (item.category === 'events') {
+        onOpenEvent(item.id);
         return;
       }
 
-      onOpenCompetition();
+      onOpenCompetition(item.id);
     }, 420);
   };
 
@@ -157,17 +165,21 @@ export function AppliedScreen({
           <View style={styles.headerRow}>
             <View style={styles.headerLeft}>
               <View style={styles.avatar}>
-                <AppText colorToken="textInverse" style={styles.avatarLabel} variant="caption">
-                  RT
-                </AppText>
+                {currentUser?.imageUrl ? (
+                  <Image source={{ uri: currentUser.imageUrl }} style={{ width: '100%', height: '100%', borderRadius: 999 }} />
+                ) : (
+                  <AppText colorToken="textInverse" style={styles.avatarLabel} variant="caption">
+                    {currentUser?.firstName?.[0] || 'U'}{currentUser?.lastName?.[0] || ''}
+                  </AppText>
+                )}
               </View>
 
               <View style={styles.profileMeta}>
                 <AppText style={styles.profileTitle} variant="title">
-                  Hello, Rohit Tiwari
+                  Hello, {currentUser?.firstName || 'User'} {currentUser?.lastName || ''}
                 </AppText>
                 <AppText colorToken="textMuted" numberOfLines={1} variant="caption">
-                  Guru Jambheshwar University
+                  {currentUser?.onboardingProfile?.collegeId || 'OppSkills User'}
                 </AppText>
               </View>
             </View>
@@ -230,6 +242,7 @@ export function AppliedScreen({
                 onCompleteNow={handleCompleteNow}
                 onOpenCompetition={onOpenCompetition}
                 onOpenHackathon={onOpenHackathon}
+                onOpenEvent={onOpenEvent}
                 timelineStages={appliedTimelineStages}
                 showBottomDivider={index < filteredItems.length - 1}
               />
@@ -316,8 +329,9 @@ function AchievementInfoRow({
 
 interface AppliedCardProps {
   readonly item: AppliedCardItemEntity;
-  readonly onOpenCompetition: () => void;
-  readonly onOpenHackathon: () => void;
+  readonly onOpenCompetition: (id: string) => void;
+  readonly onOpenHackathon: (id: string) => void;
+  readonly onOpenEvent: (id: string) => void;
   readonly timelineStages: readonly AppliedTimelineStageEntity[];
   readonly showBottomDivider: boolean;
   readonly isSubmitting: boolean;
@@ -328,6 +342,7 @@ function AppliedCard({
   item,
   onOpenCompetition,
   onOpenHackathon,
+  onOpenEvent,
   timelineStages,
   showBottomDivider,
   isSubmitting,
@@ -336,7 +351,12 @@ function AppliedCard({
   const completionStageIndex = timelineStages.findIndex(
     (stage) => stage.id === item.timelineCompleteThroughStageId,
   );
-  const openPrimaryDetail = item.category === 'hackathons' ? onOpenHackathon : onOpenCompetition;
+  let openPrimaryDetail = () => onOpenCompetition(item.id);
+  if (item.category === 'hackathons') {
+    openPrimaryDetail = () => onOpenHackathon(item.id);
+  } else if (item.category === 'events') {
+    openPrimaryDetail = () => onOpenEvent(item.id);
+  }
 
   return (
     <View style={[styles.cardWrap, showBottomDivider ? styles.cardDivider : null]}>
@@ -404,13 +424,13 @@ function AppliedCard({
 
       <View style={styles.actionRow}>
         <View style={styles.inlineActions}>
-          <Pressable onPress={onOpenCompetition} style={styles.inlineActionChip}>
+          <Pressable onPress={() => onOpenCompetition(item.id)} style={styles.inlineActionChip}>
             <AppText colorToken="brandPrimaryStrong" variant="bodyStrong">
               Invite Team
             </AppText>
           </Pressable>
 
-          <Pressable onPress={onOpenCompetition} style={styles.inlineActionChip}>
+          <Pressable onPress={() => onOpenCompetition(item.id)} style={styles.inlineActionChip}>
             <AppText colorToken="brandPrimaryStrong" variant="bodyStrong">
               Share
             </AppText>

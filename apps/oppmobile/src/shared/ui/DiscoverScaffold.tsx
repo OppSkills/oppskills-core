@@ -1,5 +1,5 @@
 import type { PropsWithChildren } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View, Image } from 'react-native';
 
 import { appDimensions } from '../constants/dimensions';
 import { lightTheme } from '../theme';
@@ -181,6 +181,9 @@ export function DiscoverVariantList({
           return (
             <Pressable key={item.id} onPress={() => onOpenItem?.(item.id)} style={styles.featureCard}>
               <View style={[styles.featureHero, heroTone(item.tone)]}>
+                {item.imageUrl && (
+                  <Image source={{ uri: item.imageUrl }} style={StyleSheet.absoluteFillObject} />
+                )}
                 <Pressable
                   accessibilityLabel={`Toggle bookmark for ${item.title}`}
                   onPress={() => onToggleBookmark(item.id)}
@@ -219,7 +222,11 @@ export function DiscoverVariantList({
         if (item.kind === 'compact') {
           return (
             <Pressable key={item.id} onPress={() => onOpenItem?.(item.id)} style={styles.compactCard}>
-              <View style={[styles.compactThumb, heroTone(item.tone)]} />
+              <View style={[styles.compactThumb, heroTone(item.tone), { overflow: 'hidden' }]}>
+                {item.imageUrl && (
+                  <Image source={{ uri: item.imageUrl }} style={StyleSheet.absoluteFillObject} />
+                )}
+              </View>
 
               <View style={styles.compactMeta}>
                 <View style={styles.compactTop}>
@@ -260,6 +267,9 @@ export function DiscoverVariantList({
         return (
           <Pressable key={item.id} onPress={() => onOpenItem?.(item.id)} style={styles.opportunityCard}>
             <View style={[styles.opportunityHero, heroTone(item.tone)]}>
+              {item.imageUrl && (
+                <Image source={{ uri: item.imageUrl }} style={StyleSheet.absoluteFillObject} />
+              )}
               <Pressable
                 accessibilityLabel={`Toggle bookmark for ${item.title}`}
                 onPress={() => onToggleBookmark(item.id)}

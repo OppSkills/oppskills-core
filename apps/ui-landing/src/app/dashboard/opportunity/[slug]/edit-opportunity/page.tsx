@@ -79,6 +79,7 @@ import {
   updateHackathonRegistrationForm,
   updateHackathonRounds,
 } from "@/lib/api/hackathonApi";
+import { getMyFestivals } from "@/lib/api/festivalApi";
 
 // Import new components
 // import BasicDetails from "./_components/BasicDetails"; // Removed
@@ -1218,7 +1219,30 @@ export default function EditOpportunityPage() {
     [],
   );
 
-
+  // Load organizer's festivals for the context dropdown
+  const [myFestivals, setMyFestivals] = useState<{ id: string; name: string }[]>([]);
+  useEffect(() => {
+    async function loadFestivals() {
+      try {
+        const token = await getToken();
+        if (!token) return;
+        const result = await getMyFestivals(token);
+        const list = Array.isArray(result)
+          ? result
+          : Array.isArray((result as any)?.data)
+            ? (result as any).data
+            : [];
+        setMyFestivals(
+          list
+            .filter((f: any) => typeof f?.id === "string" && typeof f?.name === "string")
+            .map((f: any) => ({ id: f.id as string, name: f.name as string }))
+        );
+      } catch {
+        // Silently ignore — optional feature
+      }
+    }
+    void loadFestivals();
+  }, [getToken]);
 
   async function handleBannerSelected(file: File | null): Promise<void> {
     if (!file) return;
@@ -1374,12 +1398,26 @@ export default function EditOpportunityPage() {
                         setFormData({
                           ...formData,
                           eventFestName: "Individual Hackathon",
+                          festivalId: undefined,
                         })
                       }
                     >
                       Individual Hackathon
                     </DropdownMenuItem>
-                    {/* Add more items/loading logic here */}
+                    {myFestivals.map((fest) => (
+                      <DropdownMenuItem
+                        key={fest.id}
+                        onClick={() =>
+                          setFormData({
+                            ...formData,
+                            eventFestName: fest.name,
+                            festivalId: fest.id,
+                          })
+                        }
+                      >
+                        {fest.name}
+                      </DropdownMenuItem>
+                    ))}
                   </DropdownMenuContent>
                 </DropdownMenu>
 

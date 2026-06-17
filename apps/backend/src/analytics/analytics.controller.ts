@@ -89,4 +89,60 @@ export class AnalyticsController {
     if (!userId) throw new NotFoundException('User not found');
     return this.analyticsService.getHighestPerformingListings(userId);
   }
+
+  @Get('organizer/registrations-summary')
+  async getOrganizerRegistrationsSummary(@Req() req: any) {
+    const userId = req.user?.id;
+    if (!userId) throw new NotFoundException('User not found');
+    return this.analyticsService.getOrganizerRegistrationsSummary(userId);
+  }
+
+  @Get('organizer/opportunities-summary')
+  async getOrganizerOpportunitiesSummary(@Req() req: any) {
+    const userId = req.user?.id;
+    if (!userId) throw new NotFoundException('User not found');
+    return this.analyticsService.getOrganizerOpportunitiesSummary(userId);
+  }
+
+  @Get('organizer/payments-summary')
+  async getOrganizerPaymentsSummary(@Req() req: any) {
+    const userId = req.user?.id;
+    if (!userId) throw new NotFoundException('User not found');
+    return this.analyticsService.getOrganizerPaymentsSummary(userId);
+  }
+
+  @Get('organizer/roles-summary')
+  async getOrganizerRolesSummary(@Req() req: any) {
+    const userId = req.user?.id;
+    if (!userId) throw new NotFoundException('User not found');
+    return this.analyticsService.getOrganizerRolesSummary(userId);
+  }
+
+  @Get('organizer/notifications-summary')
+  async getOrganizerNotificationsSummary(@Req() req: any) {
+    const userId = req.user?.id;
+    if (!userId) throw new NotFoundException('User not found');
+    return this.analyticsService.getOrganizerNotificationsSummary(userId);
+  }
+
+  @Get('organizer/referrals-summary')
+  async getOrganizerReferralsSummary(@Req() req: any) {
+    const userId = req.user?.id;
+    if (!userId) throw new NotFoundException('User not found');
+    return this.analyticsService.getOrganizerReferralsSummary(userId);
+  }
+
+  @Get('organizer/pipeline-summary')
+  async getOrganizerPipelineSummary(@Req() req: any) {
+    const userId = req.user?.id;
+    if (!userId) throw new NotFoundException('User not found');
+    return this.analyticsService.getOrganizerPipelineSummary(userId);
+  }
+
+  @Get('organizer/settings-summary')
+  async getOrganizerSettingsSummary(@Req() req: any) {
+    const userId = req.user?.id;
+    if (!userId) throw new NotFoundException('User not found');
+    return this.analyticsService.getOrganizerSettingsSummary(userId);
+  }
 }

@@ -1,8 +1,10 @@
 import { useState } from 'react';
-import { Image, Pressable, ScrollView, TextInput, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, ScrollView, TextInput, View } from 'react-native';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 import subtractPlaceholder from '../../../../../../assets/Subtract.png';
 import { AppText } from '../../../../../shared/ui';
+import { apiClient } from '../../../../../shared/api/apiClient';
 import { OrganizerCreateHackathonScreen, type LiveHackathon } from './OrganizerCreateHackathonScreen';
 import { styles } from './OrganizerHackathonsPanel.styles';
 
@@ -16,11 +18,27 @@ const COL_REGISTRATIONS = 130;
 const tableWidth =
   COL_SERIAL + COL_OPPORTUNITY + COL_CANDIDATES + COL_STATUS + COL_DATE + COL_DATE + COL_REGISTRATIONS;
 
-let _persistedHackathons: LiveHackathon[] = [];
-let _persistedRegsOpen: Record<string, boolean> = {};
 
-export function updatePersistedHackathon(updated: LiveHackathon) {
-  _persistedHackathons = _persistedHackathons.map((h) => (h.id === updated.id ? updated : h));
+interface OrganizerHackathonItem {
+  readonly id: string;
+  readonly slug: string;
+  readonly name: string;
+  readonly description: string;
+  readonly status: string;
+  readonly mode: string;
+  readonly startDate: string;
+  readonly endDate: string;
+  readonly registrationDeadline: string | null;
+  readonly bannerImageUrl: string | null;
+  readonly festivalId: string | null;
+  readonly ownerId: string;
+  readonly owner: {
+    readonly id: string;
+    readonly email: string;
+    readonly firstName: string | null;
+    readonly lastName: string | null;
+    readonly imageUrl: string | null;
+  };
 }
 
 interface OrganizerHackathonsPanelProps {
@@ -28,25 +46,96 @@ interface OrganizerHackathonsPanelProps {
 }
 
 export function OrganizerHackathonsPanel({ onSelectHackathon }: OrganizerHackathonsPanelProps) {
-  const [hackathons, setHackathons] = useState<LiveHackathon[]>(_persistedHackathons);
-  const [regsOpen, setRegsOpen] = useState<Record<string, boolean>>(_persistedRegsOpen);
+  const [regsOpen, setRegsOpen] = useState<Record<string, boolean>>({});
   const [searchQuery, setSearchQuery] = useState('');
   const [showCreate, setShowCreate] = useState(false);
 
+  const { data: backendHackathons = [], isLoading } = useQuery<OrganizerHackathonItem[]>({
+    queryKey: ['organizer', 'hackathons'],
+    queryFn: () => apiClient.getAuth<OrganizerHackathonItem[]>('/hackathons/my'),
+    staleTime: 1000 * 60 * 2,
+  });
+
+  function formatDateValue(value: string) {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  }
+
+  function formatTimeValue(value: string) {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '00:00';
+    return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  }
+
+  function mapOrganizerHackathon(hackathon: OrganizerHackathonItem): LiveHackathon {
+    return {
+      id: hackathon.id,
+      slug: hackathon.slug,
+      title: hackathon.name,
+      candidates: 0,
+      startDate: formatDateValue(hackathon.startDate),
+      startTime: formatTimeValue(hackathon.startDate),
+      organizerName: hackathon.owner.firstName ?? 'Organizer',
+      locationMode: 'online',
+      locationValue: '',
+      description: hackathon.description ?? '',
+      maxAttendees: '',
+      ticketType: 'free',
+      imageUrl: hackathon.bannerImageUrl,
+    };
+  }
+
+  const mergedHackathons = backendHackathons.map(mapOrganizerHackathon);
+
+  const queryClient = useQueryClient();
+  const createMutation = useMutation({
+    mutationFn: (newHackathon: any) => apiClient.post('/hackathons', newHackathon),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['organizer', 'hackathons'] });
+      setShowCreate(false);
+    },
+    onError: (error) => {
+      console.error('Failed to create hackathon', error);
+      // Don't close — keep the form open so the user can fix the name and retry
+    }
+  });
+
+  function parseLocalString(dateStr: string): Date {
+    const MONTHS: Record<string, number> = { Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5, Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11 };
+    const parts = dateStr.split(' ');
+    const day = parseInt(parts[0] ?? '1', 10);
+    const month = parts[1] ? (MONTHS[parts[1]] ?? 0) : 0;
+    const year = parts[2] ? 2000 + parseInt(parts[2], 10) : new Date().getFullYear();
+    const d = new Date(year, month, isNaN(day) ? 1 : day);
+    return d;
+  }
+
   function handleHostHackathon(hackathon: LiveHackathon) {
-    _persistedHackathons = [..._persistedHackathons, hackathon];
-    setHackathons(_persistedHackathons);
-    setShowCreate(false);
+    const parsedDate = parseLocalString(hackathon.startDate).toISOString();
+    const payload = {
+      name: hackathon.title,
+      description: hackathon.description,
+      mode: hackathon.locationMode === 'online' ? 'ONLINE' : 'OFFLINE',
+      startDate: parsedDate,
+      endDate: parsedDate, // Defaulting to same day
+      organizationName: hackathon.organizerName,
+    };
+    createMutation.mutate(payload);
   }
 
   function handleToggleRegs(id: string) {
-    _persistedRegsOpen = { ..._persistedRegsOpen, [id]: !_persistedRegsOpen[id] };
     setRegsOpen({ ...regsOpen, [id]: !regsOpen[id] });
+  }
+
+  if (isLoading && mergedHackathons.length === 0) {
+    return <LoadingState />;
   }
 
   if (showCreate) {
     return (
       <OrganizerCreateHackathonScreen
+        isCreating={createMutation.isPending}
         onBack={() => setShowCreate(false)}
         onHostHackathon={handleHostHackathon}
       />
@@ -54,13 +143,13 @@ export function OrganizerHackathonsPanel({ onSelectHackathon }: OrganizerHackath
   }
 
   const filtered = searchQuery.trim()
-    ? hackathons.filter((h) => h.title.toLowerCase().includes(searchQuery.toLowerCase()))
-    : hackathons;
+    ? mergedHackathons.filter((h) => h.title.toLowerCase().includes(searchQuery.toLowerCase()))
+    : mergedHackathons;
 
   return (
     <View style={styles.screen}>
       <View style={styles.topBar}>
-        <AppText style={styles.eventsTitle}>Hackathons ({hackathons.length})</AppText>
+        <AppText style={styles.eventsTitle}>Hackathons ({mergedHackathons.length})</AppText>
         <View style={styles.topBarRight}>
           <View style={styles.searchBar}>
             <View style={styles.searchSymbolWrap}>
@@ -86,7 +175,7 @@ export function OrganizerHackathonsPanel({ onSelectHackathon }: OrganizerHackath
       </View>
 
       <ScrollView contentContainerStyle={styles.tableScrollContent} showsVerticalScrollIndicator={false} style={styles.tableScrollOuter}>
-        {hackathons.length === 0 ? (
+        {mergedHackathons.length === 0 ? (
           <EmptyState onHost={() => setShowCreate(true)} />
         ) : (
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -128,7 +217,7 @@ export function OrganizerHackathonsPanel({ onSelectHackathon }: OrganizerHackath
                     </View>
                     <View style={[styles.td, { width: COL_OPPORTUNITY, alignItems: 'flex-start' }]}>
                       <View style={styles.opportunityCell}>
-                        <Image resizeMode="cover" source={subtractPlaceholder} style={styles.thumbnail} />
+                        <Image resizeMode="cover" source={item.imageUrl ? { uri: item.imageUrl } : subtractPlaceholder} style={styles.thumbnail} />
                         <View style={styles.opportunityInfo}>
                           <AppText numberOfLines={2} style={styles.opportunityTitle}>{item.title}</AppText>
                           <AppText style={styles.eventBadge}>HACKATHON</AppText>
@@ -172,6 +261,17 @@ export function OrganizerHackathonsPanel({ onSelectHackathon }: OrganizerHackath
           </ScrollView>
         )}
       </ScrollView>
+    </View>
+  );
+}
+
+function LoadingState() {
+  return (
+    <View style={{ alignItems: 'center', flex: 1, justifyContent: 'center', paddingHorizontal: 32, paddingVertical: 80 }}>
+      <ActivityIndicator size="large" color="#6366F1" style={{ marginBottom: 24 }} />
+      <AppText style={{ color: '#100013', fontFamily: 'Aeonik Pro', fontSize: 18, fontWeight: '600', lineHeight: 24, textAlign: 'center' }}>
+        Loading your hackathons...
+      </AppText>
     </View>
   );
 }

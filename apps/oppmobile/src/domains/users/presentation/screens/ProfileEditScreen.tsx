@@ -1,10 +1,14 @@
 import { Feather } from '@expo/vector-icons';
-import { useState } from 'react';
-import { Pressable, ScrollView, TextInput, View } from 'react-native';
+import { useState, useEffect } from 'react';
+import { Pressable, ScrollView, TextInput, View, ActivityIndicator } from 'react-native';
 import type { StyleProp, ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { useMockSession } from '../../../user-accounts/presentation/providers/MockSessionProvider';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+
+import { useAppSession } from '../../../../shared/auth/useAppSession';
+import { apiClient } from '../../../../shared/api/apiClient';
+import { useCurrentUser } from '../hooks/useCurrentUser';
 import { AppText } from '../../../../shared/ui';
 import { styles } from './ProfileEditScreen.styles';
 
@@ -23,13 +27,9 @@ interface ProfileFieldProps {
   readonly editable?: boolean;
 }
 
-const FALLBACK_PROFILE = {
-  email: 'rohanvats12@gmail.com',
-  fullName: 'Someone sharma',
-  phoneNumber: '9999999999',
-} as const;
-
-function formatPhoneLabel(rawPhone: string): string {
+// We no longer use a fallback profile to avoid showing fake data.
+function formatPhoneLabel(rawPhone?: string | null): string {
+  if (!rawPhone) return '';
   const digits = rawPhone.replace(/\D/g, '');
 
   if (digits.length === 10) {
@@ -101,23 +101,108 @@ function ProfileField({
 }
 
 export function ProfileEditScreen({ onBack }: ProfileEditScreenProps) {
-  const session = useMockSession();
+  const session = useAppSession();
+  const { data: currentUser, isLoading } = useCurrentUser();
 
-  const [email, setEmail] = useState(session.mockProfile?.email ?? FALLBACK_PROFILE.email);
-  const [fullName, setFullName] = useState(session.mockProfile?.fullName ?? FALLBACK_PROFILE.fullName);
-  const [phoneNumber, setPhoneNumber] = useState(
-    formatPhoneLabel(session.mockProfile?.phoneNumber ?? FALLBACK_PROFILE.phoneNumber),
-  );
-  const [course, setCourse] = useState(session.mockProfile?.course ?? 'B.Tech');
-  const [specialization, setSpecialization] = useState(session.mockProfile?.specialization ?? 'Computer Science');
-  const [college, setCollege] = useState(session.mockProfile?.college ?? 'OppSkills University');
-  const [startYear, setStartYear] = useState(session.mockProfile?.startYear ?? '2022');
-  const [endYear, setEndYear] = useState(session.mockProfile?.endYear ?? '2026');
-  const [gender, setGender] = useState(session.mockProfile?.gender ?? 'Rather not to say');
-  const [rollNumber, setRollNumber] = useState(session.mockProfile?.rollNumber ?? 'OS-001');
-  const [skills, setSkills] = useState((session.mockProfile?.skills ?? ['Frontend']).join(', '));
-  const [preferredRole, setPreferredRole] = useState('Software Engineer');
-  const [bio, setBio] = useState('Building projects and looking for impactful opportunities.');
+  const queryClient = useQueryClient();
+
+  const [email, setEmail] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [course, setCourse] = useState('');
+  const [specialization, setSpecialization] = useState('');
+  const [college, setCollege] = useState('');
+  const [startYear, setStartYear] = useState('');
+  const [endYear, setEndYear] = useState('');
+  const [gender, setGender] = useState('');
+  const [rollNumber, setRollNumber] = useState('');
+  const [skills, setSkills] = useState('');
+  const [preferredRole, setPreferredRole] = useState('');
+  const [bio, setBio] = useState('');
+  const [locationCity, setLocationCity] = useState('India');
+  const [locationState, setLocationState] = useState('India');
+  const [locationCountry, setLocationCountry] = useState('India');
+
+  useEffect(() => {
+    if (currentUser) {
+      const p = currentUser.onboardingProfile;
+      setEmail(currentUser.email || session.userEmail || '');
+      setFullName(`${currentUser.firstName ?? ''} ${currentUser.lastName ?? ''}`.trim());
+      
+      if (p) {
+        if (p.gender) setGender(p.gender);
+        if (p.college?.name) setCollege(p.college.name);
+        else if (p.schoolName) setCollege(p.schoolName);
+        else if (p.companyName) setCollege(p.companyName);
+
+        if (p.course) setCourse(p.course);
+        if (p.specialization) setSpecialization(p.specialization);
+        if (p.rollNumber) setRollNumber(p.rollNumber);
+        if (p.collegeCurrentYear) setStartYear(p.collegeCurrentYear);
+        if (p.collegePassoutYear) setEndYear(String(p.collegePassoutYear));
+        if (p.locationCity) setLocationCity(p.locationCity);
+        if (p.locationState) setLocationState(p.locationState);
+        if (p.locationCountry) setLocationCountry(p.locationCountry);
+        if (p.skills && p.skills.length > 0) setSkills(p.skills.join(', '));
+        if (p.jobTitle) setPreferredRole(p.jobTitle);
+      }
+    }
+  }, [currentUser, session.userEmail]);
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      const genderMap: Record<string, string> = {
+        'Female': 'FEMALE', 'FEMALE': 'FEMALE',
+        'Male': 'MALE', 'MALE': 'MALE',
+        'Rather not to say': 'OTHER', 'OTHER': 'OTHER',
+      };
+      const payload = {
+        gender: genderMap[gender] ?? 'OTHER',
+        userCategory: 'COLLEGE_STUDENT',
+        collegeName: college || null,
+        collegeSkipped: !college,
+        collegeCurrentYear: startYear || null,
+        collegePassoutYear: endYear ? (parseInt(endYear, 10) || null) : null,
+        course: course || null,
+        specialization: specialization || null,
+        rollNumber: rollNumber || null,
+        skills: skills.split(',').map(s => s.trim()).filter(Boolean),
+        jobTitle: preferredRole || null,
+        locationCity: locationCity || 'India',
+        locationState: locationState || 'India',
+        locationCountry: locationCountry || 'India',
+      };
+      
+      return apiClient.put('/user-accounts/onboarding', payload);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['user', 'me'] });
+      onBack();
+    },
+    onError: (err) => {
+      console.error('Failed to save profile', err);
+    }
+  });
+
+  if (isLoading) {
+    return (
+      <SafeAreaView edges={['top', 'left', 'right']} style={styles.screen}>
+        <View style={styles.headerRow}>
+          <Pressable accessibilityLabel="Go back" hitSlop={8} onPress={onBack} style={styles.backButton}>
+            <AppText style={styles.backButtonText} variant="title">
+              {'<'}
+            </AppText>
+          </Pressable>
+          <AppText style={styles.headerTitle} variant="title">
+            My Profile
+          </AppText>
+        </View>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color="#6366F1" />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={styles.screen}>
@@ -129,9 +214,23 @@ export function ProfileEditScreen({ onBack }: ProfileEditScreenProps) {
             </AppText>
           </Pressable>
 
-          <AppText style={styles.headerTitle} variant="title">
-            My Profile
-          </AppText>
+          <View style={styles.headerTitleWrap}>
+            <AppText style={styles.headerTitle} variant="title">
+              My Profile
+            </AppText>
+          </View>
+
+          <Pressable 
+            accessibilityLabel="Save profile" 
+            hitSlop={8} 
+            onPress={() => saveMutation.mutate()} 
+            style={[styles.saveButton, saveMutation.isPending && { opacity: 0.5 }]}
+            disabled={saveMutation.isPending}
+          >
+            <AppText style={styles.saveButtonText} variant="bodyStrong">
+              {saveMutation.isPending ? 'Saving...' : 'Save'}
+            </AppText>
+          </Pressable>
         </View>
 
         <View style={styles.avatarWrap}>

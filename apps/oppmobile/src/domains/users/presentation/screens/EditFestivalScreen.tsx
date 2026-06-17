@@ -1,5 +1,7 @@
+import * as ImagePicker from 'expo-image-picker';
 import { useState } from 'react';
 import {
+  Image,
   Modal,
   Pressable,
   ScrollView,
@@ -8,8 +10,17 @@ import {
   View,
 } from 'react-native';
 
-import { AppText } from '../../../../shared/ui';
+import subtractPlaceholder from '../../../../assets/Subtract.png';
+import { AppText, RegistrationSettingsPanel } from '../../../../shared/ui';
 import { type LiveFestival } from './FestivalDetailScreen';
+import {
+  DatePickerModal,
+  DescriptionModal,
+  LocationModal,
+  TimePickerModal,
+  type LocationMode,
+  type TimeValue,
+} from './FestivalFormModals';
 
 type EditTab =
   | 'preview'
@@ -54,7 +65,9 @@ const ELIGIBILITY_OPTIONS: { key: EligibilityKey; label: string; sub: string }[]
 
 interface EditFestivalScreenProps {
   readonly festival: LiveFestival;
-  readonly onUpdateFestival: (festival: LiveFestival) => void;
+  readonly mode?: 'edit' | 'create';
+  readonly onUpdateFestival?: (festival: LiveFestival) => void;
+  readonly onCreateFestival?: (festival: LiveFestival) => void;
 }
 
 function formatCurrentTime(): string {
@@ -67,12 +80,12 @@ function formatCurrentTime(): string {
   return `${hour}:${m}:${s} ${period}`;
 }
 
-export function EditFestivalScreen({ festival, onUpdateFestival }: EditFestivalScreenProps) {
+export function EditFestivalScreen({ festival, mode = 'edit', onUpdateFestival, onCreateFestival }: EditFestivalScreenProps) {
   const [activeTab, setActiveTab] = useState<EditTab>('preview');
   const [savedTime, setSavedTime] = useState<string | null>(null);
 
   function handleSave(updatedFestival: LiveFestival) {
-    onUpdateFestival(updatedFestival);
+    if (onUpdateFestival) onUpdateFestival(updatedFestival);
     setSavedTime(formatCurrentTime());
   }
 
@@ -101,21 +114,44 @@ export function EditFestivalScreen({ festival, onUpdateFestival }: EditFestivalS
         })}
       </ScrollView>
 
-      <View style={styles.savedBar}>
-        <AppText style={savedTime !== null ? styles.savedText : styles.unsavedText}>
-          {savedTime !== null ? 'Saved' : 'Unsaved'}
-        </AppText>
-        {savedTime !== null && (
-          <AppText style={styles.lastSavedText}>Last saved: {savedTime}</AppText>
-        )}
-      </View>
+      {/* Saved status bar or Create Button */}
+      {mode === 'create' ? (
+        <View style={styles.savedBar}>
+          <AppText style={styles.unsavedText}>Draft Festival</AppText>
+          <Pressable
+            onPress={() => onCreateFestival && onCreateFestival(festival)}
+            style={{ backgroundColor: '#392160', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 100 }}
+          >
+            <AppText style={{ color: '#fff', fontSize: 13, fontWeight: '600' }}>Host Festival</AppText>
+          </Pressable>
+        </View>
+      ) : (
+        <View style={styles.savedBar}>
+          <AppText style={savedTime !== null ? styles.savedText : styles.unsavedText}>
+            {savedTime !== null ? 'Saved' : 'Unsaved'}
+          </AppText>
+          {savedTime !== null && (
+            <AppText style={styles.lastSavedText}>Last saved: {savedTime}</AppText>
+          )}
+        </View>
+      )}
 
       {activeTab === 'preview' ? (
         <PreviewContent festival={festival} />
       ) : activeTab === 'basic-details' ? (
         <BasicDetailsContent festival={festival} onSave={handleSave} />
       ) : activeTab === 'registration-settings' ? (
-        <RegistrationSettingsContent festival={festival} onSave={handleSave} />
+        <RegistrationSettingsPanel
+          eligibleCandidates={festival.eligibleCandidates || ['everyone']}
+          maxAttendees={festival.maxAttendees || ''}
+          onChange={(updates) => handleSave({ ...festival, ...updates })}
+          onSave={() => handleSave(festival)}
+          {...(festival.additionalQuestions !== undefined ? { additionalQuestions: festival.additionalQuestions } : {})}
+          {...(festival.registrationDeadlineDate !== undefined ? { registrationDeadlineDate: festival.registrationDeadlineDate } : {})}
+          {...(festival.registrationDeadlineTime !== undefined ? { registrationDeadlineTime: festival.registrationDeadlineTime } : {})}
+          {...(festival.registrationStartDate !== undefined ? { registrationStartDate: festival.registrationStartDate } : {})}
+          {...(festival.registrationStartTime !== undefined ? { registrationStartTime: festival.registrationStartTime } : {})}
+        />
       ) : activeTab === 'prizes' ? (
         <PrizesContent festival={festival} onSave={handleSave} />
       ) : activeTab === 'additional-info' ? (
@@ -176,9 +212,49 @@ function BasicDetailsContent({
   readonly onSave: (festival: LiveFestival) => void;
 }) {
   const [title, setTitle] = useState(festival.title);
+  const [imageUrl, setImageUrl] = useState(festival.imageUrl ?? null);
+
+  const [activeModal, setActiveModal] = useState<'date' | 'time' | 'location' | 'description' | null>(null);
+  
+  // Initialize state from festival data
+  const [startDate, setStartDate] = useState(festival.startDate || '');
+  const [startTime, setStartTime] = useState(festival.startTime || '');
+  const [locationMode, setLocationMode] = useState<LocationMode>(festival.locationMode || 'online');
+  const [locationValue, setLocationValue] = useState(festival.locationValue || '');
+  const [description, setDescription] = useState(festival.description || '');
+
+  const parsedDate = startDate ? new Date(startDate) : new Date();
+  const timeValue: TimeValue = startTime
+    ? {
+        hour: startTime.split(':')[0] || '10',
+        minute: startTime.split(':')[1]?.split(' ')[0] || '00',
+        period: startTime.includes('PM') ? 'PM' : 'AM',
+      }
+    : { hour: '10', minute: '00', period: 'AM' };
+
+  async function pickImage() {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [16, 9],
+      quality: 0.8,
+    });
+    if (!result.canceled && result.assets && result.assets.length > 0 && result.assets[0]?.uri) {
+      setImageUrl(result.assets[0].uri);
+    }
+  }
 
   function handleSave() {
-    onSave({ ...festival, title });
+    onSave({
+      ...festival,
+      title,
+      imageUrl,
+      startDate,
+      startTime,
+      locationMode,
+      locationValue,
+      description,
+    });
   }
 
   return (
@@ -188,11 +264,15 @@ function BasicDetailsContent({
       showsVerticalScrollIndicator={false}
     >
       <View style={bdStyles.bannerWrap}>
-        <View style={bdStyles.bannerPlaceholder}>
-          <AppText style={bdStyles.bannerPlaceholderText}>FESTIVAL BANNER</AppText>
-        </View>
-        <Pressable style={bdStyles.changeBannerBtn}>
-          <AppText style={bdStyles.changeBannerText}>Change Banner</AppText>
+        {imageUrl ? (
+          <Image resizeMode="cover" source={{ uri: imageUrl }} style={bdStyles.bannerPlaceholder} />
+        ) : (
+          <View style={bdStyles.bannerPlaceholder}>
+            <AppText style={bdStyles.bannerPlaceholderText}>FESTIVAL BANNER</AppText>
+          </View>
+        )}
+        <Pressable onPress={pickImage} style={bdStyles.changeBannerBtn}>
+          <AppText style={bdStyles.changeBannerText}>{imageUrl ? 'Change Banner' : 'Add Banner'}</AppText>
         </Pressable>
       </View>
 
@@ -209,13 +289,13 @@ function BasicDetailsContent({
 
       <View style={bdStyles.divider} />
 
-      <Pressable style={bdStyles.fieldRow}>
+      <Pressable onPress={() => setActiveModal('date')} style={bdStyles.fieldRow}>
         <View style={bdStyles.fieldIconWrap}>
           <View style={bdStyles.calIcon} />
           <View style={bdStyles.calPage} />
         </View>
         <View style={bdStyles.fieldTextCol}>
-          <AppText style={bdStyles.fieldValue}>Select date</AppText>
+          <AppText style={bdStyles.fieldValue}>{startDate || 'Select date'}</AppText>
           <AppText style={bdStyles.fieldLabel}>Festival Start Date</AppText>
         </View>
         <View style={bdStyles.chevronRight} />
@@ -223,14 +303,14 @@ function BasicDetailsContent({
 
       <View style={bdStyles.divider} />
 
-      <Pressable style={bdStyles.fieldRow}>
+      <Pressable onPress={() => setActiveModal('time')} style={bdStyles.fieldRow}>
         <View style={bdStyles.fieldIconWrap}>
           <View style={bdStyles.clockCircle} />
           <View style={bdStyles.clockHand} />
           <View style={bdStyles.clockHandMin} />
         </View>
         <View style={bdStyles.fieldTextCol}>
-          <AppText style={bdStyles.fieldValue}>Select time</AppText>
+          <AppText style={bdStyles.fieldValue}>{startTime || 'Select time'}</AppText>
           <AppText style={bdStyles.fieldLabel}>Festival Start Time</AppText>
         </View>
         <View style={bdStyles.chevronRight} />
@@ -238,13 +318,15 @@ function BasicDetailsContent({
 
       <View style={bdStyles.divider} />
 
-      <Pressable style={bdStyles.fieldRow}>
+      <Pressable onPress={() => setActiveModal('location')} style={bdStyles.fieldRow}>
         <View style={bdStyles.fieldIconWrap}>
           <View style={bdStyles.pinHead} />
           <View style={bdStyles.pinTail} />
         </View>
         <View style={bdStyles.fieldTextCol}>
-          <AppText style={bdStyles.fieldValue}>Add location</AppText>
+          <AppText numberOfLines={1} style={bdStyles.fieldValue}>
+            {locationValue || 'Add location'}
+          </AppText>
           <AppText style={bdStyles.fieldLabel}>Offline location or virtual link</AppText>
         </View>
         <View style={bdStyles.chevronRight} />
@@ -252,7 +334,7 @@ function BasicDetailsContent({
 
       <View style={bdStyles.divider} />
 
-      <Pressable style={bdStyles.fieldRow}>
+      <Pressable onPress={() => setActiveModal('description')} style={bdStyles.fieldRow}>
         <View style={bdStyles.fieldIconWrap}>
           <View style={bdStyles.docBody} />
           <View style={bdStyles.docLine1} />
@@ -260,7 +342,9 @@ function BasicDetailsContent({
           <View style={bdStyles.docLine3} />
         </View>
         <View style={bdStyles.fieldTextCol}>
-          <AppText style={bdStyles.fieldValue}>Add Description</AppText>
+          <AppText numberOfLines={1} style={bdStyles.fieldValue}>
+            {description || 'Add Description'}
+          </AppText>
           <AppText style={bdStyles.fieldLabel}>Tap to add festival description</AppText>
         </View>
         <View style={bdStyles.chevronRight} />
@@ -271,6 +355,46 @@ function BasicDetailsContent({
       <Pressable onPress={handleSave} style={bdStyles.saveBtn}>
         <AppText style={bdStyles.saveBtnText}>Save Changes</AppText>
       </Pressable>
+
+      <DatePickerModal
+        onClose={() => setActiveModal(null)}
+        onConfirm={(date) => {
+          const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+          setStartDate(`${date.getDate()} ${MONTHS[date.getMonth()]} ${String(date.getFullYear()).slice(2)}`);
+          setActiveModal(null);
+        }}
+        value={parsedDate}
+        visible={activeModal === 'date'}
+      />
+      <TimePickerModal
+        onClose={() => setActiveModal(null)}
+        onConfirm={(t: TimeValue) => {
+          setStartTime(`${t.hour}:${t.minute} ${t.period}`);
+          setActiveModal(null);
+        }}
+        value={timeValue}
+        visible={activeModal === 'time'}
+      />
+      <LocationModal
+        mode={locationMode}
+        onClose={() => setActiveModal(null)}
+        onConfirm={(mode, val) => {
+          setLocationMode(mode);
+          setLocationValue(val);
+          setActiveModal(null);
+        }}
+        value={locationValue}
+        visible={activeModal === 'location'}
+      />
+      <DescriptionModal
+        onClose={() => setActiveModal(null)}
+        onConfirm={(desc) => {
+          setDescription(desc);
+          setActiveModal(null);
+        }}
+        value={description}
+        visible={activeModal === 'description'}
+      />
     </ScrollView>
   );
 }

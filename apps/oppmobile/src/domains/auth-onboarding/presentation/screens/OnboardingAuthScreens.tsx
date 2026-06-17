@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useSignIn, useSignUp, useUser } from '@clerk/clerk-expo';
 import { Image, type ImageSourcePropType, Modal, Pressable, ScrollView, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -269,7 +270,9 @@ export function SignUpScreen({ initialEmail = '', onContinue, onGoogleContinue, 
   const [errorMessage, setErrorMessage] = useState<string | undefined>();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const submit = () => {
+  const { isLoaded, signUp } = useSignUp();
+
+  const submit = async () => {
     const normalizedEmail = email.trim();
 
     if (!normalizedEmail) {
@@ -282,12 +285,22 @@ export function SignUpScreen({ initialEmail = '', onContinue, onGoogleContinue, 
       return;
     }
 
+    if (!isLoaded || !signUp) {
+      setErrorMessage('Auth is not ready yet.');
+      return;
+    }
+
     setErrorMessage(undefined);
     setIsSubmitting(true);
-    setTimeout(() => {
+    try {
+      await signUp.create({ emailAddress: normalizedEmail });
+      await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
       setIsSubmitting(false);
       onContinue(normalizedEmail);
-    }, 420);
+    } catch (err: any) {
+      setIsSubmitting(false);
+      setErrorMessage(err.errors?.[0]?.message || 'Sign up failed. Please try again.');
+    }
   };
 
   return (
@@ -411,7 +424,9 @@ export function VerifyIdentityScreen({
   const [errorMessage, setErrorMessage] = useState<string | undefined>();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const submit = () => {
+  const { isLoaded, signUp } = useSignUp();
+
+  const submit = async () => {
     const normalizedOtp = otp.trim();
 
     if (!isValidOtp(normalizedOtp)) {
@@ -419,12 +434,26 @@ export function VerifyIdentityScreen({
       return;
     }
 
+    if (!isLoaded || !signUp) {
+      setErrorMessage('Auth is not ready yet.');
+      return;
+    }
+
     setErrorMessage(undefined);
     setIsSubmitting(true);
-    setTimeout(() => {
+    try {
+      const completeSignUp = await signUp.attemptEmailAddressVerification({ code: normalizedOtp });
       setIsSubmitting(false);
-      onContinue(normalizedOtp);
-    }, 380);
+      // Status isn't complete yet because we need password/name next
+      if (completeSignUp.status !== 'complete') {
+        onContinue(normalizedOtp);
+      } else {
+        onContinue(normalizedOtp);
+      }
+    } catch (err: any) {
+      setIsSubmitting(false);
+      setErrorMessage(err.errors?.[0]?.message || 'Invalid OTP. Please try again.');
+    }
   };
 
   return (
@@ -526,7 +555,10 @@ export function ProfileSetupPersonalScreen({ initialValues, onContinue, onSkip }
   const [errorMessage, setErrorMessage] = useState<string | undefined>();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const submit = () => {
+  const { isLoaded, signUp, setActive } = useSignUp();
+  const { user } = useUser();
+
+  const submit = async () => {
     if (!fullName.trim()) {
       setErrorMessage('Full name is required.');
       return;
@@ -542,6 +574,11 @@ export function ProfileSetupPersonalScreen({ initialValues, onContinue, onSkip }
       return;
     }
 
+    if (!isLoaded || !signUp || !setActive) {
+      setErrorMessage('Auth is not ready yet.');
+      return;
+    }
+
     setErrorMessage(undefined);
     setIsSubmitting(true);
     const payload = {
@@ -549,10 +586,46 @@ export function ProfileSetupPersonalScreen({ initialValues, onContinue, onSkip }
       password: password.trim(),
       phoneNumber: normalizeDigits(phoneNumber),
     };
-    setTimeout(() => {
+
+    try {
+      const [firstName, ...rest] = payload.fullName.split(' ');
+      const lastName = rest.join(' ');
+      
+      if (user) {
+        await user.update({
+          firstName,
+          lastName: lastName || '.',
+          unsafeMetadata: { phone: payload.phoneNumber },
+        });
+        setIsSubmitting(false);
+        onContinue(payload);
+        return;
+      }
+
+      const updatedSignUp = await signUp.update({
+        firstName: firstName,
+        lastName: lastName || '.',
+        password: payload.password,
+        unsafeMetadata: {
+          phone: payload.phoneNumber,
+        },
+      });
+
       setIsSubmitting(false);
-      onContinue(payload);
-    }, 420);
+      if (updatedSignUp.status === 'complete') {
+        if (updatedSignUp.createdSessionId) {
+          await setActive({ session: updatedSignUp.createdSessionId });
+        }
+        onContinue(payload);
+      } else {
+        const missing = updatedSignUp.missingFields?.join(', ') || '';
+        const unverified = updatedSignUp.unverifiedFields?.join(', ') || '';
+        setErrorMessage(`Need more info. Missing: ${missing}. Unverified: ${unverified}. Status: ${updatedSignUp.status}`);
+      }
+    } catch (err: any) {
+      setIsSubmitting(false);
+      setErrorMessage(err.errors?.[0]?.message || 'Failed to update profile details.');
+    }
   };
 
   return (
@@ -1106,18 +1179,17 @@ interface SignInScreenProps {
 
 export function SignInScreen({
   initialEmail = '',
-  expectedPassword,
-  onContinue,
   onGoogleContinue,
   onSignUp,
 }: SignInScreenProps) {
+  const { signIn, setActive, isLoaded } = useSignIn();
   const [email, setEmail] = useState(initialEmail);
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | undefined>();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const submit = () => {
+  const submit = async () => {
     const normalizedEmail = email.trim();
 
     if (!isValidEmail(normalizedEmail)) {
@@ -1130,17 +1202,36 @@ export function SignInScreen({
       return;
     }
 
-    if (expectedPassword && password.trim() !== expectedPassword) {
-      setErrorMessage('Password does not match your mock profile setup.');
+    if (!isLoaded || !signIn) {
+      setErrorMessage('Auth is not ready yet. Please wait a moment.');
       return;
     }
 
     setErrorMessage(undefined);
     setIsSubmitting(true);
-    setTimeout(() => {
+
+    try {
+      const result = await signIn.create({
+        identifier: normalizedEmail,
+        password: password.trim(),
+      });
+
+      if (result.status === 'complete') {
+        await setActive({ session: result.createdSessionId });
+        onContinue({ email: normalizedEmail, password: password.trim() });
+      } else {
+        // Clerk may require additional steps (e.g. 2FA) — surface the status
+        setErrorMessage(`Sign-in incomplete: ${result.status}. Please try again.`);
+      }
+    } catch (err: unknown) {
+      const clerkError = err as { errors?: Array<{ message: string }> };
+      const message =
+        clerkError?.errors?.[0]?.message ??
+        (err instanceof Error ? err.message : 'Sign-in failed. Please check your credentials.');
+      setErrorMessage(message);
+    } finally {
       setIsSubmitting(false);
-      onContinue({ email: normalizedEmail, password: password.trim() });
-    }, 420);
+    }
   };
 
   return (

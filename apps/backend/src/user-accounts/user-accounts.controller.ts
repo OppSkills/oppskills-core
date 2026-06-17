@@ -139,11 +139,12 @@ export class UserAccountsController {
     description: 'Unauthorized - Invalid or missing JWT token',
   })
   async submitOnboarding(
-    @Request() req: { user: { id: string } },
+    @Request() req: { user: { id: string; email?: string } },
     @Body() onboardingData: CreateOnboardingDto,
   ) {
     return this.userAccountsService.submitOnboarding(
       req.user.id,
+      req.user.email,
       onboardingData,
     );
   }

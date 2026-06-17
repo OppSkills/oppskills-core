@@ -82,17 +82,17 @@ export function HackathonDetailScreen({ hackathon: initialHackathon, onBack, onO
       {activeContextSection === 'dashboard' ? (
         <HackathonDashboardScreen hackathon={hackathon} />
       ) : activeContextSection === 'manage-registration' ? (
-        <ManageHackathonRegistrationScreen />
+        <ManageHackathonRegistrationScreen slug={hackathon.slug ?? hackathon.id} />
       ) : activeContextSection === 'edit-hackathon' ? (
         <EditHackathonScreen hackathon={hackathon} onUpdateHackathon={handleUpdateHackathon} />
       ) : activeContextSection === 'referrals' ? (
         <HackathonReferralsPanel hackathon={hackathon} />
       ) : activeContextSection === 'manage-roles' ? (
-        <HackathonManageRolesPanel />
+        <HackathonManageRolesPanel hackathonId={hackathon.id} />
       ) : activeContextSection === 'payments' ? (
         <HackathonPaymentsPanel hackathon={hackathon} />
       ) : activeContextSection === 'send-notifications' ? (
-        <HackathonNotificationsPanel />
+        <HackathonNotificationsPanel hackathonId={hackathon.id} hackathonTitle={hackathon.title} />
       ) : activeContextSection === 'settings' ? (
         <HackathonSettingsPanel hackathon={hackathon} />
       ) : (

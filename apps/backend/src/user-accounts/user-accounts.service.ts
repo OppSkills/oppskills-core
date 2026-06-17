@@ -4,6 +4,7 @@ import { Logger } from 'src/_utils/logger';
 import { ClerkAuthConfigService } from 'src/common/config.service';
 import { prisma, UserCategory } from '@oppskills/db';
 import * as crypto from 'crypto';
+import { Prisma } from '@prisma/client';
 import {
   ClerkWebhookRequestDto,
   ClerkWebhookEventType,
@@ -192,7 +193,10 @@ export class UserAccountsService {
       where: { id: userId },
       include,
     });
-    if (byId) return byId;
+    if (byId) {
+      const stats = await this.getUserStats(byId.id);
+      return { ...byId, stats };
+    }
 
     // 2) Backwards-compat: some environments may have users created with cuid() ids.
     // In that case, the only stable linkage we have is email (unique).
@@ -201,7 +205,10 @@ export class UserAccountsService {
         where: { email },
         include,
       });
-      if (byEmail) return byEmail;
+      if (byEmail) {
+        const stats = await this.getUserStats(byEmail.id);
+        return { ...byEmail, stats };
+      }
 
       // 3) If neither exists, create the row so downstream flows work.
       // Note: if a race/dup happens, we re-fetch by email.
@@ -224,7 +231,8 @@ export class UserAccountsService {
           },
           include,
         });
-        return created;
+        const stats = await this.getUserStats(created.id);
+        return { ...created, stats };
       } catch (error) {
         this.logger.warn('[getMe] Failed to create user; retrying by email.', {
           userId,
@@ -236,7 +244,10 @@ export class UserAccountsService {
           where: { email },
           include,
         });
-        if (retry) return retry;
+        if (retry) {
+          const stats = await this.getUserStats(retry.id);
+          return { ...retry, stats };
+        }
       }
     }
 
@@ -247,10 +258,33 @@ export class UserAccountsService {
   }
 
   /**
+   * Calculate user stats for profile.
+   */
+  private async getUserStats(userId: string) {
+    const [eventsCount, hackathonsCount] = await Promise.all([
+      prisma.eventParticipantEntity.count({
+        where: { userId },
+      }),
+      prisma.hackathonRegistrationSubmissionEntity.count({
+        where: { userId },
+      }),
+    ]);
+    return {
+      events: eventsCount,
+      competitions: hackathonsCount,
+      certificates: 0,
+    };
+  }
+
+  /**
    * Submit or update onboarding profile.
    * Validates conditional fields and upserts the profile.
    */
-  async submitOnboarding(userId: string, data: CreateOnboardingDto) {
+  async submitOnboarding(
+    userId: string,
+    email: string | undefined,
+    data: CreateOnboardingDto,
+  ) {
     // Resolve college if passing name instead of ID
     if (
       !data.collegeSkipped &&
@@ -280,64 +314,56 @@ export class UserAccountsService {
     // Validate conditional requirements
     this.validateOnboardingData(data);
 
+    const onboardingProfilePayload = {
+      gender: data.gender,
+      userCategory: data.userCategory,
+      schoolName: data.schoolName || null,
+      schoolClass: data.schoolClass || null,
+      schoolAddress: data.schoolAddress || null,
+      collegeId: data.collegeId || null,
+      collegeCurrentYear: data.collegeCurrentYear || null,
+      collegePassoutYear: data.collegePassoutYear || null,
+      collegeSkipped: data.collegeSkipped || false,
+      course: data.course || null,
+      specialization: data.specialization || null,
+      rollNumber: data.rollNumber || null,
+      companyName: data.companyName || null,
+      jobTitle: data.jobTitle || null,
+      locationCity: data.locationCity,
+      locationState: data.locationState,
+      locationCountry: data.locationCountry,
+      interests: data.interests || [],
+      skills: data.skills || [],
+      experienceLevel: data.experienceLevel || null,
+      teamPreference: data.teamPreference || null,
+    };
+
+    const updateUserData = {
+      onboarded: true,
+      onboardingProfile: {
+        upsert: {
+          update: onboardingProfilePayload,
+          create: onboardingProfilePayload,
+        },
+      },
+    };
+
+    const createUserData = {
+      id: userId,
+      email: email ?? `unknown-${userId}@oppskills.local`,
+      onboarded: true,
+      onboardingProfile: {
+        create: onboardingProfilePayload,
+      },
+    };
+
     try {
-      // Use atomic update with nested upsert instead of interactive transaction
-      // This prevents connection pool exhaustion and transaction timeouts
       const result = await prisma.userEntity.update({
         where: { id: userId },
-        data: {
-          onboarded: true,
-          onboardingProfile: {
-            upsert: {
-              update: {
-                gender: data.gender,
-                userCategory: data.userCategory,
-                schoolName: data.schoolName || null,
-                schoolClass: data.schoolClass || null,
-                schoolAddress: data.schoolAddress || null,
-                collegeId: data.collegeId || null,
-                collegeCurrentYear: data.collegeCurrentYear || null,
-                collegePassoutYear: data.collegePassoutYear || null,
-                collegeSkipped: data.collegeSkipped || false,
-                companyName: data.companyName || null,
-                jobTitle: data.jobTitle || null,
-                locationCity: data.locationCity,
-                locationState: data.locationState,
-                locationCountry: data.locationCountry,
-                interests: data.interests || [],
-                skills: data.skills || [],
-                experienceLevel: data.experienceLevel || null,
-                teamPreference: data.teamPreference || null,
-              },
-              create: {
-                gender: data.gender,
-                userCategory: data.userCategory,
-                schoolName: data.schoolName || null,
-                schoolClass: data.schoolClass || null,
-                schoolAddress: data.schoolAddress || null,
-                collegeId: data.collegeId || null,
-                collegeCurrentYear: data.collegeCurrentYear || null,
-                collegePassoutYear: data.collegePassoutYear || null,
-                collegeSkipped: data.collegeSkipped || false,
-                companyName: data.companyName || null,
-                jobTitle: data.jobTitle || null,
-                locationCity: data.locationCity,
-                locationState: data.locationState,
-                locationCountry: data.locationCountry,
-                interests: data.interests || [],
-                skills: data.skills || [],
-                experienceLevel: data.experienceLevel || null,
-                teamPreference: data.teamPreference || null,
-              },
-            },
-          },
-        },
-        include: {
-          onboardingProfile: true, // Return the profile
-        },
+        data: updateUserData,
+        include: { onboardingProfile: true },
       });
 
-      // Emit user.onboarded event for onboarding complete email
       const eventPayload: UserOnboardedEventPayload = {
         userId,
         email: result.email,
@@ -353,6 +379,59 @@ export class UserAccountsService {
         onboardingProfile: result.onboardingProfile,
       };
     } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2025'
+      ) {
+        if (email) {
+          const existingByEmail = await prisma.userEntity.findUnique({
+            where: { email },
+          });
+          if (existingByEmail) {
+            const result = await prisma.userEntity.update({
+              where: { id: existingByEmail.id },
+              data: updateUserData,
+              include: { onboardingProfile: true },
+            });
+
+            const eventPayload: UserOnboardedEventPayload = {
+              userId: result.id,
+              email: result.email,
+              firstName: result.firstName || undefined,
+              userCategory: data.userCategory,
+              locationCity: data.locationCity,
+            };
+            this.eventEmitter.emit(EMAIL_EVENTS.USER_ONBOARDED, eventPayload);
+
+            return {
+              success: true,
+              message: 'Onboarding completed successfully',
+              onboardingProfile: result.onboardingProfile,
+            };
+          }
+        }
+
+        const result = await prisma.userEntity.create({
+          data: createUserData,
+          include: { onboardingProfile: true },
+        });
+
+        const eventPayload: UserOnboardedEventPayload = {
+          userId: result.id,
+          email: result.email,
+          firstName: result.firstName || undefined,
+          userCategory: data.userCategory,
+          locationCity: data.locationCity,
+        };
+        this.eventEmitter.emit(EMAIL_EVENTS.USER_ONBOARDED, eventPayload);
+
+        return {
+          success: true,
+          message: 'Onboarding completed successfully',
+          onboardingProfile: result.onboardingProfile,
+        };
+      }
+
       this.logger.error(
         `Error submitting onboarding for user ${userId}:`,
         error,
@@ -360,6 +439,16 @@ export class UserAccountsService {
       if (error instanceof HttpException) {
         throw error;
       }
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new HttpException(
+          'A user with this email already exists. Please sign in and try again.',
+          HttpStatus.CONFLICT,
+        );
+      }
+
       throw new HttpException(
         'Failed to save onboarding profile',
         HttpStatus.INTERNAL_SERVER_ERROR,

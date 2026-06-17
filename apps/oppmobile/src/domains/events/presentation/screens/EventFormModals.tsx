@@ -40,7 +40,7 @@ function formatDate(d: Date) {
 }
 
 function daysInMonth(year: number, month: number) {
-  return new Date(year, month + 1, 0).getDate();
+  return ([31, (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0 ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month])!;
 }
 
 function firstDayOfWeek(year: number, month: number) {

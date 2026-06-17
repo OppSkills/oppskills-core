@@ -199,6 +199,7 @@ Content-Type: application/json
   "hackathonType": "CODING_HACKATHON",
   "participantType": "TEAM_OF_4",
   "bannerImageUrl": "https://cdn.oppskills.com/hackathons/tech-innovation-2025-banner.jpg",
+  "festivalId": "550e8400-e29b-41d4-a716-446655440002",
   "location": {
     "type": "PHYSICAL",
     "address": "456 Tech Park Ave, Building 3, Austin, TX 78701",
@@ -448,6 +449,7 @@ Content-Type: application/json
 {
   "name": "Updated Hackathon Name",
   "description": "Updated description",
+  "festivalId": "550e8400-e29b-41d4-a716-446655440002",
   "startDate": "2025-03-20T10:00:00Z",
   "endDate": "2025-03-22T18:00:00Z",
   "bannerImageUrl": "https://cdn.oppskills.com/new-banner.jpg"
@@ -1363,6 +1365,30 @@ Authorization: Bearer <token>
     "startDate": "2025-06-15T09:00:00Z",
     "endDate": "2025-06-18T18:00:00Z",
     "posterImageUrl": "https://cdn.oppskills.com/festivals/techfest-2025-poster.jpg"
+  }
+]
+```
+
+---
+
+#### List My Festivals
+
+Retrieve festivals where the authenticated user is the owner or a manager.
+
+```http
+GET /festivals/my
+Authorization: Bearer <token>
+```
+
+**Response (200):**
+```json
+[
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440002",
+    "name": "TechFest 2025",
+    "slug": "tech-fest-2025",
+    "status": "PUBLISHED",
+    "role": "OWNER"
   }
 ]
 ```

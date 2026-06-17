@@ -4,7 +4,6 @@ import {
   Image,
   Modal,
   Pressable,
-  ScrollView,
   StyleSheet,
   View,
   useWindowDimensions,
@@ -14,7 +13,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import oppskillsLogo from '../../../assets/OppSkill_Logo_UP_6 1.png';
 import { lightTheme } from '../theme';
-import { AppText } from './AppText';
 
 export type OrganizerSidebarIconName =
   | 'dashboard'

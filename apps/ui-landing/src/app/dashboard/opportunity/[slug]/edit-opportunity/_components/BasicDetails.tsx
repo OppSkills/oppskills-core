@@ -45,13 +45,14 @@ import { Label } from "@/components/ui/label";
 import RichTextEditor from "@/components/ui/editor/RichtextEditor";
 import { format } from "date-fns";
 import Image from "next/image";
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { FormData } from "../page";
 import { useAuth } from "@clerk/nextjs";
 import { toast } from "sonner";
 import { presignImageUpload } from "@/lib/api/mediaApi";
 import { uploadImageToS3PresignedPost } from "@/lib/uploads/uploadImageToS3";
+import { getMyFestivals } from "@/lib/api/festivalApi";
 
 // Reusing the InputBlock logic
 const InputBlock = ({
@@ -102,6 +103,31 @@ export default function BasicDetails({
   const { getToken } = useAuth();
   const [isUploadingBanner, setIsUploadingBanner] = useState<boolean>(false);
   const fileInputId = useMemo(() => `banner-upload-${crypto.randomUUID()}`, []);
+
+  // Load organizer's festivals for the type dropdown
+  const [myFestivals, setMyFestivals] = useState<{ id: string; name: string }[]>([]);
+  useEffect(() => {
+    async function loadFestivals() {
+      try {
+        const token = await getToken();
+        if (!token) return;
+        const result = await getMyFestivals(token);
+        const list = Array.isArray(result)
+          ? result
+          : Array.isArray((result as any)?.data)
+            ? (result as any).data
+            : [];
+        setMyFestivals(
+          list
+            .filter((f: any) => typeof f?.id === "string" && typeof f?.name === "string")
+            .map((f: any) => ({ id: f.id as string, name: f.name as string }))
+        );
+      } catch {
+        // Silently ignore — festivals list is optional
+      }
+    }
+    void loadFestivals();
+  }, [getToken]);
 
   /**
    * Upload banner image:
@@ -226,12 +252,26 @@ export default function BasicDetails({
                   setFormData({
                     ...formData,
                     eventFestName: "Individual Hackathon",
+                    festivalId: undefined,
                   })
                 }
               >
                 Individual Hackathon
               </DropdownMenuItem>
-              {/* Add more items/loading logic here */}
+              {myFestivals.map((fest) => (
+                <DropdownMenuItem
+                  key={fest.id}
+                  onClick={() =>
+                    setFormData({
+                      ...formData,
+                      eventFestName: fest.name,
+                      festivalId: fest.id,
+                    })
+                  }
+                >
+                  {fest.name}
+                </DropdownMenuItem>
+              ))}
             </DropdownMenuContent>
           </DropdownMenu>
 

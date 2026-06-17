@@ -5,7 +5,12 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { prisma } from '@oppskills/db';
-import type { CreateTeamDto, JoinTeamDto } from '@oppskills/types';
+import type {
+  CreateTeamDto,
+  JoinTeamDto,
+  RequestJoinTeamDto,
+  RespondJoinRequestDto,
+} from '@oppskills/types';
 import { randomBytes } from 'crypto';
 
 /**
@@ -162,11 +167,11 @@ export class TeamService {
     }
 
     // Hackathon owner cannot create a team in their own hackathon
-    if (hackathon.ownerId === leaderId) {
-      throw new ForbiddenException(
-        'Hackathon owner cannot create a team in their own hackathon',
-      );
-    }
+    // if (hackathon.ownerId === leaderId) {
+    //   throw new ForbiddenException(
+    //     'Hackathon owner cannot create a team in their own hackathon',
+    //   );
+    // }
 
     // Check if user is already in a team for this hackathon
     const existingTeam = await this.checkUserTeamInHackathon(
@@ -207,8 +212,21 @@ export class TeamService {
         where: { invitationCode },
       });
       if (!existing) break;
+      if (!existing) break;
       invitationCode = generateInvitationCode();
       attempts++;
+    }
+
+    // Resolve referral code if provided
+    let referralId: string | undefined;
+    if (dto.referralCode) {
+      const referral = await prisma.referralEntity.findUnique({
+        where: { code: dto.referralCode }
+      });
+      // Ensure the referral is active and matches this hackathon
+      if (referral && referral.isActive && referral.entityType === 'HACKATHON' && referral.entityId === dto.hackathonId) {
+        referralId = referral.id;
+      }
     }
 
     // Create team and registration in transaction
@@ -236,6 +254,7 @@ export class TeamService {
           userId: leaderId,
           teamId: team.id,
           isLeader: true,
+          referralId,
         },
       });
 
@@ -374,11 +393,29 @@ export class TeamService {
             },
           },
         },
+        registrationSubmissions: {
+          include: {
+            answers: true,
+          },
+        },
       },
     });
 
     if (!team) throw new NotFoundException('Team not found');
-    return team;
+
+    const leaderSubmission = team.registrationSubmissions.find(
+      (sub) => sub.userId === team.leaderId,
+    );
+    const leaderPhone = leaderSubmission?.answers.find(
+      (ans) => ans.fieldId === 'default-phone',
+    )?.valueText || '';
+
+    const { registrationSubmissions, ...teamData } = team;
+
+    return {
+      ...teamData,
+      leaderPhone,
+    };
   }
 
   /**
@@ -502,6 +539,17 @@ export class TeamService {
       answers: dto.answers,
     });
 
+    // Resolve referral code if provided
+    let referralId: string | undefined;
+    if (dto.referralCode) {
+      const referral = await prisma.referralEntity.findUnique({
+        where: { code: dto.referralCode }
+      });
+      if (referral && referral.isActive && referral.entityType === 'HACKATHON' && referral.entityId === team.hackathonId) {
+        referralId = referral.id;
+      }
+    }
+
     // Create member and registration in transaction
     const result = await prisma.$transaction(async (tx) => {
       const newMember = await tx.teamMemberEntity.create({
@@ -516,6 +564,7 @@ export class TeamService {
           teamId: team.id,
           teamMemberId: newMember.id,
           isLeader: false,
+          referralId,
         },
       });
 
@@ -1184,5 +1233,260 @@ export class TeamService {
           throw new BadRequestException('Attachments are not supported yet.');
       }
     }
+  }
+
+  /**
+   * Request to join a team.
+   */
+  async requestJoinTeam(dto: RequestJoinTeamDto, userId: string) {
+    let team;
+    if (dto.teamId) {
+      team = await prisma.teamEntity.findUnique({
+        where: { id: dto.teamId },
+        include: { members: true, hackathon: true },
+      });
+    } else if (dto.invitationCode) {
+      team = await prisma.teamEntity.findUnique({
+        where: { invitationCode: dto.invitationCode },
+        include: { members: true, hackathon: true },
+      });
+    } else {
+      throw new BadRequestException(
+        'Either teamId or invitationCode is required.',
+      );
+    }
+
+    if (!team) throw new NotFoundException('Team not found');
+
+    const hackathon = team.hackathon;
+
+    if (hackathon.status !== 'PUBLISHED' && hackathon.status !== 'ONGOING') {
+      throw new BadRequestException(
+        'Hackathon is not accepting registrations.',
+      );
+    }
+
+    if (hackathon.approvalStatus !== 'APPROVED') {
+      throw new BadRequestException('Hackathon has not been approved yet.');
+    }
+
+    if (hackathon.isRegistrationPaused) {
+      throw new BadRequestException('Registrations are currently paused.');
+    }
+
+    if (
+      hackathon.registrationDeadline &&
+      new Date() > hackathon.registrationDeadline
+    ) {
+      throw new BadRequestException('Registration deadline has passed.');
+    }
+
+    // Check if team is full (+1 for leader)
+    const currentSize = team.members.length + 1;
+    if (currentSize >= team.maxSize) {
+      throw new ForbiddenException('Team is already full');
+    }
+
+    if (team.leaderId === userId) {
+      throw new ForbiddenException(
+        'Team leader cannot request to join their own team',
+      );
+    }
+
+    const alreadyMember = team.members.some((m) => m.userId === userId);
+    if (alreadyMember) {
+      throw new ForbiddenException('User already part of this team');
+    }
+
+    // Check if user is in another team for this hackathon
+    const existingTeam = await this.checkUserTeamInHackathon(
+      team.hackathonId,
+      userId,
+    );
+    if (existingTeam) {
+      throw new ForbiddenException(
+        'You are already registered in a team for this hackathon.',
+      );
+    }
+
+    // Check if a pending request already exists
+    const existingRequest = await prisma.teamJoinRequestEntity.findUnique({
+      where: {
+        teamId_userId: {
+          teamId: team.id,
+          userId,
+        },
+      },
+    });
+
+    if (existingRequest) {
+      if (existingRequest.status === 'PENDING') {
+        throw new BadRequestException(
+          'You already have a pending request for this team.',
+        );
+      } else if (existingRequest.status === 'ACCEPTED') {
+        throw new BadRequestException(
+          'Your request has already been accepted.',
+        );
+      } else {
+        // If rejected previously, we can allow re-requesting by deleting the old one or updating it
+        await prisma.teamJoinRequestEntity.update({
+          where: { id: existingRequest.id },
+          data: { status: 'PENDING' },
+        });
+        return { message: 'Join request re-sent successfully' };
+      }
+    }
+
+    await prisma.teamJoinRequestEntity.create({
+      data: {
+        teamId: team.id,
+        userId,
+        status: 'PENDING',
+      },
+    });
+
+    return { message: 'Join request sent successfully' };
+  }
+
+  /**
+   * Get pending join requests for a team (Leader only).
+   */
+  async getTeamJoinRequests(teamId: string, userId: string) {
+    const team = await prisma.teamEntity.findUnique({
+      where: { id: teamId },
+      select: { leaderId: true },
+    });
+
+    if (!team) throw new NotFoundException('Team not found');
+
+    if (team.leaderId !== userId) {
+      throw new ForbiddenException(
+        'Only the team leader can view join requests.',
+      );
+    }
+
+    return prisma.teamJoinRequestEntity.findMany({
+      where: {
+        teamId,
+        status: 'PENDING',
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            imageUrl: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  /**
+   * Accept or Reject a join request (Leader only).
+   */
+  async respondToJoinRequest(
+    requestId: string,
+    dto: RespondJoinRequestDto,
+    userId: string,
+  ) {
+    const request = await prisma.teamJoinRequestEntity.findUnique({
+      where: { id: requestId },
+      include: {
+        team: {
+          include: {
+            members: true,
+            hackathon: true,
+          },
+        },
+      },
+    });
+
+    if (!request) throw new NotFoundException('Join request not found');
+
+    const team = request.team;
+
+    if (team.leaderId !== userId) {
+      throw new ForbiddenException(
+        'Only the team leader can respond to join requests.',
+      );
+    }
+
+    if (request.status !== 'PENDING') {
+      throw new BadRequestException(`Request is already ${request.status}`);
+    }
+
+    if (dto.status === 'REJECTED') {
+      await prisma.teamJoinRequestEntity.update({
+        where: { id: requestId },
+        data: { status: 'REJECTED' },
+      });
+      return { message: 'Request rejected' };
+    }
+
+    // Accepting the request
+    const hackathon = team.hackathon;
+
+    if (hackathon.status !== 'PUBLISHED' && hackathon.status !== 'ONGOING') {
+      throw new BadRequestException(
+        'Hackathon is not accepting registrations.',
+      );
+    }
+
+    if (hackathon.isRegistrationPaused) {
+      throw new BadRequestException('Registrations are currently paused.');
+    }
+
+    const currentSize = team.members.length + 1;
+    if (currentSize >= team.maxSize) {
+      throw new ForbiddenException('Team is already full');
+    }
+
+    // Check if user is already in another team
+    const existingTeam = await this.checkUserTeamInHackathon(
+      team.hackathonId,
+      request.userId,
+    );
+    if (existingTeam) {
+      // Reject this request since user joined another team
+      await prisma.teamJoinRequestEntity.update({
+        where: { id: requestId },
+        data: { status: 'REJECTED' },
+      });
+      throw new ForbiddenException('User has already joined another team.');
+    }
+
+    // Transaction to accept and add member
+    await prisma.$transaction(async (tx) => {
+      await tx.teamJoinRequestEntity.update({
+        where: { id: requestId },
+        data: { status: 'ACCEPTED' },
+      });
+
+      const newMember = await tx.teamMemberEntity.create({
+        data: { userId: request.userId, teamId: team.id },
+      });
+
+      await tx.hackathonRegistrationSubmissionEntity.create({
+        data: {
+          hackathonId: team.hackathonId,
+          userId: request.userId,
+          teamId: team.id,
+          teamMemberId: newMember.id,
+          isLeader: false,
+        },
+      });
+
+      await tx.hackathonEntity.update({
+        where: { id: team.hackathonId },
+        data: { registrationCount: { increment: 1 } },
+      });
+    });
+
+    return { message: 'Request accepted and user added to team' };
   }
 }

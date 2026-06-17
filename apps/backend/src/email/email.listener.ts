@@ -5,7 +5,7 @@ import { render } from '@react-email/components';
 import { EmailService } from './email.service';
 import { EMAIL_EVENTS } from './email.events';
 import { EventNotificationEmail } from '@oppskills/emails';
-import type { AdminWelcomeEmailProps } from "@oppskills/emails"
+import type { AdminWelcomeEmailProps } from '@oppskills/emails';
 import type {
   UserCreatedEventPayload,
   UserOnboardedEventPayload,
@@ -26,7 +26,7 @@ export class EmailListener {
     private readonly emailService: EmailService,
     @Inject(forwardRef(() => EventPassService))
     private readonly eventPassService: EventPassService,
-  ) { }
+  ) {}
 
   @OnEvent(EMAIL_EVENTS.USER_CREATED)
   async handleUserCreated(payload: UserCreatedEventPayload): Promise<void> {
@@ -297,7 +297,10 @@ export class EmailListener {
     const attachments: Array<{ filename: string; content: string }> = [];
 
     // Sanitise ticketId for use in filenames (remove №, spaces, special chars)
-    const safeTicketId = eventPass.ticketId.replace(/[^a-zA-Z0-9-_]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+    const safeTicketId = eventPass.ticketId
+      .replace(/[^a-zA-Z0-9-_]/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
 
     try {
       const resp = await fetch(ogImageUrl);
@@ -317,7 +320,10 @@ export class EmailListener {
         // QR must encode the full validation URL — identical to what the
         // event-pass page renders with QRCodeSVG on the ticket card.
         const qrUrl = `https://www.oppskills.com/pass/validate/${eventPass.token}`;
-        const qrBuf = await QRCode.toBuffer(qrUrl, { type: 'png', errorCorrectionLevel: 'H' });
+        const qrBuf = await QRCode.toBuffer(qrUrl, {
+          type: 'png',
+          errorCorrectionLevel: 'H',
+        });
         attachments.push({
           filename: `pass-qr-${safeTicketId}.png`,
           content: qrBuf.toString('base64'),

@@ -53,7 +53,7 @@ export class DiscountCodeService {
       data: {
         hackathonId: hackathon.id,
         code: params.code.toUpperCase(),
-        type: params.type as DiscountCodeType,
+        type: params.type,
         value: params.value,
         maxRedemptions: params.maxRedemptions,
         maxPerUser: params.maxPerUser ?? 1,

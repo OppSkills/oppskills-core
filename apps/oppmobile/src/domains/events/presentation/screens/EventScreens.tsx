@@ -26,8 +26,8 @@ interface DiscoverEventsPrimaryScreenProps {
   readonly onOpenCompetitions: () => void;
   readonly onOpenHackathons: () => void;
   readonly onOpenCommunities: () => void;
-  readonly onOpenEventFreePage: () => void;
-  readonly onOpenEventPaidPage: () => void;
+  readonly onOpenEventFreePage: (eventId: string) => void;
+  readonly onOpenEventPaidPage: (eventId: string) => void;
   readonly onOpenSearchRecent: () => void;
 }
 
@@ -57,8 +57,8 @@ interface DiscoverEventsSecondaryScreenProps {
   readonly onOpenCompetitions: () => void;
   readonly onOpenHackathons: () => void;
   readonly onOpenCommunities: () => void;
-  readonly onOpenEventFreePage: () => void;
-  readonly onOpenEventPaidPage: () => void;
+  readonly onOpenEventFreePage: (eventId: string) => void;
+  readonly onOpenEventPaidPage: (eventId: string) => void;
   readonly onOpenSearchPopular: () => void;
 }
 
@@ -88,8 +88,8 @@ interface DiscoverEventsTemplateProps {
   readonly onOpenCommunities: () => void;
   readonly onOpenCompetitions: () => void;
   readonly onOpenHackathons: () => void;
-  readonly onOpenEventFreePage: () => void;
-  readonly onOpenEventPaidPage: () => void;
+  readonly onOpenEventFreePage: (eventId: string) => void;
+  readonly onOpenEventPaidPage: (eventId: string) => void;
   readonly onOpenSearch: () => void;
   readonly preselectedBookmarkedIds: readonly string[];
   readonly retryErrorLabel: string;
@@ -223,11 +223,11 @@ function DiscoverEventsTemplate({
                   key={item.id}
                   onOpen={() => {
                     if (isEventFree(item.entryFee)) {
-                      onOpenEventFreePage();
+                      onOpenEventFreePage(item.id);
                       return;
                     }
 
-                    onOpenEventPaidPage();
+                    onOpenEventPaidPage(item.id);
                   }}
                   onToggleBookmark={toggleBookmark}
                   showFrequency={showFrequency}

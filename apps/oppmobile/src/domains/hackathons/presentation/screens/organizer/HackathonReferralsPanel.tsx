@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import {
+  Image,
   Modal,
   Pressable,
   ScrollView,
@@ -11,239 +12,348 @@ import {
 
 import { AppText } from '../../../../../shared/ui';
 import { type LiveHackathon } from './OrganizerCreateHackathonScreen';
+import { useEntityReferrals, useGenerateReferral, type ReferrerDetail } from '../../../../referrals/presentation/hooks/useReferrals';
 
-interface Referrer {
-  readonly id: string;
-  readonly email: string;
-  readonly link: string;
+// ── Main Panel ────────────────────────────────────────────────────────────────
+
+function makeLink(): string {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let result = '';
+  for (let i = 0; i < 8; i++) result += chars.charAt(Math.floor(Math.random() * chars.length));
+  return `www.oppskills.com/re/${result.toLowerCase()}`;
 }
 
 interface HackathonReferralsPanelProps {
   readonly hackathon: LiveHackathon;
 }
 
-const COL_SERIAL = 64;
-const COL_GENERATED = 220;
-const COL_CLICKS = 130;
-const COL_REGS = 150;
-const COL_VIEW = 120;
-const COL_DELETE = 72;
-const TABLE_WIDTH = COL_SERIAL + COL_GENERATED + COL_CLICKS + COL_REGS + COL_VIEW + COL_DELETE;
-
-function makeLink(): string {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  let result = '';
-  for (let i = 0; i < 8; i++) result += chars.charAt(Math.floor(Math.random() * chars.length));
-  return `https://oppskills.com/r/${result}`;
-}
-
 export function HackathonReferralsPanel({ hackathon }: HackathonReferralsPanelProps) {
-  const [referrers, setReferrers] = useState<Referrer[]>([]);
-  const [showModal, setShowModal] = useState(false);
+  const { data: referrersData = [], isLoading } = useEntityReferrals('HACKATHON', hackathon.id);
+  const { mutate: generateReferral } = useGenerateReferral();
 
-  function handleAddReferrer(email: string) {
-    setReferrers((prev) => [...prev, { id: String(Date.now()), email, link: makeLink() }]);
-    setShowModal(false);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showParticipants, setShowParticipants] = useState<ReferrerDetail | null>(null);
+  const [showReferrerDetail, setShowReferrerDetail] = useState<ReferrerDetail | null>(null);
+  const [activeFilter, setActiveFilter] = useState<'all' | 'organizer'>('all');
+
+  function handleAddReferrer(name: string, email: string, level: string) {
+    generateReferral({
+      entityType: 'HACKATHON' as any,
+      entityId: hackathon.id,
+      referrerEmail: email,
+      sendEmail: true,
+    });
+    setShowAddModal(false);
   }
 
   function handleDelete(id: string) {
-    setReferrers((prev) => prev.filter((r) => r.id !== id));
+    // API not yet implemented for delete
   }
 
+  const referrers = referrersData;
+
+  const totalParticipants = referrers.reduce((a, r) => a + r.registrations, 0);
+  const totalClicks = referrers.reduce((a, r) => a + r.clicks, 0);
+  const totalRegs = referrers.reduce((a, r) => a + r.registrations, 0);
+
+  const filtered =
+    activeFilter === 'organizer' ? referrers.filter((r) => r.isOrganizer) : referrers;
+
   return (
-    <ScrollView
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-    >
-      {/* Header */}
-      <AppText style={styles.eventTitle}>{hackathon.title.toUpperCase()}</AppText>
-      <AppText style={styles.subtitle}>View all the Referral details about Hackathon</AppText>
+    <View style={styles.container}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Page title */}
+        <AppText style={styles.eventTitle}>{hackathon.title}</AppText>
+        <AppText style={styles.subtitle}>View all the Referral details about Event</AppText>
 
-      {/* Add Referrer button */}
-      <Pressable onPress={() => setShowModal(true)} style={styles.addBtn}>
-        <AppText style={styles.addBtnPlus}>+</AppText>
-        <AppText style={styles.addBtnText}>Add Referrer</AppText>
-      </Pressable>
+        {/* Stats cards – horizontal scroll */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.statsRow}>
+          {/* Dark card */}
+          <View style={styles.darkCard}>
+            <AppText style={styles.darkCardLabel}>Referred Participants</AppText>
+            <AppText style={styles.darkCardValue}>{totalParticipants}</AppText>
+            <View style={styles.darkCardFooter}>
+              <AppText style={styles.darkCardFooterLabel}>Total Registrations</AppText>
+              <View style={styles.darkCardBadge}>
+                <AppText style={styles.darkCardBadgeText}>{totalRegs}</AppText>
+              </View>
+            </View>
+          </View>
 
-      {/* Stats cards */}
-      <View style={styles.darkCard}>
-        <AppText style={styles.darkCardTitle}>Referred Participants</AppText>
-        <AppText style={styles.darkCardValue}>0</AppText>
-        <View style={styles.darkCardFooter}>
-          <AppText style={styles.darkCardLabel}>Total registration</AppText>
-          <View style={styles.darkCardBadge}>
-            <AppText style={styles.darkCardBadgeText}>0</AppText>
+          {/* Light card */}
+          <View style={styles.lightCard}>
+            <AppText style={styles.lightCardLabel}>Referral Impressions</AppText>
+            <AppText style={styles.lightCardValue}>{totalClicks.toLocaleString()}</AppText>
+            <AppText style={styles.lightCardSub}>Total Impressions</AppText>
+          </View>
+        </ScrollView>
+
+        <View style={styles.divider} />
+
+        {/* Add Referrer button */}
+        <Pressable onPress={() => setShowAddModal(true)} style={styles.addBtn}>
+          <View style={styles.addPlusCircle}>
+            <View style={styles.plusH} />
+            <View style={styles.plusV} />
+          </View>
+          <AppText style={styles.addBtnText}>Add Referrer</AppText>
+        </Pressable>
+
+        {/* Filter tabs */}
+        <View style={styles.filterRow}>
+          <Pressable onPress={() => setActiveFilter('all')} style={styles.filterTab}>
+            <AppText
+              style={[styles.filterTabText, activeFilter === 'all' && styles.filterTabTextActive]}
+            >
+              All Referrers ({referrers.length})
+            </AppText>
+            {activeFilter === 'all' && <View style={styles.filterUnderline} />}
+            <View style={styles.filterClose}>
+              <View style={styles.filterX1} />
+              <View style={styles.filterX2} />
+            </View>
+          </Pressable>
+
+          <Pressable onPress={() => setActiveFilter('organizer')} style={styles.filterTab}>
+            <AppText
+              style={[
+                styles.filterTabText,
+                activeFilter === 'organizer' && styles.filterTabTextActive,
+              ]}
+            >
+              Organizer Referrers ({referrers.filter((r) => r.isOrganizer).length})
+            </AppText>
+            {activeFilter === 'organizer' && <View style={styles.filterUnderline} />}
+            <View style={styles.filterClose}>
+              <View style={styles.filterX1} />
+              <View style={styles.filterX2} />
+            </View>
+          </Pressable>
+        </View>
+
+        {/* Referrers list or empty state */}
+        {filtered.length === 0 ? (
+          <View style={styles.emptyState}>
+            <View style={styles.emptyIllustration}>
+              {/* Server stack */}
+              <View style={styles.serverStack}>
+                {[0, 1, 2].map((i) => (
+                  <View key={i} style={styles.serverBlock}>
+                    <View style={styles.serverLight} />
+                  </View>
+                ))}
+              </View>
+              {/* Laptop */}
+              <View style={styles.laptop}>
+                <View style={styles.laptopScreen}>
+                  <AppText style={styles.laptopText}>NO DATA</AppText>
+                </View>
+                <View style={styles.laptopBase} />
+              </View>
+            </View>
+            <AppText style={styles.emptyTitle}>No referral links generated</AppText>
+            <AppText style={styles.emptyDescription}>
+              To get data about referrals first generate referral links.{'\n'}This can be generated
+              by referrer.
+            </AppText>
+          </View>
+        ) : (
+          <View style={styles.referrerList}>
+            {filtered.map((referrer) => (
+              <ReferrerCard
+                key={referrer.id}
+                referrer={referrer}
+                onDelete={() => handleDelete(referrer.id)}
+                onViewParticipants={() => setShowParticipants(referrer)}
+                onViewDetail={() => setShowReferrerDetail(referrer)}
+              />
+            ))}
+          </View>
+        )}
+      </ScrollView>
+
+      {/* ── Modals ── */}
+      <AddReferrerModal
+        onClose={() => setShowAddModal(false)}
+        onConfirm={handleAddReferrer}
+        visible={showAddModal}
+      />
+
+      {showParticipants ? (
+        <ParticipantDetailsModal
+          onClose={() => setShowParticipants(null)}
+          referrer={showParticipants}
+        />
+      ) : null}
+
+      {showReferrerDetail ? (
+        <ReferrerDetailModal
+          onClose={() => setShowReferrerDetail(null)}
+          referrer={showReferrerDetail}
+        />
+      ) : null}
+    </View>
+  );
+}
+
+function ReferrerCard({
+  referrer,
+  onDelete,
+  onViewParticipants,
+  onViewDetail,
+}: {
+  readonly referrer: ReferrerDetail;
+  readonly onDelete: () => void;
+  readonly onViewParticipants: () => void;
+  readonly onViewDetail: () => void;
+}) {
+  return (
+    <View style={styles.referrerCard}>
+      {/* Top row: avatar + info + View Participants */}
+      <View style={styles.referrerTopRow}>
+        <Image
+          source={
+            referrer.avatarUrl
+              ? { uri: referrer.avatarUrl }
+              : { uri: `https://i.pravatar.cc/100?u=${referrer.id}` }
+          }
+          style={styles.referrerAvatar}
+        />
+        <View style={styles.referrerInfo}>
+          <View style={styles.referrerNameRow}>
+            <AppText style={styles.referrerName}>{referrer.name}</AppText>
+            <Pressable onPress={onViewParticipants}>
+              <AppText style={styles.viewParticipantsLink}>View Participants</AppText>
+            </Pressable>
+          </View>
+          <AppText style={styles.referrerEmail}>{referrer.email}</AppText>
+          <View style={styles.referrerLinkRow}>
+            <AppText numberOfLines={1} style={styles.referrerLink}>
+              {referrer.link}
+            </AppText>
+            {/* Copy icon */}
+            <Pressable style={styles.iconBtn}>
+              <View style={styles.copyOuter}>
+                <View style={styles.copyInner} />
+              </View>
+            </Pressable>
+            {/* Share icon */}
+            <Pressable style={styles.iconBtn} onPress={onViewDetail}>
+              <View style={styles.shareBox}>
+                <View style={styles.shareArrow} />
+              </View>
+            </Pressable>
+            {/* Delete icon */}
+            <Pressable style={styles.iconBtn} onPress={onDelete}>
+              <TrashIcon />
+            </Pressable>
           </View>
         </View>
       </View>
 
-      <StatCard badge="2" label="Total Clicks" title="Referral Clicks" value="2" />
-      <StatCard badge={String(referrers.length)} label="Total Referral Users" title="Referral Users" value={String(referrers.length)} />
-      <StatCard badge={String(referrers.length)} label="Active Links" title="Referral Link Generated" value={String(referrers.length)} />
-
-      {/* Table */}
-      <View style={styles.tableWrap}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <View style={{ width: TABLE_WIDTH }}>
-            {/* Header row */}
-            <View style={styles.tableHeader}>
-              <View style={[styles.col, { width: COL_SERIAL }]}>
-                <AppText style={styles.headerText}>S. No.</AppText>
-              </View>
-              <View style={[styles.col, { width: COL_GENERATED }]}>
-                <AppText style={styles.headerText}>Generated by / Link</AppText>
-              </View>
-              <View style={[styles.col, { width: COL_CLICKS }]}>
-                <AppText style={styles.headerText}>Link Clicks</AppText>
-              </View>
-              <View style={[styles.col, { width: COL_REGS }]}>
-                <AppText style={styles.headerText}>Registrations</AppText>
-              </View>
-              <View style={[styles.col, { width: COL_VIEW }]}>
-                <AppText style={styles.headerText}>View Referrals</AppText>
-              </View>
-              <View style={[styles.col, { width: COL_DELETE }]}>
-                <AppText style={styles.headerText}>Delete</AppText>
-              </View>
-            </View>
-
-            {/* Rows */}
-            {referrers.length === 0 ? (
-              <View style={styles.emptyRow}>
-                <AppText style={styles.emptyText}>No referrers added yet.</AppText>
-              </View>
-            ) : (
-              referrers.map((referrer, index) => (
-                <View key={referrer.id} style={[styles.tableRow, index % 2 === 1 ? styles.tableRowAlt : null]}>
-                  <View style={[styles.col, { width: COL_SERIAL }]}>
-                    <AppText style={styles.rowSerial}>{index + 1}</AppText>
-                  </View>
-                  <View style={[styles.col, { width: COL_GENERATED, flexDirection: 'column', alignItems: 'flex-start', gap: 2 }]}>
-                    <View style={styles.avatarRow}>
-                      <View style={styles.avatarCircle}>
-                        <AppText style={styles.avatarInitial}>
-                          {referrer.email.charAt(0).toUpperCase()}
-                        </AppText>
-                      </View>
-                      <View style={{ flex: 1 }}>
-                        <AppText numberOfLines={1} style={styles.referrerEmail}>{referrer.email}</AppText>
-                      </View>
-                    </View>
-                    <AppText numberOfLines={1} style={styles.referrerLink}>{referrer.link}</AppText>
-                  </View>
-                  <View style={[styles.col, { width: COL_CLICKS, flexDirection: 'column', alignItems: 'flex-start', gap: 4 }]}>
-                    <View style={styles.clicksPill}>
-                      <AppText style={styles.clicksPillText}>0 Clicks</AppText>
-                    </View>
-                    <AppText style={styles.subLabel}>0 in last 24 hrs</AppText>
-                  </View>
-                  <View style={[styles.col, { width: COL_REGS, flexDirection: 'column', alignItems: 'flex-start', gap: 4 }]}>
-                    <View style={styles.regsPill}>
-                      <AppText style={styles.regsPillText}>0 Registrations</AppText>
-                    </View>
-                    <AppText style={styles.subLabel}>00 in last 24 hrs</AppText>
-                  </View>
-                  <View style={[styles.col, { width: COL_VIEW }]}>
-                    <View style={styles.viewListBtn}>
-                      <AppText style={styles.viewListText}>View list</AppText>
-                    </View>
-                  </View>
-                  <View style={[styles.col, { width: COL_DELETE }]}>
-                    <Pressable onPress={() => handleDelete(referrer.id)} style={styles.deleteBtn}>
-                      <View style={styles.trashBody} />
-                      <View style={styles.trashLid} />
-                      <View style={styles.trashLine1} />
-                      <View style={styles.trashLine2} />
-                      <View style={styles.trashLine3} />
-                    </Pressable>
-                  </View>
-                </View>
-              ))
-            )}
+      {/* Stats chips row */}
+      <View style={styles.statsChipsRow}>
+        <View style={styles.statsChipCol}>
+          <View style={styles.clicksChip}>
+            <AppText style={styles.clicksChipText}>{referrer.clicks.toLocaleString()} Clicks</AppText>
           </View>
-        </ScrollView>
-      </View>
-
-      <AddReferrerModal
-        onClose={() => setShowModal(false)}
-        onConfirm={handleAddReferrer}
-        visible={showModal}
-      />
-    </ScrollView>
-  );
-}
-
-function StatCard({
-  title,
-  value,
-  label,
-  badge,
-}: {
-  readonly title: string;
-  readonly value: string;
-  readonly label: string;
-  readonly badge: string;
-}) {
-  return (
-    <View style={styles.statCard}>
-      <AppText style={styles.statCardTitle}>{title}</AppText>
-      <AppText style={styles.statCardValue}>{value}</AppText>
-      <View style={styles.statCardFooter}>
-        <AppText style={styles.statCardLabel}>{label}</AppText>
-        <View style={styles.statCardBadge}>
-          <AppText style={styles.statCardBadgeText}>{badge}</AppText>
+          <View style={styles.last24Row}>
+            <View style={styles.trendUp} />
+            <AppText style={styles.last24Text}>{referrer.clicksLast24} in last 24 hrs</AppText>
+          </View>
+        </View>
+        <View style={styles.statsChipCol}>
+          <View style={styles.regsChip}>
+            <AppText style={styles.regsChipText}>{referrer.registrations} Registrations</AppText>
+          </View>
+          <View style={styles.last24Row}>
+            <View style={styles.trendUp} />
+            <AppText style={styles.last24Text}>{referrer.regsLast24} in last 24 hrs</AppText>
+          </View>
         </View>
       </View>
     </View>
   );
 }
 
-interface AddReferrerModalProps {
-  readonly visible: boolean;
-  readonly onConfirm: (email: string) => void;
-  readonly onClose: () => void;
+// ── Trash icon ────────────────────────────────────────────────────────────────
+function TrashIcon() {
+  return (
+    <View style={trash.wrap}>
+      <View style={trash.lid} />
+      <View style={trash.body}>
+        <View style={[trash.line, { left: 4 }]} />
+        <View style={[trash.line, { left: 7 }]} />
+        <View style={[trash.line, { left: 10 }]} />
+      </View>
+    </View>
+  );
 }
+const trash = StyleSheet.create({
+  wrap: { height: 18, position: 'relative', width: 14 },
+  lid: { backgroundColor: '#9C8DAA', borderRadius: 1, height: 2, position: 'absolute', top: 0, width: 14 },
+  body: { borderColor: '#9C8DAA', borderRadius: 2, borderWidth: 1.5, bottom: 0, height: 13, left: 1, position: 'absolute', width: 12 },
+  line: { backgroundColor: '#9C8DAA', borderRadius: 1, height: 7, position: 'absolute', top: 2, width: 1.5 },
+});
 
-function AddReferrerModal({ visible, onConfirm, onClose }: AddReferrerModalProps) {
+// ── Add Referrer Modal ────────────────────────────────────────────────────────
+function AddReferrerModal({
+  visible,
+  onConfirm,
+  onClose,
+}: {
+  readonly visible: boolean;
+  readonly onConfirm: (name: string, email: string, level: string) => void;
+  readonly onClose: () => void;
+}) {
   const [email, setEmail] = useState('');
+  const [level, setLevel] = useState('');
   const [sendEmail, setSendEmail] = useState(true);
-
-  if (!visible) return null;
 
   function handleConfirm() {
     if (!email.trim()) return;
-    onConfirm(email.trim());
+    onConfirm('', email.trim(), level.toLowerCase().trim());
     setEmail('');
+    setLevel('');
     setSendEmail(true);
   }
 
   return (
-    <Modal onRequestClose={onClose} transparent visible={visible}>
-      <View style={modalStyles.overlay}>
-        <View style={modalStyles.sheet}>
-          <View style={modalStyles.header}>
-            <AppText style={modalStyles.headerTitle}>Add Referrer</AppText>
-            <Pressable hitSlop={10} onPress={onClose} style={modalStyles.closeBtn}>
-              <View style={[modalStyles.closeStroke, modalStyles.closeStroke1]} />
-              <View style={[modalStyles.closeStroke, modalStyles.closeStroke2]} />
-            </Pressable>
-          </View>
+    <Modal onRequestClose={onClose} transparent visible={visible} animationType="slide">
+      <Pressable onPress={onClose} style={modal.overlay}>
+        <Pressable style={modal.sheet} onPress={() => undefined}>
+          <View style={modal.handle} />
+          <AppText style={modal.title}>Add Referrer</AppText>
 
-          <View style={modalStyles.field}>
-            <AppText style={modalStyles.fieldLabel}>Official Email *</AppText>
+          <View style={modal.field}>
+            <AppText style={modal.fieldLabel}>Official Email *</AppText>
             <TextInput
               autoCapitalize="none"
               keyboardType="email-address"
               onChangeText={setEmail}
-              placeholder="john_alex@gmail.com"
-              placeholderTextColor="#C3BFC4"
-              style={modalStyles.input}
+              placeholder="Place Holder Text"
+              placeholderTextColor="#A099A1"
+              style={modal.input}
               value={email}
             />
           </View>
 
-          <View style={modalStyles.toggleRow}>
-            <AppText style={modalStyles.toggleLabel}>Send Email to the Referrer</AppText>
+          <View style={modal.field}>
+            <AppText style={modal.fieldLabel}>Referrer Level *</AppText>
+            <TextInput
+              onChangeText={setLevel}
+              placeholder=""
+              placeholderTextColor="#A099A1"
+              style={modal.input}
+              value={level}
+            />
+          </View>
+
+          <View style={modal.toggleRow}>
+            <AppText style={modal.toggleLabel}>Send Email to the Referrer</AppText>
             <Switch
               onValueChange={setSendEmail}
               thumbColor="#FFFFFF"
@@ -252,83 +362,235 @@ function AddReferrerModal({ visible, onConfirm, onClose }: AddReferrerModalProps
             />
           </View>
 
-          <Pressable onPress={handleConfirm} style={modalStyles.confirmBtn}>
-            <AppText style={modalStyles.confirmBtnText}>Add Referrer</AppText>
+          <Pressable onPress={handleConfirm} style={modal.confirmBtn}>
+            <View style={modal.confirmPlusCircle}>
+              <View style={modal.confirmPlusH} />
+              <View style={modal.confirmPlusV} />
+            </View>
+            <AppText style={modal.confirmBtnText}>Add Referrer</AppText>
           </Pressable>
-        </View>
-      </View>
+        </Pressable>
+      </Pressable>
     </Modal>
   );
 }
 
+// ── Participant Details Modal ──────────────────────────────────────────────────
+const SAMPLE_PARTICIPANTS = [
+  { name: 'Maya Patel', badge: 'College Student', location: 'Mumbai, Maharashtra, India', phone: '+91 88888 77777', email: 'maya.patel@designhub.com', institution: 'Design Institute of India', avatarUrl: 'https://i.pravatar.cc/100?img=47' },
+  { name: 'Maya Patel', badge: 'College Student', location: 'Mumbai, Maharashtra, India', phone: '+91 88888 77777', email: 'maya.patel@designhub.com', institution: 'Design Institute of India', avatarUrl: 'https://i.pravatar.cc/100?img=47' },
+  { name: 'Maya Patel', badge: 'College Student', location: 'Mumbai, Maharashtra, India', phone: '+91 88888 77777', email: 'maya.patel@designhub.com', institution: 'Design Institute of India', avatarUrl: 'https://i.pravatar.cc/100?img=47' },
+  { name: 'Maya Patel', badge: 'College Student', location: 'Mumbai, Maharashtra, India', phone: '+91 88888 77777', email: 'maya.patel@designhub.com', institution: 'Design Institute of India', avatarUrl: 'https://i.pravatar.cc/100?img=47' },
+];
+
+function ParticipantDetailsModal({
+  onClose,
+  referrer: _referrer,
+}: {
+  readonly onClose: () => void;
+  readonly referrer: ReferrerDetail;
+}) {
+  return (
+    <Modal onRequestClose={onClose} transparent visible animationType="slide">
+      <Pressable onPress={onClose} style={modal.overlay}>
+        <Pressable style={modal.sheet} onPress={() => undefined}>
+          <View style={modal.handle} />
+          <AppText style={modal.title}>Participant Details</AppText>
+
+          <ScrollView showsVerticalScrollIndicator={false}>
+            {SAMPLE_PARTICIPANTS.map((p, i) => (
+              <View key={i} style={participant.row}>
+                <Image source={{ uri: p.avatarUrl }} style={participant.avatar} />
+                <View style={participant.info}>
+                  <View style={participant.nameRow}>
+                    <AppText style={participant.name}>{p.name}</AppText>
+                    <View style={participant.badge}>
+                      <AppText style={participant.badgeText}>{p.badge}</AppText>
+                    </View>
+                  </View>
+                  <View style={participant.metaRow}>
+                    <View style={participant.dot} />
+                    <AppText style={participant.meta}>{p.location}</AppText>
+                  </View>
+                  <View style={participant.metaRow}>
+                    <View style={participant.phoneDot} />
+                    <AppText style={participant.meta}>{p.phone}</AppText>
+                  </View>
+                  <View style={participant.metaRow}>
+                    <View style={participant.emailDot} />
+                    <AppText style={participant.meta}>{p.email}</AppText>
+                  </View>
+                  <View style={participant.metaRow}>
+                    <View style={participant.eduDot} />
+                    <AppText style={participant.meta}>{p.institution}</AppText>
+                  </View>
+                </View>
+              </View>
+            ))}
+          </ScrollView>
+        </Pressable>
+      </Pressable>
+    </Modal>
+  );
+}
+
+// ── Referrer Detail Modal ─────────────────────────────────────────────────────
+function ReferrerDetailModal({
+  onClose,
+  referrer,
+}: {
+  readonly onClose: () => void;
+  readonly referrer: ReferrerDetail;
+}) {
+  return (
+    <Modal onRequestClose={onClose} transparent visible animationType="slide">
+      <Pressable onPress={onClose} style={modal.overlay}>
+        <Pressable style={[modal.sheet, { paddingBottom: 32 }]} onPress={() => undefined}>
+          <View style={modal.handle} />
+          <AppText style={modal.title}>Referrer Details</AppText>
+
+          {/* Referrer profile */}
+          <View style={detail.profileRow}>
+            <Image
+              source={
+                referrer.avatarUrl
+                  ? { uri: referrer.avatarUrl }
+                  : { uri: `https://i.pravatar.cc/100?u=${referrer.id}` }
+              }
+              style={detail.avatar}
+            />
+            <View style={detail.profileInfo}>
+              <AppText style={detail.profileName}>{referrer.name}</AppText>
+              {referrer.location ? (
+                <View style={detail.metaRow}>
+                  <View style={detail.pinDot} />
+                  <AppText style={detail.metaText}>{referrer.location}</AppText>
+                </View>
+              ) : null}
+              {referrer.phone ? (
+                <View style={detail.metaRow}>
+                  <View style={detail.phoneDot} />
+                  <AppText style={detail.metaText}>{referrer.phone}</AppText>
+                </View>
+              ) : null}
+              <View style={detail.metaRow}>
+                <View style={detail.emailDot} />
+                <AppText style={detail.metaText}>{referrer.email}</AppText>
+              </View>
+              {referrer.institution ? (
+                <View style={detail.metaRow}>
+                  <View style={detail.eduDot} />
+                  <AppText style={detail.metaText}>{referrer.institution}</AppText>
+                </View>
+              ) : null}
+            </View>
+          </View>
+
+          {/* Mini stats */}
+          <View style={detail.statsRow}>
+            <View style={detail.darkMiniCard}>
+              <AppText style={detail.darkMiniLabel}>All Events Referrals</AppText>
+              <AppText style={detail.darkMiniValue}>{referrer.registrations}</AppText>
+              <View style={detail.darkMiniFooter}>
+                <AppText style={detail.darkMiniFooterLabel}>Last 24 hrs</AppText>
+                <View style={detail.darkMiniBadge}>
+                  <AppText style={detail.darkMiniBadgeText}>{referrer.regsLast24}</AppText>
+                </View>
+              </View>
+            </View>
+
+            <View style={detail.lightMiniCard}>
+              <AppText style={detail.lightMiniLabel}>No Of Links Generated</AppText>
+              <AppText style={detail.lightMiniValue}>{referrer.clicks.toLocaleString()}</AppText>
+              <AppText style={detail.lightMiniSub}>Active Links</AppText>
+            </View>
+          </View>
+
+          {/* One referral link preview */}
+          <View style={detail.linkCard}>
+            <Image
+              source={{ uri: 'https://i.pravatar.cc/60?img=3' }}
+              style={detail.hackathonThumb}
+            />
+            <View style={detail.linkInfo}>
+              <AppText style={detail.linkName}>{referrer.name}</AppText>
+              <AppText style={detail.linkEmail}>{referrer.email}</AppText>
+              <AppText style={detail.linkUrl}>{referrer.link}</AppText>
+              <View style={detail.linkChips}>
+                <View style={styles.clicksChip}>
+                  <AppText style={styles.clicksChipText}>{referrer.clicks.toLocaleString()} Clicks</AppText>
+                </View>
+                <View style={styles.regsChip}>
+                  <AppText style={styles.regsChipText}>{referrer.registrations} Registrations</AppText>
+                </View>
+              </View>
+              <View style={detail.linkLast24}>
+                <AppText style={styles.last24Text}>{referrer.clicksLast24} in last 24 hrs</AppText>
+                <AppText style={styles.last24Text}>{referrer.regsLast24} in last 24 hrs</AppText>
+              </View>
+            </View>
+          </View>
+        </Pressable>
+      </Pressable>
+    </Modal>
+  );
+}
+
+// ── Styles ────────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#FAFAFA',
+  },
   content: {
-    gap: 14,
+    gap: 16,
     padding: 16,
     paddingBottom: 48,
   },
   eventTitle: {
     color: '#100013',
     fontFamily: 'Aeonik Pro',
-    fontSize: 28,
-    fontWeight: '900',
-    letterSpacing: -0.5,
-    lineHeight: 34,
+    fontSize: 24,
+    fontWeight: '700',
+    lineHeight: 30,
   },
   subtitle: {
     color: '#9CA3AF',
     fontFamily: 'Urbanist',
     fontSize: 14,
-    marginBottom: 4,
+    marginTop: -8,
   },
-  addBtn: {
-    alignItems: 'center',
-    backgroundColor: '#3D2A6E',
-    borderRadius: 100,
+  statsRow: {
     flexDirection: 'row',
-    gap: 10,
-    justifyContent: 'center',
-    paddingVertical: 16,
   },
-  addBtnPlus: {
-    color: '#FFFFFF',
-    fontSize: 20,
-    fontWeight: '400',
-    lineHeight: 22,
-  },
-  addBtnText: {
-    color: '#FFFFFF',
-    fontFamily: 'Urbanist',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  // Dark stats card
   darkCard: {
     backgroundColor: '#12002A',
     borderRadius: 16,
-    gap: 4,
+    marginRight: 12,
+    minWidth: 200,
     padding: 20,
   },
-  darkCardTitle: {
+  darkCardLabel: {
     color: '#C4B5FD',
     fontFamily: 'Urbanist',
     fontSize: 14,
     fontWeight: '500',
+    marginBottom: 4,
   },
   darkCardValue: {
     color: '#FFFFFF',
     fontFamily: 'Aeonik Pro',
-    fontSize: 40,
+    fontSize: 48,
     fontWeight: '700',
-    lineHeight: 48,
+    lineHeight: 56,
   },
   darkCardFooter: {
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 4,
+    marginTop: 8,
   },
-  darkCardLabel: {
+  darkCardFooterLabel: {
     color: '#DDD6FE',
     fontFamily: 'Urbanist',
     fontSize: 13,
@@ -345,291 +607,403 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
   },
-  // Light stat cards
-  statCard: {
+  lightCard: {
     backgroundColor: '#FFFFFF',
-    borderColor: '#C4B5FD',
+    borderColor: '#E2D3FF',
     borderRadius: 16,
     borderWidth: 1.5,
-    gap: 4,
+    minWidth: 160,
     padding: 20,
   },
-  statCardTitle: {
-    color: '#100013',
-    fontFamily: 'Aeonik Pro',
-    fontSize: 16,
-    fontWeight: '600',
+  lightCardLabel: {
+    color: '#6949AA',
+    fontFamily: 'Urbanist',
+    fontSize: 14,
+    fontWeight: '500',
+    marginBottom: 4,
   },
-  statCardValue: {
+  lightCardValue: {
     color: '#100013',
     fontFamily: 'Aeonik Pro',
     fontSize: 40,
     fontWeight: '700',
     lineHeight: 48,
   },
-  statCardFooter: {
+  lightCardSub: {
+    color: '#9C8DAA',
+    fontFamily: 'Urbanist',
+    fontSize: 13,
+    marginTop: 4,
+  },
+  divider: {
+    backgroundColor: '#E8E6E8',
+    height: 1,
+    marginVertical: 4,
+  },
+  addBtn: {
+    alignItems: 'center',
+    backgroundColor: '#3D2A6E',
+    borderRadius: 100,
+    flexDirection: 'row',
+    gap: 10,
+    justifyContent: 'center',
+    paddingVertical: 16,
+  },
+  addPlusCircle: {
+    alignItems: 'center',
+    borderColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1.5,
+    height: 24,
+    justifyContent: 'center',
+    width: 24,
+  },
+  plusH: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 1,
+    height: 1.5,
+    position: 'absolute',
+    width: 12,
+  },
+  plusV: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 1,
+    height: 12,
+    position: 'absolute',
+    width: 1.5,
+  },
+  addBtnText: {
+    color: '#FFFFFF',
+    fontFamily: 'Urbanist',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  filterRow: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  filterTab: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 6,
+    paddingBottom: 8,
+    position: 'relative',
+  },
+  filterTabText: {
+    color: '#9C8DAA',
+    fontFamily: 'Urbanist',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  filterTabTextActive: {
+    color: '#6949AA',
+  },
+  filterUnderline: {
+    backgroundColor: '#6949AA',
+    bottom: 0,
+    height: 2,
+    left: 0,
+    position: 'absolute',
+    right: 0,
+  },
+  filterClose: {
+    height: 14,
+    justifyContent: 'center',
+    position: 'relative',
+    width: 14,
+  },
+  filterX1: {
+    backgroundColor: '#9C8DAA',
+    borderRadius: 1,
+    height: 1.5,
+    position: 'absolute',
+    transform: [{ rotate: '45deg' }],
+    width: 10,
+  },
+  filterX2: {
+    backgroundColor: '#9C8DAA',
+    borderRadius: 1,
+    height: 1.5,
+    position: 'absolute',
+    transform: [{ rotate: '-45deg' }],
+    width: 10,
+  },
+
+  /* Empty state */
+  emptyState: {
+    alignItems: 'center',
+    paddingTop: 24,
+    paddingBottom: 32,
+  },
+  emptyIllustration: {
+    alignItems: 'flex-end',
+    flexDirection: 'row',
+    height: 120,
+    justifyContent: 'center',
+    marginBottom: 24,
+    width: '100%',
+  },
+  serverStack: {
+    gap: 4,
+    justifyContent: 'flex-end',
+    marginRight: 12,
+  },
+  serverBlock: {
+    backgroundColor: '#3D2A6E',
+    borderRadius: 4,
+    flexDirection: 'row',
+    height: 24,
+    justifyContent: 'flex-end',
+    paddingRight: 6,
+    paddingVertical: 6,
+    width: 60,
+  },
+  serverLight: {
+    backgroundColor: '#22C55E',
+    borderRadius: 4,
+    height: 8,
+    width: 8,
+  },
+  laptop: {
+    alignItems: 'center',
+  },
+  laptopScreen: {
+    alignItems: 'center',
+    backgroundColor: '#E2D3FF',
+    borderColor: '#6949AA',
+    borderRadius: 6,
+    borderWidth: 2,
+    height: 70,
+    justifyContent: 'center',
+    width: 100,
+  },
+  laptopText: {
+    color: '#42007A',
+    fontFamily: 'Urbanist',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  laptopBase: {
+    backgroundColor: '#6949AA',
+    borderRadius: 2,
+    height: 6,
+    marginTop: 2,
+    width: 110,
+  },
+  emptyTitle: {
+    color: '#100013',
+    fontFamily: 'Aeonik Pro',
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  emptyDescription: {
+    color: '#9C8DAA',
+    fontFamily: 'Urbanist',
+    fontSize: 13,
+    lineHeight: 20,
+    textAlign: 'center',
+  },
+
+  /* Referrer list */
+  referrerList: {
+    gap: 16,
+  },
+  referrerCard: {
+    backgroundColor: '#FFFFFF',
+    borderColor: '#E8E6E8',
+    borderRadius: 16,
+    borderWidth: 1,
+    gap: 12,
+    padding: 14,
+  },
+  referrerTopRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  referrerAvatar: {
+    borderRadius: 30,
+    height: 52,
+    width: 52,
+  },
+  referrerInfo: {
+    flex: 1,
+    gap: 4,
+  },
+  referrerNameRow: {
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 4,
   },
-  statCardLabel: {
-    color: '#8359D5',
+  referrerName: {
+    color: '#100013',
     fontFamily: 'Urbanist',
-    fontSize: 13,
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  viewParticipantsLink: {
+    color: '#6949AA',
+    fontFamily: 'Urbanist',
+    fontSize: 12,
     fontWeight: '500',
   },
-  statCardBadge: {
-    backgroundColor: '#3D2A6E',
-    borderRadius: 100,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-  },
-  statCardBadgeText: {
-    color: '#FFFFFF',
-    fontFamily: 'Urbanist',
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  // Table
-  tableWrap: {
-    borderRadius: 12,
-    overflow: 'hidden',
-  },
-  tableHeader: {
-    backgroundColor: '#1C1340',
-    flexDirection: 'row',
-  },
-  col: {
-    alignItems: 'center',
-    borderColor: 'rgba(255,255,255,0.08)',
-    borderRightWidth: 1,
-    flexDirection: 'row',
-    gap: 4,
-    justifyContent: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 14,
-  },
-  headerCheckbox: {
-    borderColor: '#FFFFFF',
-    borderRadius: 4,
-    borderWidth: 1.5,
-    height: 18,
-    width: 18,
-  },
-  headerText: {
-    color: '#FFFFFF',
-    fontFamily: 'Urbanist',
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  sortIcon: {
-    color: '#C4B5FD',
-    fontSize: 12,
-  },
-  tableRow: {
-    backgroundColor: '#FFFFFF',
-    flexDirection: 'row',
-  },
-  tableRowAlt: {
-    backgroundColor: '#FAFAFA',
-  },
-  emptyRow: {
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    paddingVertical: 32,
-  },
-  emptyText: {
-    color: '#C3BFC4',
-    fontFamily: 'Urbanist',
-    fontSize: 14,
-  },
-  rowCheckbox: {
-    borderColor: '#C3BFC4',
-    borderRadius: 4,
-    borderWidth: 1.5,
-    height: 18,
-    width: 18,
-  },
-  rowSerial: {
+  referrerEmail: {
     color: '#584D5A',
     fontFamily: 'Urbanist',
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: 12,
   },
-  avatarRow: {
+  referrerLinkRow: {
     alignItems: 'center',
     flexDirection: 'row',
     gap: 8,
-    width: '100%',
-  },
-  avatarCircle: {
-    alignItems: 'center',
-    backgroundColor: '#6949AA',
-    borderRadius: 18,
-    flexShrink: 0,
-    height: 32,
-    justifyContent: 'center',
-    width: 32,
-  },
-  avatarInitial: {
-    color: '#FFFFFF',
-    fontFamily: 'Aeonik Pro',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  referrerEmail: {
-    color: '#100013',
-    fontFamily: 'Urbanist',
-    fontSize: 12,
-    fontWeight: '600',
   },
   referrerLink: {
-    color: '#8359D5',
+    color: '#6949AA',
+    flex: 1,
     fontFamily: 'Urbanist',
-    fontSize: 11,
+    fontSize: 12,
     textDecorationLine: 'underline',
   },
-  clicksPill: {
-    backgroundColor: '#FEF08A',
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+  iconBtn: {
+    alignItems: 'center',
+    height: 24,
+    justifyContent: 'center',
+    width: 24,
   },
-  clicksPillText: {
+  copyOuter: {
+    borderColor: '#9C8DAA',
+    borderRadius: 3,
+    borderWidth: 1.5,
+    height: 14,
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    width: 14,
+  },
+  copyInner: {
+    backgroundColor: '#FAFAFA',
+    borderColor: '#9C8DAA',
+    borderRadius: 2,
+    borderWidth: 1.5,
+    height: 11,
+    left: -3,
+    position: 'absolute',
+    top: 3,
+    width: 11,
+  },
+  shareBox: {
+    borderColor: '#9C8DAA',
+    borderRadius: 3,
+    borderWidth: 1.5,
+    height: 14,
+    width: 14,
+  },
+  shareArrow: {
+    borderColor: '#9C8DAA',
+    borderRightWidth: 1.5,
+    borderTopWidth: 1.5,
+    height: 5,
+    position: 'absolute',
+    right: 2,
+    top: -3,
+    transform: [{ rotate: '45deg' }],
+    width: 5,
+  },
+  statsChipsRow: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  statsChipCol: {
+    flex: 1,
+    gap: 4,
+  },
+  clicksChip: {
+    backgroundColor: '#FEF9C3',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  clicksChipText: {
     color: '#713F12',
     fontFamily: 'Urbanist',
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '700',
   },
-  regsPill: {
-    backgroundColor: '#FBCFE8',
+  regsChip: {
+    backgroundColor: '#FCE7F3',
     borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
   },
-  regsPillText: {
+  regsChipText: {
     color: '#831843',
     fontFamily: 'Urbanist',
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '700',
   },
-  subLabel: {
+  last24Row: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 4,
+  },
+  trendUp: {
+    borderBottomColor: '#22C55E',
+    borderBottomWidth: 6,
+    borderLeftColor: 'transparent',
+    borderLeftWidth: 4,
+    borderRightColor: 'transparent',
+    borderRightWidth: 4,
+    height: 0,
+    width: 0,
+  },
+  last24Text: {
     color: '#9CA3AF',
     fontFamily: 'Urbanist',
     fontSize: 11,
   },
-  viewListBtn: {
-    alignItems: 'center',
-    backgroundColor: '#1C1340',
-    borderRadius: 20,
-    flexDirection: 'row',
-    gap: 4,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-  },
-  viewListText: {
-    color: '#FFFFFF',
-    fontFamily: 'Urbanist',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  deleteBtn: {
-    alignItems: 'center',
-    height: 32,
-    justifyContent: 'center',
-    position: 'relative',
-    width: 26,
-  },
-  trashLid: {
-    backgroundColor: '#EF4444',
-    borderRadius: 1,
-    height: 2,
-    position: 'absolute',
-    top: 6,
-    width: 20,
-  },
-  trashBody: {
-    borderColor: '#EF4444',
-    borderRadius: 3,
-    borderWidth: 1.5,
-    height: 16,
-    position: 'absolute',
-    top: 12,
-    width: 16,
-  },
-  trashLine1: {
-    backgroundColor: '#EF4444',
-    borderRadius: 1,
-    height: 8,
-    left: 10,
-    position: 'absolute',
-    top: 15,
-    width: 1.5,
-  },
-  trashLine2: {
-    backgroundColor: '#EF4444',
-    borderRadius: 1,
-    height: 8,
-    left: 14,
-    position: 'absolute',
-    top: 15,
-    width: 1.5,
-  },
-  trashLine3: {
-    backgroundColor: '#EF4444',
-    borderRadius: 1,
-    height: 8,
-    left: 18,
-    position: 'absolute',
-    top: 15,
-    width: 1.5,
-  },
 });
 
-const modalStyles = StyleSheet.create({
+// ── Modal styles ──────────────────────────────────────────────────────────────
+const modal = StyleSheet.create({
   overlay: {
-    alignItems: 'center',
-    backgroundColor: 'rgba(12,1,20,0.5)',
+    backgroundColor: 'rgba(12,1,20,0.45)',
     flex: 1,
-    justifyContent: 'center',
-    padding: 24,
+    justifyContent: 'flex-end',
   },
   sheet: {
     backgroundColor: '#EEEEF0',
-    borderRadius: 20,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: '85%',
     padding: 24,
-    width: '100%',
+    paddingTop: 16,
   },
-  header: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 24,
+  handle: {
+    alignSelf: 'center',
+    backgroundColor: '#C3BFC4',
+    borderRadius: 4,
+    height: 5,
+    marginBottom: 20,
+    width: 48,
   },
-  headerTitle: {
+  title: {
     color: '#100013',
     fontFamily: 'Aeonik Pro',
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '700',
+    marginBottom: 20,
   },
-  closeBtn: {
-    alignItems: 'center',
-    height: 28,
-    justifyContent: 'center',
-    width: 28,
+  field: {
+    gap: 6,
+    marginBottom: 16,
   },
-  closeStroke: {
-    backgroundColor: '#584D5A',
-    borderRadius: 2,
-    height: 2,
-    position: 'absolute',
-    width: 16,
+  fieldLabel: {
+    color: '#584D5A',
+    fontFamily: 'Urbanist',
+    fontSize: 13,
+    fontWeight: '500',
   },
-  closeStroke1: { transform: [{ rotate: '45deg' }] },
-  closeStroke2: { transform: [{ rotate: '-45deg' }] },
-  field: { gap: 8, marginBottom: 16 },
-  fieldLabel: { color: '#584D5A', fontFamily: 'Urbanist', fontSize: 14, fontWeight: '500' },
   input: {
     backgroundColor: '#FFFFFF',
     borderColor: '#E8E6E8',
@@ -638,8 +1012,8 @@ const modalStyles = StyleSheet.create({
     color: '#100013',
     fontFamily: 'Urbanist',
     fontSize: 15,
-    paddingHorizontal: 18,
-    paddingVertical: 14,
+    height: 52,
+    paddingHorizontal: 20,
   },
   toggleRow: {
     alignItems: 'center',
@@ -655,14 +1029,273 @@ const modalStyles = StyleSheet.create({
   },
   confirmBtn: {
     alignItems: 'center',
-    backgroundColor: '#7B6BA0',
+    backgroundColor: '#42007A',
     borderRadius: 100,
-    paddingVertical: 16,
+    flexDirection: 'row',
+    gap: 10,
+    height: 54,
+    justifyContent: 'center',
+  },
+  confirmPlusCircle: {
+    alignItems: 'center',
+    borderColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1.5,
+    height: 24,
+    justifyContent: 'center',
+    width: 24,
+  },
+  confirmPlusH: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 1,
+    height: 1.5,
+    position: 'absolute',
+    width: 12,
+  },
+  confirmPlusV: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 1,
+    height: 12,
+    position: 'absolute',
+    width: 1.5,
   },
   confirmBtnText: {
     color: '#FFFFFF',
     fontFamily: 'Urbanist',
     fontSize: 16,
     fontWeight: '700',
+  },
+});
+
+// ── Participant styles ─────────────────────────────────────────────────────────
+const participant = StyleSheet.create({
+  row: {
+    borderBottomColor: '#F0EFF1',
+    borderBottomWidth: 1,
+    flexDirection: 'row',
+    gap: 14,
+    paddingVertical: 16,
+  },
+  avatar: {
+    borderRadius: 8,
+    height: 72,
+    width: 72,
+  },
+  info: {
+    flex: 1,
+    gap: 4,
+  },
+  nameRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 10,
+    justifyContent: 'space-between',
+  },
+  name: {
+    color: '#100013',
+    fontFamily: 'Urbanist',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  badge: {
+    backgroundColor: '#FEF3C7',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  badgeText: {
+    color: '#92400E',
+    fontFamily: 'Urbanist',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  metaRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 6,
+  },
+  dot: {
+    backgroundColor: '#9C8DAA',
+    borderRadius: 6,
+    height: 12,
+    width: 12,
+  },
+  phoneDot: {
+    backgroundColor: '#9C8DAA',
+    borderRadius: 6,
+    height: 12,
+    width: 12,
+  },
+  emailDot: {
+    backgroundColor: '#9C8DAA',
+    borderRadius: 6,
+    height: 12,
+    width: 12,
+  },
+  eduDot: {
+    backgroundColor: '#9C8DAA',
+    borderRadius: 6,
+    height: 12,
+    width: 12,
+  },
+  meta: {
+    color: '#584D5A',
+    fontFamily: 'Urbanist',
+    fontSize: 12,
+  },
+});
+
+// ── Referrer detail styles ────────────────────────────────────────────────────
+const detail = StyleSheet.create({
+  profileRow: {
+    flexDirection: 'row',
+    gap: 14,
+    marginBottom: 20,
+  },
+  avatar: {
+    borderRadius: 8,
+    height: 72,
+    width: 72,
+  },
+  profileInfo: {
+    flex: 1,
+    gap: 4,
+  },
+  profileName: {
+    color: '#100013',
+    fontFamily: 'Urbanist',
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  metaRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 6,
+  },
+  pinDot: { backgroundColor: '#9C8DAA', borderRadius: 6, height: 12, width: 12 },
+  phoneDot: { backgroundColor: '#9C8DAA', borderRadius: 6, height: 12, width: 12 },
+  emailDot: { backgroundColor: '#9C8DAA', borderRadius: 6, height: 12, width: 12 },
+  eduDot: { backgroundColor: '#9C8DAA', borderRadius: 6, height: 12, width: 12 },
+  metaText: {
+    color: '#584D5A',
+    fontFamily: 'Urbanist',
+    fontSize: 12,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 20,
+  },
+  darkMiniCard: {
+    backgroundColor: '#12002A',
+    borderRadius: 14,
+    flex: 1,
+    padding: 16,
+  },
+  darkMiniLabel: {
+    color: '#C4B5FD',
+    fontFamily: 'Urbanist',
+    fontSize: 13,
+    fontWeight: '500',
+    marginBottom: 4,
+  },
+  darkMiniValue: {
+    color: '#FFFFFF',
+    fontFamily: 'Aeonik Pro',
+    fontSize: 36,
+    fontWeight: '700',
+    lineHeight: 42,
+  },
+  darkMiniFooter: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 8,
+  },
+  darkMiniFooterLabel: {
+    color: '#DDD6FE',
+    fontFamily: 'Urbanist',
+    fontSize: 12,
+  },
+  darkMiniBadge: {
+    backgroundColor: '#3D2A6E',
+    borderRadius: 100,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+  },
+  darkMiniBadgeText: {
+    color: '#FFFFFF',
+    fontFamily: 'Urbanist',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  lightMiniCard: {
+    backgroundColor: '#FFFFFF',
+    borderColor: '#E2D3FF',
+    borderRadius: 14,
+    borderWidth: 1.5,
+    flex: 1,
+    padding: 16,
+  },
+  lightMiniLabel: {
+    color: '#6949AA',
+    fontFamily: 'Urbanist',
+    fontSize: 13,
+    fontWeight: '500',
+    marginBottom: 4,
+  },
+  lightMiniValue: {
+    color: '#100013',
+    fontFamily: 'Aeonik Pro',
+    fontSize: 32,
+    fontWeight: '700',
+    lineHeight: 38,
+  },
+  lightMiniSub: {
+    color: '#9C8DAA',
+    fontFamily: 'Urbanist',
+    fontSize: 12,
+    marginTop: 4,
+  },
+  linkCard: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  hackathonThumb: {
+    borderRadius: 8,
+    height: 64,
+    width: 64,
+  },
+  linkInfo: {
+    flex: 1,
+    gap: 3,
+  },
+  linkName: {
+    color: '#100013',
+    fontFamily: 'Urbanist',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  linkEmail: {
+    color: '#584D5A',
+    fontFamily: 'Urbanist',
+    fontSize: 12,
+  },
+  linkUrl: {
+    color: '#6949AA',
+    fontFamily: 'Urbanist',
+    fontSize: 12,
+    textDecorationLine: 'underline',
+  },
+  linkChips: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 4,
+  },
+  linkLast24: {
+    flexDirection: 'row',
+    gap: 16,
+    marginTop: 2,
   },
 });

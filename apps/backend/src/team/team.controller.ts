@@ -22,7 +22,12 @@ import {
 } from '@nestjs/swagger';
 import { ClerkAuthGuard } from '../common/clerk-auth.guard';
 import { TeamService } from './team.service';
-import { CreateTeamDto, JoinTeamDto } from '@oppskills/types';
+import {
+  CreateTeamDto,
+  JoinTeamDto,
+  RequestJoinTeamDto,
+  RespondJoinRequestDto,
+} from '@oppskills/types';
 import type { Request } from 'express';
 
 @ApiTags('Teams')
@@ -391,5 +396,65 @@ export class TeamController {
       throw new UnauthorizedException('User not found in request');
     }
     return this.teamService.changeTeamLeader(teamId, body.newLeaderId, user.id);
+  }
+
+  @Post('request-join-team')
+  @ApiOperation({
+    summary: 'Request to join a team',
+    description: 'Send a request to join an existing team',
+  })
+  @ApiBody({ type: RequestJoinTeamDto })
+  @ApiResponse({ status: 201, description: 'Join request sent successfully' })
+  @ApiResponse({ status: 400, description: 'Bad Request' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 404, description: 'Team not found' })
+  async requestJoinTeam(@Body() dto: RequestJoinTeamDto, @Req() req: Request) {
+    const user = req['user'];
+    if (!user) throw new UnauthorizedException('User not found in request');
+    return this.teamService.requestJoinTeam(dto, user.id);
+  }
+
+  @Get('team/:teamId/requests')
+  @ApiOperation({
+    summary: 'Get join requests for a team',
+    description:
+      'Retrieve pending join requests for a team. Only team leader can view.',
+  })
+  @ApiParam({ name: 'teamId', type: 'string', format: 'uuid' })
+  @ApiResponse({
+    status: 200,
+    description: 'Pending join requests retrieved successfully',
+  })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 404, description: 'Team not found' })
+  async getTeamJoinRequests(
+    @Param('teamId') teamId: string,
+    @Req() req: Request,
+  ) {
+    const user = req['user'];
+    if (!user) throw new UnauthorizedException('User not found in request');
+    return this.teamService.getTeamJoinRequests(teamId, user.id);
+  }
+
+  @Post('team/requests/:requestId/respond')
+  @ApiOperation({
+    summary: 'Respond to a join request',
+    description:
+      'Accept or reject a team join request. Only team leader can respond.',
+  })
+  @ApiParam({ name: 'requestId', type: 'string', format: 'uuid' })
+  @ApiBody({ type: RespondJoinRequestDto })
+  @ApiResponse({ status: 200, description: 'Response processed successfully' })
+  @ApiResponse({ status: 400, description: 'Bad Request' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 404, description: 'Join request not found' })
+  async respondToJoinRequest(
+    @Param('requestId') requestId: string,
+    @Body() dto: RespondJoinRequestDto,
+    @Req() req: Request,
+  ) {
+    const user = req['user'];
+    if (!user) throw new UnauthorizedException('User not found in request');
+    return this.teamService.respondToJoinRequest(requestId, dto, user.id);
   }
 }

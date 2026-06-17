@@ -26,7 +26,7 @@ import { OpportunityDetailScreen } from '../../../../shared/ui/OpportunityDetail
 interface DiscoverCompetitionsScreenProps {
   readonly onOpenEvents: () => void;
   readonly onOpenHackathons: () => void;
-  readonly onOpenCompetitionPage: () => void;
+  readonly onOpenCompetitionPage: (competitionId: string) => void;
   readonly onSearchResults: () => void;
 }
 
@@ -146,7 +146,7 @@ export function DiscoverCompetitionsScreen({
                   image={heroImageByIndex(index)}
                   item={item}
                   key={item.id}
-                  onOpenCompetitionPage={onOpenCompetitionPage}
+                  onOpenCompetitionPage={() => onOpenCompetitionPage(item.id)}
                   onToggleBookmark={toggleBookmark}
                 />
               ))}
@@ -259,11 +259,12 @@ function heroImageByIndex(_index: number): ImageSourcePropType {
 }
 
 interface CompetitionPageScreenProps {
+  readonly competitionId: string;
   readonly onBackToDiscover: () => void;
 }
 
-export function CompetitionPageScreen({ onBackToDiscover }: CompetitionPageScreenProps) {
-  const { data: detail, isError, isLoading, refetch } = useCompetitionDetail();
+export function CompetitionPageScreen({ competitionId, onBackToDiscover }: CompetitionPageScreenProps) {
+  const { data: detail, isError, isLoading, refetch } = useCompetitionDetail(competitionId);
 
   if (isLoading) {
     return <DetailLoadingState />;

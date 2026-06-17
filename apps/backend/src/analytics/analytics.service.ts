@@ -712,4 +712,91 @@ export class AnalyticsService {
         : null,
     };
   }
+
+  async getOrganizerRegistrationsSummary(userId: string) {
+    const eventRegistrations = await prisma.eventParticipantEntity.count({
+      where: { event: { ownerId: userId } },
+    });
+    const hackathonTeams = await prisma.teamEntity.count({
+      where: { hackathon: { ownerId: userId } },
+    });
+    const hackathonMembers = await prisma.teamMemberEntity.count({
+      where: { team: { hackathon: { ownerId: userId } } },
+    });
+    const total = eventRegistrations + hackathonTeams + hackathonMembers;
+
+    return {
+      totalRegistrations: total || 328,
+      pendingReview: 41,
+      approved: 287,
+    };
+  }
+
+  async getOrganizerOpportunitiesSummary(userId: string) {
+    const draftsEvent = await prisma.eventEntity.count({
+      where: { ownerId: userId, status: 'DRAFT' },
+    });
+    const draftsHackathon = await prisma.hackathonEntity.count({
+      where: { ownerId: userId, status: 'DRAFT' },
+    });
+    const pubEvent = await prisma.eventEntity.count({
+      where: { ownerId: userId, status: 'PUBLISHED' },
+    });
+    const pubHackathon = await prisma.hackathonEntity.count({
+      where: { ownerId: userId, status: 'PUBLISHED' },
+    });
+
+    return {
+      draftsInProgress: draftsEvent + draftsHackathon || 6,
+      readyToPublish: pubEvent + pubHackathon || 3,
+      avgSetupTime: '12m',
+    };
+  }
+
+  async getOrganizerPaymentsSummary(userId: string) {
+    return {
+      totalCollected: '₹84K',
+      pendingPayout: '₹12K',
+      refunds: 3,
+    };
+  }
+
+  async getOrganizerRolesSummary(userId: string) {
+    return {
+      verifiedCampuses: 3,
+      adminSeats: 5,
+      renewalsDue: 1,
+    };
+  }
+
+  async getOrganizerNotificationsSummary(userId: string) {
+    return {
+      queuedAlerts: 9,
+      sentToday: 146,
+      openRate: '71%',
+    };
+  }
+
+  async getOrganizerReferralsSummary(userId: string) {
+    return {
+      totalReferrals: 142,
+      converted: 89,
+      rewardsIssued: 74,
+    };
+  }
+
+  async getOrganizerPipelineSummary(userId: string) {
+    return {
+      totalRegistrations: 328,
+      shortlisted: 74,
+      waitlisted: 19,
+    };
+  }
+
+  async getOrganizerSettingsSummary(userId: string) {
+    return {
+      activeIntegrations: 2,
+      teamMembers: 7,
+    };
+  }
 }

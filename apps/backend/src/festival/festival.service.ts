@@ -47,6 +47,8 @@ export class FestivalService {
         organizerId: userId,
         organizationName: dto.organizationName,
         organizationLogoUrl: dto.organizationLogoUrl,
+        status: 'PUBLISHED',
+        approvalStatus: 'APPROVED',
       },
       include: {
         hackathons: true,
@@ -230,7 +232,7 @@ export class FestivalService {
       }
     }
 
-    const currentStatus = existing.status as LifecycleStatus;
+    const currentStatus = existing.status;
     this.assertLifecycleTransitionAllowed(
       currentStatus,
       nextStatus,

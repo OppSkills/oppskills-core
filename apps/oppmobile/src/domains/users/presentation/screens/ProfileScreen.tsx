@@ -8,7 +8,8 @@ import certificateStatIcon from '../../../../../assets/Frame 192 (2).png';
 import eventStatIcon from '../../../../../assets/Frame 192.png';
 import frame426Illustration from '../../../../../assets/Frame 426.png';
 import writingRoomIllustration from '../../../../../assets/Writing room-rafiki 1.png';
-import { useMockSession } from '../../../user-accounts/presentation/providers/MockSessionProvider';
+import { useCurrentUser } from '../hooks/useCurrentUser';
+import { useAppSession } from '../../../../shared/auth/useAppSession';
 import { AppText } from '../../../../shared/ui';
 import { styles } from './ProfileScreen.styles';
 
@@ -17,25 +18,6 @@ interface ProfileScreenProps {
   readonly onEdit: () => void;
 }
 
-const FALLBACK_PROFILE = {
-  email: 'rohanvats12@gmail.com',
-  fullName: 'Someone sharma',
-  phone: '9999999999',
-} as const;
-
-function formatPhoneLabel(rawPhone: string): string {
-  const digits = rawPhone.replace(/\D/g, '');
-
-  if (digits.length === 10) {
-    return `+91 ${digits.slice(0, 5)} ${digits.slice(5)}`;
-  }
-
-  if (digits.length === 12 && digits.startsWith('91')) {
-    return `+${digits.slice(0, 2)} ${digits.slice(2, 7)} ${digits.slice(7)}`;
-  }
-
-  return rawPhone;
-}
 
 function initialsFromName(fullName: string): string {
   const parts = fullName
@@ -76,11 +58,20 @@ function StatRow({ label, value, iconSource }: StatRowProps) {
 }
 
 export function ProfileScreen({ onBack, onEdit }: ProfileScreenProps) {
-  const session = useMockSession();
-  const fullName = session.mockProfile?.fullName || FALLBACK_PROFILE.fullName;
-  const email = session.mockProfile?.email || FALLBACK_PROFILE.email;
-  const phone = formatPhoneLabel(session.mockProfile?.phoneNumber || FALLBACK_PROFILE.phone);
+  const session = useAppSession();
+  const { data: currentUser } = useCurrentUser();
+  
+  const fullName = currentUser 
+    ? `${currentUser.firstName ?? ''} ${currentUser.lastName ?? ''}`.trim() || 'User'
+    : `${session.firstName ?? ''} ${session.lastName ?? ''}`.trim() || 'User';
+  const email = currentUser?.email || session.userEmail || '';
   const initials = initialsFromName(fullName);
+  const p = currentUser?.onboardingProfile;
+  const stats = currentUser?.stats;
+
+  const collegeName = p?.college?.name ?? p?.schoolName ?? p?.companyName ?? null;
+  const skillsText = p?.skills && p.skills.length > 0 ? p.skills.join(', ') : null;
+  const locationText = [p?.locationCity, p?.locationCountry].filter(Boolean).join(', ') || null;
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={styles.screen}>
@@ -96,9 +87,13 @@ export function ProfileScreen({ onBack, onEdit }: ProfileScreenProps) {
 
         <View style={styles.profileCard}>
           <View style={styles.avatar}>
-            <AppText style={styles.avatarText} variant="title">
-              {initials}
-            </AppText>
+            {currentUser?.imageUrl ? (
+              <Image source={{ uri: currentUser.imageUrl }} style={{ width: '100%', height: '100%', borderRadius: 999 }} />
+            ) : (
+              <AppText style={styles.avatarText} variant="title">
+                {initials}
+              </AppText>
+            )}
           </View>
 
           <View style={styles.profileMeta}>
@@ -106,14 +101,25 @@ export function ProfileScreen({ onBack, onEdit }: ProfileScreenProps) {
               {fullName}
             </AppText>
             <View style={styles.profileMetaRow}>
-              <AppText style={styles.phone} variant="caption">
-                {phone}
-              </AppText>
-              <View style={styles.tinyDot} />
               <AppText numberOfLines={1} style={styles.email} variant="caption">
                 {email}
               </AppText>
             </View>
+            {collegeName ? (
+              <AppText numberOfLines={1} style={[styles.email, { marginTop: 2 }]} variant="caption">
+                🎓 {collegeName}
+              </AppText>
+            ) : null}
+            {locationText ? (
+              <AppText numberOfLines={1} style={[styles.email, { marginTop: 2 }]} variant="caption">
+                📍 {locationText}
+              </AppText>
+            ) : null}
+            {skillsText ? (
+              <AppText numberOfLines={2} style={[styles.email, { marginTop: 2 }]} variant="caption">
+                🛠 {skillsText}
+              </AppText>
+            ) : null}
           </View>
 
           <Pressable accessibilityLabel="Edit profile" hitSlop={8} onPress={onEdit} style={styles.editPill}>
@@ -130,9 +136,9 @@ export function ProfileScreen({ onBack, onEdit }: ProfileScreenProps) {
           <AppText style={styles.cardTitle} variant="title">
             Your Stats
           </AppText>
-          <StatRow iconSource={eventStatIcon} label="Events" value="12" />
-          <StatRow iconSource={competitionStatIcon} label="Competitions" value="8" />
-          <StatRow iconSource={certificateStatIcon} label="Certificates" value="8" />
+          <StatRow iconSource={eventStatIcon} label="Events" value={String(stats?.events ?? 0)} />
+          <StatRow iconSource={competitionStatIcon} label="Competitions" value={String(stats?.competitions ?? 0)} />
+          <StatRow iconSource={certificateStatIcon} label="Certificates" value={String(stats?.certificates ?? 0)} />
         </View>
 
         <View style={styles.sectionCard}>

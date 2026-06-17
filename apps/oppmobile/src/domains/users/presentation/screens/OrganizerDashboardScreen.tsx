@@ -1,19 +1,31 @@
 import { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { AppText, OrganizerSidebarDrawer, type OrganizerSidebarItem } from '../../../../shared/ui';
 import { type LiveEvent } from '../../../events/presentation/screens/OrganizerCreateEventScreen';
 import { EventDetailScreen } from '../../../events/presentation/screens/EventDetailScreen';
 import { OrganizerDashboardHome } from './OrganizerDashboardHome';
-import { OrganizerEventsPanel, updatePersistedEvent } from '../../../events/presentation/screens/OrganizerEventsPanel';
+import { OrganizerEventsPanel } from '../../../events/presentation/screens/OrganizerEventsPanel';
 import { SendNotificationsPanel } from './SendNotificationsPanel';
 import { TalentPipelinePanel } from './TalentPipelinePanel';
 import { OrganizerFestivalsPanel } from './OrganizerFestivalsPanel';
 import { FestivalDetailScreen, type LiveFestival } from './FestivalDetailScreen';
 import { type LiveHackathon } from '../../../hackathons/presentation/screens/organizer/OrganizerCreateHackathonScreen';
-import { OrganizerHackathonsPanel, updatePersistedHackathon } from '../../../hackathons/presentation/screens/organizer/OrganizerHackathonsPanel';
+import { OrganizerHackathonsPanel } from '../../../hackathons/presentation/screens/organizer/OrganizerHackathonsPanel';
 import { HackathonDetailScreen } from '../../../hackathons/presentation/screens/organizer/HackathonDetailScreen';
+import { Skeleton } from 'boneyard-js/react';
+import {
+  useOrganizerRegistrationsSummary,
+  useOrganizerOpportunitiesSummary,
+  useOrganizerPaymentsSummary,
+  useOrganizerRolesSummary,
+  useOrganizerNotificationsSummary,
+  useOrganizerReferralsSummary,
+  useOrganizerPipelineSummary,
+  useOrganizerSettingsSummary,
+} from '../hooks/useOrganizerSummaries';
 import { styles } from './OrganizerDashboardScreen.styles';
 
 const organizerSidebarItems = [
@@ -187,11 +199,113 @@ interface OrganizerDashboardScreenProps {
 }
 
 export function OrganizerDashboardScreen({ onBack }: OrganizerDashboardScreenProps) {
+  const queryClient = useQueryClient();
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [activeSectionKey, setActiveSectionKey] = useState<OrganizerSectionKey | 'event' | 'hackathon' | 'festival' | 'home'>('dashboard');
   const [selectedEvent, setSelectedEvent] = useState<LiveEvent | null>(null);
   const [selectedFestival, setSelectedFestival] = useState<LiveFestival | null>(null);
   const [selectedHackathon, setSelectedHackathon] = useState<LiveHackathon | null>(null);
+
+  const regSummary = useOrganizerRegistrationsSummary(activeSectionKey === 'manage-registrations');
+  const oppSummary = useOrganizerOpportunitiesSummary(activeSectionKey === 'edit-opportunity');
+  const paySummary = useOrganizerPaymentsSummary(activeSectionKey === 'payments');
+  const rolesSummary = useOrganizerRolesSummary(activeSectionKey === 'manage-roles');
+  const notifSummary = useOrganizerNotificationsSummary(activeSectionKey === 'send-notifications');
+  const refSummary = useOrganizerReferralsSummary(activeSectionKey === 'referrals');
+  const pipeSummary = useOrganizerPipelineSummary(activeSectionKey === 'talent-pipeline');
+  const settingsSummary = useOrganizerSettingsSummary(activeSectionKey === 'settings');
+
+  const getSectionMetrics = (sectionKey: OrganizerSectionKey) => {
+    const section = organizerSections[sectionKey];
+    if (!section) return { metrics: [], isLoading: false };
+
+    let overrideMetrics: { label: string; value: string }[] = section.metrics.map(m => ({ ...m }));
+    let isLoading = false;
+
+    switch (sectionKey) {
+      case 'manage-registrations':
+        isLoading = regSummary.isLoading;
+        if (regSummary.data) {
+          overrideMetrics = [
+            { label: 'Total registrations', value: String(regSummary.data.totalRegistrations) },
+            { label: 'Pending review', value: String(regSummary.data.pendingReview) },
+            { label: 'Approved', value: String(regSummary.data.approved) },
+          ];
+        }
+        break;
+      case 'edit-opportunity':
+        isLoading = oppSummary.isLoading;
+        if (oppSummary.data) {
+          overrideMetrics = [
+            { label: 'Drafts in progress', value: String(oppSummary.data.draftsInProgress) },
+            { label: 'Ready to publish', value: String(oppSummary.data.readyToPublish) },
+            { label: 'Avg. setup time', value: oppSummary.data.avgSetupTime },
+          ];
+        }
+        break;
+      case 'payments':
+        isLoading = paySummary.isLoading;
+        if (paySummary.data) {
+          overrideMetrics = [
+            { label: 'Total collected', value: paySummary.data.totalCollected },
+            { label: 'Pending payout', value: paySummary.data.pendingPayout },
+            { label: 'Refunds', value: String(paySummary.data.refunds) },
+          ];
+        }
+        break;
+      case 'manage-roles':
+        isLoading = rolesSummary.isLoading;
+        if (rolesSummary.data) {
+          overrideMetrics = [
+            { label: 'Verified campuses', value: String(rolesSummary.data.verifiedCampuses) },
+            { label: 'Admin seats', value: String(rolesSummary.data.adminSeats) },
+            { label: 'Renewals due', value: String(rolesSummary.data.renewalsDue) },
+          ];
+        }
+        break;
+      case 'send-notifications':
+        isLoading = notifSummary.isLoading;
+        if (notifSummary.data) {
+          overrideMetrics = [
+            { label: 'Queued alerts', value: String(notifSummary.data.queuedAlerts) },
+            { label: 'Sent today', value: String(notifSummary.data.sentToday) },
+            { label: 'Open rate', value: notifSummary.data.openRate },
+          ];
+        }
+        break;
+      case 'referrals':
+        isLoading = refSummary.isLoading;
+        if (refSummary.data) {
+          overrideMetrics = [
+            { label: 'Total referrals', value: String(refSummary.data.totalReferrals) },
+            { label: 'Converted', value: String(refSummary.data.converted) },
+            { label: 'Rewards issued', value: String(refSummary.data.rewardsIssued) },
+          ];
+        }
+        break;
+      case 'talent-pipeline':
+        isLoading = pipeSummary.isLoading;
+        if (pipeSummary.data) {
+          overrideMetrics = [
+            { label: 'Total registrations', value: String(pipeSummary.data.totalRegistrations) },
+            { label: 'Shortlisted', value: String(pipeSummary.data.shortlisted) },
+            { label: 'Waitlisted', value: String(pipeSummary.data.waitlisted) },
+          ];
+        }
+        break;
+      case 'settings':
+        isLoading = settingsSummary.isLoading;
+        if (settingsSummary.data) {
+          overrideMetrics = [
+            { label: 'Active integrations', value: String(settingsSummary.data.activeIntegrations) },
+            { label: 'Team members', value: String(settingsSummary.data.teamMembers) },
+            { label: 'Last updated', value: '2d ago' },
+          ];
+        }
+        break;
+    }
+    return { metrics: overrideMetrics, isLoading };
+  };
 
   const activeSection = activeSectionKey in organizerSections
     ? organizerSections[activeSectionKey as OrganizerSectionKey]
@@ -235,7 +349,7 @@ export function OrganizerDashboardScreen({ onBack }: OrganizerDashboardScreenPro
           onBack={() => setSelectedHackathon(null)}
           onOpenMainSidebar={() => setDrawerVisible(true)}
           onUpdateHackathon={(updated) => {
-            updatePersistedHackathon(updated);
+            void queryClient.invalidateQueries({ queryKey: ['organizer', 'hackathons'] });
             setSelectedHackathon(updated);
           }}
         />
@@ -247,7 +361,7 @@ export function OrganizerDashboardScreen({ onBack }: OrganizerDashboardScreenPro
           onBack={() => setSelectedEvent(null)}
           onOpenMainSidebar={() => setDrawerVisible(true)}
           onUpdateEvent={(updated) => {
-            updatePersistedEvent(updated);
+            void queryClient.invalidateQueries({ queryKey: ['organizer', 'events'] });
             setSelectedEvent(updated);
           }}
         />
@@ -258,7 +372,10 @@ export function OrganizerDashboardScreen({ onBack }: OrganizerDashboardScreenPro
           festival={selectedFestival}
           onBack={() => setSelectedFestival(null)}
           onOpenMainSidebar={() => setDrawerVisible(true)}
-          onUpdateFestival={(updated) => setSelectedFestival(updated)}
+          onUpdateFestival={(updated) => {
+            void queryClient.invalidateQueries({ queryKey: ['organizer', 'festivals'] });
+            setSelectedFestival(updated);
+          }}
         />
       ) : showingFestivals ? (
         <OrganizerFestivalsPanel onSelectFestival={(f) => setSelectedFestival(f)} />
@@ -283,16 +400,18 @@ export function OrganizerDashboardScreen({ onBack }: OrganizerDashboardScreenPro
             </AppText>
 
             <View style={styles.metricGrid}>
-              {activeSection.metrics.map((metric) => (
-                <View key={metric.label} style={styles.metricCard}>
-                  <AppText style={styles.metricLabel} variant="caption">
-                    {metric.label}
-                  </AppText>
-                  <AppText style={styles.metricValue} variant="title">
-                    {metric.value}
-                  </AppText>
-                </View>
-              ))}
+              <Skeleton name={`${activeSectionKey}-metrics`} loading={getSectionMetrics(activeSectionKey as OrganizerSectionKey).isLoading}>
+                {getSectionMetrics(activeSectionKey as OrganizerSectionKey).metrics.map((metric) => (
+                  <View key={metric.label} style={styles.metricCard}>
+                    <AppText style={styles.metricLabel} variant="caption">
+                      {metric.label}
+                    </AppText>
+                    <AppText style={styles.metricValue} variant="title">
+                      {metric.value}
+                    </AppText>
+                  </View>
+                ))}
+              </Skeleton>
             </View>
           </View>
 

@@ -1,20 +1,28 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   Image,
   Modal,
   Pressable,
   ScrollView,
   StyleSheet,
+  Switch,
   TextInput,
   View,
 } from 'react-native';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
+import * as ImagePicker from 'expo-image-picker';
+import * as DocumentPicker from 'expo-document-picker';
 import subtractPlaceholder from '../../../../../../assets/Subtract.png';
-import { AppText } from '../../../../../shared/ui';
+import { AppText, RegistrationSettingsPanel, type RegistrationQuestion } from '../../../../../shared/ui';
+import { apiClient } from '../../../../../shared/api/apiClient';
 import {
   type EligibilityKey,
   type HackathonContact,
+  type HackathonAttachment,
   type HackathonPrize,
+  type HackathonRound,
   type LiveHackathon,
   type PassSendingMode,
 } from './OrganizerCreateHackathonScreen';
@@ -31,19 +39,20 @@ type EditTab =
   | 'preview'
   | 'basic-details'
   | 'registration-settings'
+  | 'rounds'
   | 'prizes'
   | 'additional-info'
   | 'pass-settings';
 
-type PreviewSubTab = 'about' | 'contact';
+
 
 const EDIT_TABS: { key: EditTab; label: string }[] = [
   { key: 'preview', label: 'Preview' },
   { key: 'basic-details', label: 'Basic Details' },
   { key: 'registration-settings', label: 'Registration Settings' },
+  { key: 'rounds', label: 'Rounds' },
   { key: 'prizes', label: 'Prizes' },
   { key: 'additional-info', label: 'Additional Info' },
-  { key: 'pass-settings', label: 'Pass Settings' },
 ];
 
 const ELIGIBILITY_OPTIONS: { key: EligibilityKey; label: string; sub: string }[] = [
@@ -56,8 +65,12 @@ const ELIGIBILITY_OPTIONS: { key: EligibilityKey; label: string; sub: string }[]
 
 interface EditHackathonScreenProps {
   readonly hackathon: LiveHackathon;
-  readonly onUpdateHackathon: (hackathon: LiveHackathon) => void;
+  readonly mode?: 'edit' | 'create';
+  readonly isCreating?: boolean;
+  readonly onUpdateHackathon?: (hackathon: LiveHackathon) => void;
+  readonly onCreateHackathon?: (hackathon: LiveHackathon) => void;
 }
+
 
 function formatCurrentTime(): string {
   const now = new Date();
@@ -69,13 +82,131 @@ function formatCurrentTime(): string {
   return `${hour}:${m}:${s} ${period}`;
 }
 
-export function EditHackathonScreen({ hackathon, onUpdateHackathon }: EditHackathonScreenProps) {
+/** Converts "4 Jun 26" style date strings to ISO. Falls back to now+offsetDays. */
+function parseDateStrToISO(dateStr: string, offsetDays = 0): string {
+  const MONTHS: Record<string, number> = {
+    Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5,
+    Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11,
+  };
+  const parts = (dateStr ?? '').trim().split(' ');
+  if (parts.length >= 3 && parts[1] && MONTHS[parts[1]] !== undefined) {
+    const day = parseInt(parts[0] ?? '1', 10);
+    const month = MONTHS[parts[1]] ?? 0;
+    const rawYear = parseInt(parts[2] ?? '0', 10);
+    const year = rawYear < 100 ? 2000 + rawYear : rawYear;
+    const d = new Date(year, month, isNaN(day) ? 1 : day);
+    if (!isNaN(d.getTime())) return d.toISOString();
+  }
+  const fallback = new Date();
+  fallback.setDate(fallback.getDate() + offsetDays);
+  return fallback.toISOString();
+}
+
+/** Maps local LiveHackathon rounds to the backend RoundDto shape. */
+function mapRoundsToDto(rounds: readonly HackathonRound[]) {
+  return rounds.map((r, index) => ({
+    name: r.title || `Round ${index + 1}`,
+    description: r.description || undefined,
+    startsAt: parseDateStrToISO(r.startDate, index),
+    endsAt: parseDateStrToISO(r.endDate, index + 1),
+    order: index,
+    roundType: (r.type ? r.type.toUpperCase() : 'ONLINE') as 'ONLINE' | 'OFFLINE' | 'PRESENTATION',
+    submissionConfig: r.submissionsEnabled ? { requiresFileUpload: true } : undefined,
+  }));
+}
+
+export function EditHackathonScreen({ hackathon, mode = 'edit', isCreating = false, onUpdateHackathon, onCreateHackathon }: EditHackathonScreenProps) {
   const [activeTab, setActiveTab] = useState<EditTab>('preview');
   const [savedTime, setSavedTime] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+
+  const updateMutation = useMutation({
+    mutationFn: (updatedHackathon: LiveHackathon) => {
+      if (!updatedHackathon.id) return Promise.resolve(null);
+      const MONTHS: Record<string, number> = {
+        Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5,
+        Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11,
+      };
+      const parseDate = (str: string): string => {
+        const parts = (str ?? '').trim().split(' ');
+        if (parts.length >= 3 && parts[1] && MONTHS[parts[1]] !== undefined) {
+          const day = parseInt(parts[0] ?? '1', 10);
+          const month = MONTHS[parts[1]] ?? 0;
+          const rawYear = parseInt(parts[2] ?? '0', 10);
+          const year = rawYear < 100 ? 2000 + rawYear : rawYear;
+          const d = new Date(year, month, isNaN(day) ? 1 : day);
+          if (!isNaN(d.getTime())) return d.toISOString();
+        }
+        return new Date().toISOString();
+      };
+      return apiClient.put(`/hackathons/${updatedHackathon.id}`, {
+        name: updatedHackathon.title,
+        description: updatedHackathon.description,
+        startDate: parseDate(updatedHackathon.startDate),
+        endDate: parseDate(updatedHackathon.startDate), // same-day default
+        registrationStartDate: updatedHackathon.registrationStartDate ? parseDate(updatedHackathon.registrationStartDate) : undefined,
+        registrationDeadline: updatedHackathon.registrationDeadlineDate ? parseDate(updatedHackathon.registrationDeadlineDate) : undefined,
+        mode: updatedHackathon.locationMode === 'online' ? 'ONLINE' : 'OFFLINE',
+        organizationName: updatedHackathon.organizerName || undefined,
+        bannerImageUrl: updatedHackathon.imageUrl || undefined,
+      });
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['organizer', 'hackathons'] });
+    },
+  });
+
+  const updateRoundsMutation = useMutation({
+    mutationFn: ({ hackathonId, rounds }: { hackathonId: string; rounds: readonly HackathonRound[] }) => {
+      return apiClient.put(`/hackathons/${hackathonId}/rounds`, {
+        rounds: mapRoundsToDto(rounds),
+      });
+    },
+  });
+
+  const updateAdditionalInfoMutation = useMutation({
+    mutationFn: ({ hackathonId, contacts, attachments }: { hackathonId: string; contacts: readonly HackathonContact[]; attachments: readonly HackathonAttachment[] }) => {
+      return apiClient.put(`/hackathons/${hackathonId}/additional-info`, {
+        contactPersons: contacts.map((c) => ({
+          name: c.name,
+          phone: c.phone || undefined,
+          email: c.email || undefined,
+        })),
+        attachments: attachments.map((a) => ({
+          fileName: a.name,
+          fileUrl: a.url,
+          fileType: 'document',
+        })),
+      });
+    },
+  });
 
   function handleSave(updatedHackathon: LiveHackathon) {
-    onUpdateHackathon(updatedHackathon);
+    if (onUpdateHackathon) onUpdateHackathon(updatedHackathon);
     setSavedTime(formatCurrentTime());
+    if (mode === 'edit' && updatedHackathon.id) {
+      updateMutation.mutate(updatedHackathon);
+    }
+  }
+
+  function handleSaveRounds(hackathonId: string, rounds: readonly HackathonRound[], updatedHackathon: LiveHackathon) {
+    if (onUpdateHackathon) onUpdateHackathon(updatedHackathon);
+    setSavedTime(formatCurrentTime());
+    if (hackathonId) {
+      updateRoundsMutation.mutate({ hackathonId, rounds });
+    }
+  }
+
+  function handleSaveAdditionalInfo(hackathonId: string, updatedHackathon: LiveHackathon) {
+    if (onUpdateHackathon) onUpdateHackathon(updatedHackathon);
+    setSavedTime(formatCurrentTime());
+    if (hackathonId) {
+      updateAdditionalInfoMutation.mutate({
+        hackathonId,
+        contacts: updatedHackathon.contacts ?? [],
+        attachments: updatedHackathon.attachments ?? [],
+      });
+    }
   }
 
   return (
@@ -104,144 +235,375 @@ export function EditHackathonScreen({ hackathon, onUpdateHackathon }: EditHackat
         })}
       </ScrollView>
 
-      {/* Saved status bar */}
-      <View style={styles.savedBar}>
-        <AppText style={savedTime !== null ? styles.savedText : styles.unsavedText}>
-          {savedTime !== null ? 'Saved' : 'Unsaved'}
-        </AppText>
-        {savedTime !== null && (
-          <AppText style={styles.lastSavedText}>Last saved: {savedTime}</AppText>
-        )}
-      </View>
+      {/* Saved status bar or Create Button */}
+      {mode === 'create' ? (
+        <View style={styles.savedBar}>
+          <AppText style={styles.unsavedText}>{isCreating ? 'Creating…' : 'Draft Hackathon'}</AppText>
+          <Pressable
+            disabled={isCreating}
+            onPress={() => !isCreating && onCreateHackathon && onCreateHackathon(hackathon)}
+            style={{ backgroundColor: isCreating ? '#7C5BA0' : '#392160', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 100, flexDirection: 'row', alignItems: 'center', gap: 8, opacity: isCreating ? 0.7 : 1 }}
+          >
+            {isCreating && <ActivityIndicator color="#fff" size="small" />}
+            <AppText style={{ color: '#fff', fontSize: 13, fontWeight: '600' }}>
+              {isCreating ? 'Creating…' : 'Host Hackathon'}
+            </AppText>
+          </Pressable>
+        </View>
+      ) : (
+        <View style={styles.savedBar}>
+          <AppText style={savedTime !== null ? styles.savedText : styles.unsavedText}>
+            {updateMutation.isPending ? 'Saving…' : savedTime !== null ? 'Saved' : 'Unsaved'}
+          </AppText>
+          {savedTime !== null && !updateMutation.isPending && (
+            <AppText style={styles.lastSavedText}>Last saved: {savedTime}</AppText>
+          )}
+        </View>
+      )}
 
       {activeTab === 'preview' ? (
         <PreviewContent hackathon={hackathon} />
       ) : activeTab === 'basic-details' ? (
-        <BasicDetailsContent hackathon={hackathon} onSave={handleSave} />
+        <BasicDetailsContent hackathon={hackathon} isSaving={updateMutation.isPending} onSave={handleSave} />
       ) : activeTab === 'registration-settings' ? (
         <RegistrationSettingsContent hackathon={hackathon} onSave={handleSave} />
+      ) : activeTab === 'rounds' ? (
+        <RoundsContent
+          hackathon={hackathon}
+          hackathonId={hackathon.id}
+          isSavingRounds={updateRoundsMutation.isPending}
+          onSave={(updated) => handleSaveRounds(hackathon.id, updated.rounds ?? [], updated)}
+        />
       ) : activeTab === 'prizes' ? (
         <PrizesContent hackathon={hackathon} onSave={handleSave} />
       ) : activeTab === 'additional-info' ? (
-        <AdditionalInfoContent hackathon={hackathon} onSave={handleSave} />
-      ) : activeTab === 'pass-settings' ? (
-        <PassSettingsContent hackathon={hackathon} onSave={handleSave} />
+        <AdditionalInfoContent hackathon={hackathon} onSave={(updated) => handleSaveAdditionalInfo(hackathon.id, updated)} />
       ) : null}
     </View>
   );
 }
 
+// ─── Registration Settings Content ───────────────────────────────────────────────
+
+function RegistrationSettingsContent({ hackathon, onSave }: { readonly hackathon: LiveHackathon; readonly onSave: (h: LiveHackathon) => void }) {
+  const [activeModal, setActiveModal] = useState<'registrationStartDate' | 'registrationStartTime' | 'registrationDeadlineDate' | 'registrationDeadlineTime' | null>(null);
+
+  const parsedStartDate = parseDateStr(hackathon.registrationStartDate || '');
+  const startTimeValue = parseTimeStr(hackathon.registrationStartTime || '');
+  const parsedDeadlineDate = parseDateStr(hackathon.registrationDeadlineDate || '');
+  const deadlineTimeValue = parseTimeStr(hackathon.registrationDeadlineTime || '');
+
+  return (
+    <>
+      <RegistrationSettingsPanel 
+        eligibleCandidates={hackathon.eligibleCandidates || ['everyone']}
+        maxAttendees={hackathon.maxAttendees || ''}
+        onChange={(updates) => onSave({ ...hackathon, ...updates })}
+        onSave={() => onSave(hackathon)}
+        onPressTimelineField={setActiveModal}
+        {...(hackathon.additionalQuestions !== undefined ? { additionalQuestions: hackathon.additionalQuestions } : {})}
+        {...(hackathon.registrationDeadlineDate !== undefined ? { registrationDeadlineDate: hackathon.registrationDeadlineDate } : {})}
+        {...(hackathon.registrationDeadlineTime !== undefined ? { registrationDeadlineTime: hackathon.registrationDeadlineTime } : {})}
+        {...(hackathon.registrationStartDate !== undefined ? { registrationStartDate: hackathon.registrationStartDate } : {})}
+        {...(hackathon.registrationStartTime !== undefined ? { registrationStartTime: hackathon.registrationStartTime } : {})}
+      />
+      
+      <DatePickerModal
+        onClose={() => setActiveModal(null)}
+        onConfirm={(date) => {
+          const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+          const dateStr = `${date.getDate()} ${MONTHS[date.getMonth()]} ${String(date.getFullYear()).slice(2)}`;
+          if (activeModal === 'registrationStartDate') onSave({ ...hackathon, registrationStartDate: dateStr });
+          if (activeModal === 'registrationDeadlineDate') onSave({ ...hackathon, registrationDeadlineDate: dateStr });
+          setActiveModal(null);
+        }}
+        value={activeModal === 'registrationStartDate' ? parsedStartDate : parsedDeadlineDate}
+        visible={activeModal === 'registrationStartDate' || activeModal === 'registrationDeadlineDate'}
+      />
+      <TimePickerModal
+        onClose={() => setActiveModal(null)}
+        onConfirm={(t: TimeValue) => {
+          const timeStr = `${t.hour}:${t.minute} ${t.period}`;
+          if (activeModal === 'registrationStartTime') onSave({ ...hackathon, registrationStartTime: timeStr });
+          if (activeModal === 'registrationDeadlineTime') onSave({ ...hackathon, registrationDeadlineTime: timeStr });
+          setActiveModal(null);
+        }}
+        value={activeModal === 'registrationStartTime' ? startTimeValue : deadlineTimeValue}
+        visible={activeModal === 'registrationStartTime' || activeModal === 'registrationDeadlineTime'}
+      />
+    </>
+  );
+}
+
 // ─── Preview ─────────────────────────────────────────────────────────────────
+
+type PreviewSubTab = 'about' | 'rounds' | 'prizes' | 'contact';
 
 function PreviewContent({ hackathon }: { readonly hackathon: LiveHackathon }) {
   const [subTab, setSubTab] = useState<PreviewSubTab>('about');
 
-  return (
-    <ScrollView contentContainerStyle={styles.previewContent} showsVerticalScrollIndicator={false}>
-      <View style={styles.eventCard}>
-        <Image resizeMode="cover" source={subtractPlaceholder} style={styles.bannerImage} />
+  const hasPrizes = hackathon.prizes && hackathon.prizes.length > 0;
+  const hasContact = hackathon.contacts && hackathon.contacts.length > 0;
 
-        <View style={styles.subTabRow}>
-          <Pressable
-            onPress={() => setSubTab('about')}
-            style={[styles.subTab, subTab === 'about' ? styles.subTabActive : null]}
-          >
-            <AppText style={[styles.subTabLabel, subTab === 'about' ? styles.subTabLabelActive : null]}>
-              About Hackathon
-            </AppText>
-          </Pressable>
-          <Pressable
-            onPress={() => setSubTab('contact')}
-            style={[styles.subTab, subTab === 'contact' ? styles.subTabActive : null]}
-          >
-            <AppText style={[styles.subTabLabel, subTab === 'contact' ? styles.subTabLabelActive : null]}>
-              Contact Details
-            </AppText>
-          </Pressable>
+  return (
+    <View style={previewStyles.container}>
+      <ScrollView contentContainerStyle={previewStyles.scrollContent} showsVerticalScrollIndicator={false}>
+        {/* Cover Banner */}
+        <View style={previewStyles.bannerWrap}>
+          <Image resizeMode="cover" source={hackathon.imageUrl ? { uri: hackathon.imageUrl } : subtractPlaceholder} style={previewStyles.bannerImage} />
+          {/* Overlays can go here if needed later */}
         </View>
 
-        <View style={styles.subTabDivider} />
+        <View style={previewStyles.contentWrap}>
+          {/* Tags & Share */}
+          <View style={previewStyles.metaRow}>
+            <View style={previewStyles.tagsWrap}>
+              <AppText style={previewStyles.tagText}>Workshop</AppText>
+              <AppText style={previewStyles.tagText}>Funding</AppText>
+            </View>
+            <View style={previewStyles.shareCircle}>
+              <View style={previewStyles.shareIcon} />
+            </View>
+          </View>
 
-        {subTab === 'about' ? <AboutSection hackathon={hackathon} /> : <ContactSection hackathon={hackathon} />}
-      </View>
-    </ScrollView>
+          {/* Title */}
+          <AppText style={previewStyles.title}>{hackathon.title}</AppText>
+
+          {/* Schedule & Location */}
+          <View style={previewStyles.infoRow}>
+            <View style={previewStyles.infoIconBox}>
+              <AppText style={previewStyles.calMonth}>{getMonthAbbr(hackathon.startDate) || 'Jan'}</AppText>
+              <AppText style={previewStyles.calDay}>{getDay(hackathon.startDate) || '1'}</AppText>
+            </View>
+            <View style={previewStyles.infoCol}>
+              <AppText style={previewStyles.infoMain}>{getFullDate(hackathon.startDate) || 'Date TBD'}</AppText>
+              <AppText style={previewStyles.infoSub}>{hackathon.startTime || 'Time TBD'}</AppText>
+            </View>
+          </View>
+
+          <View style={previewStyles.infoRow}>
+            <View style={previewStyles.infoIconBox}>
+              <View style={previewStyles.pinHead} />
+              <View style={previewStyles.pinTail} />
+            </View>
+            <View style={previewStyles.infoCol}>
+              <AppText style={previewStyles.infoMain}>
+                {hackathon.locationValue || (hackathon.locationMode === 'online' ? 'Online Event' : 'Location Name')}
+              </AppText>
+              <AppText style={previewStyles.infoSub}>City, State</AppText>
+            </View>
+          </View>
+
+          {/* Dynamic Tabs */}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={previewStyles.tabsScroll} contentContainerStyle={previewStyles.tabsContent}>
+            <Pressable onPress={() => setSubTab('about')} style={[previewStyles.tabBtn, subTab === 'about' && previewStyles.tabBtnActive]}>
+              <AppText style={[previewStyles.tabText, subTab === 'about' && previewStyles.tabTextActive]}>About Event</AppText>
+            </Pressable>
+            <Pressable onPress={() => setSubTab('rounds')} style={[previewStyles.tabBtn, subTab === 'rounds' && previewStyles.tabBtnActive]}>
+              <AppText style={[previewStyles.tabText, subTab === 'rounds' && previewStyles.tabTextActive]}>Rounds</AppText>
+            </Pressable>
+            {hasPrizes && (
+              <Pressable onPress={() => setSubTab('prizes')} style={[previewStyles.tabBtn, subTab === 'prizes' && previewStyles.tabBtnActive]}>
+                <AppText style={[previewStyles.tabText, subTab === 'prizes' && previewStyles.tabTextActive]}>Prizes</AppText>
+              </Pressable>
+            )}
+            <Pressable onPress={() => setSubTab('contact')} style={[previewStyles.tabBtn, subTab === 'contact' && previewStyles.tabBtnActive]}>
+              <AppText style={[previewStyles.tabText, subTab === 'contact' && previewStyles.tabTextActive]}>Contact Details</AppText>
+            </Pressable>
+          </ScrollView>
+
+          {/* Tab Content */}
+          <View style={previewStyles.sectionContent}>
+            {subTab === 'about' && <AboutSection hackathon={hackathon} />}
+            {subTab === 'rounds' && <RoundsSection hackathon={hackathon} />}
+            {subTab === 'prizes' && <PrizesSection hackathon={hackathon} />}
+            {subTab === 'contact' && <ContactSection hackathon={hackathon} />}
+          </View>
+
+        </View>
+      </ScrollView>
+    </View>
   );
 }
 
 function AboutSection({ hackathon }: { readonly hackathon: LiveHackathon }) {
   return (
-    <View style={styles.aboutSection}>
-      <AppText style={styles.eventTitle}>{hackathon.title.toUpperCase()}</AppText>
+    <View>
+      <AppText style={previewStyles.sectionTitle}>About Event</AppText>
+      <AppText style={previewStyles.descText}>
+        {hackathon.description || 'No description provided.'}
+      </AppText>
 
-      <View style={styles.infoRow}>
-        <View style={styles.calBlock}>
-          <AppText style={styles.calMonth}>{getMonthAbbr(hackathon.startDate)}</AppText>
-          <AppText style={styles.calDay}>{getDay(hackathon.startDate)}</AppText>
-        </View>
-        <View style={styles.infoText}>
-          <AppText style={styles.infoMain}>{getFullDate(hackathon.startDate)}</AppText>
-          <AppText style={styles.infoSub}>{hackathon.startTime} Onwards</AppText>
-        </View>
-      </View>
-
-      <View style={styles.infoRow}>
-        <View style={styles.locationIconWrap}>
-          <View style={styles.locationPinHead} />
-          <View style={styles.locationPinTail} />
-        </View>
-        <AppText style={styles.infoMain}>
-          {hackathon.locationValue || (hackathon.locationMode === 'online' ? 'Online Hackathon' : 'Location TBD')}
-        </AppText>
-      </View>
-
-      <View style={styles.registrationCard}>
-        <AppText style={styles.registrationTitle}>Registration</AppText>
-        <View style={styles.registrationDivider} />
-        <AppText style={styles.registrationPrompt}>Welcome! Please choose your desired ticket type:</AppText>
-        <View style={styles.ticketOption}>
-          <AppText style={styles.ticketLabel}>
-            {hackathon.ticketType === 'free' ? 'Standard Entry (Free)' : 'Standard Entry (Paid)'}
+      <AppText style={[previewStyles.sectionTitle, { marginTop: 24, fontSize: 16 }]}>Registration Details</AppText>
+      <View style={previewStyles.contactCard}>
+        <View style={previewStyles.contactInfo}>
+          <AppText style={previewStyles.contactName}>Registration Start</AppText>
+          <AppText style={previewStyles.contactMeta}>
+            {hackathon.registrationStartDate || 'TBD'} {hackathon.registrationStartTime ? `at ${hackathon.registrationStartTime}` : ''}
           </AppText>
-          <View style={styles.ticketCheck}>
-            <View style={styles.ticketCheckMark} />
+        </View>
+      </View>
+      <View style={previewStyles.contactCard}>
+        <View style={previewStyles.contactInfo}>
+          <AppText style={previewStyles.contactName}>Registration Deadline</AppText>
+          <AppText style={previewStyles.contactMeta}>
+            {hackathon.registrationDeadlineDate || 'TBD'} {hackathon.registrationDeadlineTime ? `at ${hackathon.registrationDeadlineTime}` : ''}
+          </AppText>
+        </View>
+      </View>
+      <View style={previewStyles.contactCard}>
+        <View style={previewStyles.contactInfo}>
+          <AppText style={previewStyles.contactName}>Max Attendees</AppText>
+          <AppText style={previewStyles.contactMeta}>{hackathon.maxAttendees || 'No Limit'}</AppText>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+function RoundsSection({ hackathon }: { readonly hackathon: LiveHackathon }) {
+  const rounds = hackathon.rounds ?? [];
+  if (rounds.length === 0) {
+    return (
+      <View>
+        <AppText style={previewStyles.sectionTitle}>Rounds</AppText>
+        <AppText style={previewStyles.emptyText}>No rounds defined yet. Add rounds in the Rounds tab.</AppText>
+      </View>
+    );
+  }
+  return (
+    <View>
+      <AppText style={previewStyles.sectionTitle}>Rounds</AppText>
+      {rounds.map((round, idx) => (
+        <View key={round.id} style={[previewStyles.contactCard, { marginBottom: 10 }]}>
+          <View style={[previewStyles.contactAvatar, { backgroundColor: '#F3EEFF' }]}>
+            <AppText style={[previewStyles.contactInitial, { color: '#6949AA' }]}>{idx + 1}</AppText>
+          </View>
+          <View style={previewStyles.contactInfo}>
+            <AppText style={previewStyles.contactName}>{round.title || `Round ${idx + 1}`}</AppText>
+            {round.startDate ? (
+              <AppText style={previewStyles.contactMeta}>{round.startDate} – {round.endDate || '?'}</AppText>
+            ) : null}
+            {round.description ? (
+              <AppText numberOfLines={2} style={previewStyles.contactMeta}>{round.description}</AppText>
+            ) : null}
           </View>
         </View>
-      </View>
+      ))}
+    </View>
+  );
+}
 
-      <AppText style={styles.sectionHeading}>About Hackathon</AppText>
-      {hackathon.description ? (
-        <AppText style={styles.descriptionText}>{hackathon.description}</AppText>
-      ) : (
-        <AppText style={styles.descriptionEmpty}>No description added yet.</AppText>
-      )}
+function PrizesSection({ hackathon }: { readonly hackathon: LiveHackathon }) {
+  return (
+    <View>
+      <AppText style={previewStyles.sectionTitle}>Prizes</AppText>
+      {hackathon.prizes?.map((prize) => (
+        <View key={prize.id} style={previewStyles.contactCard}>
+          <View style={[previewStyles.contactAvatar, { backgroundColor: '#F3EEFF' }]}>
+            <AppText style={[previewStyles.contactInitial, { color: '#6949AA' }]}>P</AppText>
+          </View>
+          <View style={previewStyles.contactInfo}>
+            <AppText style={previewStyles.contactName}>{prize.title}</AppText>
+            <AppText style={previewStyles.contactMeta}>{prize.amount}</AppText>
+          </View>
+        </View>
+      ))}
     </View>
   );
 }
 
 function ContactSection({ hackathon }: { readonly hackathon: LiveHackathon }) {
   const contacts = hackathon.contacts ?? [];
+  const attachments = hackathon.attachments ?? [];
   return (
-    <View style={styles.contactSection}>
-      <AppText style={styles.sectionHeading}>Contact Details</AppText>
+    <View>
+      <AppText style={previewStyles.sectionTitle}>Contact Details</AppText>
       {contacts.length === 0 ? (
-        <AppText style={styles.descriptionEmpty}>No contacts added yet.</AppText>
+        <AppText style={previewStyles.emptyText}>No contacts added yet.</AppText>
       ) : (
         contacts.map((contact) => (
-          <View key={contact.id} style={styles.contactCard}>
-            <View style={styles.contactAvatar}>
-              <AppText style={styles.contactInitial}>{contact.name.charAt(0).toUpperCase()}</AppText>
+          <View key={contact.id} style={previewStyles.contactCard}>
+            <View style={previewStyles.contactAvatar}>
+              <AppText style={previewStyles.contactInitial}>{contact.name.charAt(0).toUpperCase()}</AppText>
             </View>
-            <View style={styles.contactInfo}>
-              <AppText style={styles.contactName}>{contact.name}</AppText>
-              <AppText style={styles.contactMeta}>{contact.phone}</AppText>
-              <AppText style={styles.contactMeta}>{contact.email}</AppText>
+            <View style={previewStyles.contactInfo}>
+              <AppText style={previewStyles.contactName}>{contact.name}</AppText>
+              <AppText style={previewStyles.contactMeta}>{contact.phone}</AppText>
+              <AppText style={previewStyles.contactMeta}>{contact.email}</AppText>
             </View>
           </View>
         ))
       )}
+
+      {attachments.length > 0 && (
+        <>
+          <AppText style={[previewStyles.sectionTitle, { marginTop: 24 }]}>Attachments</AppText>
+          {attachments.map((attachment) => (
+            <View key={attachment.id} style={previewStyles.contactCard}>
+              <View style={[previewStyles.contactAvatar, { backgroundColor: '#F3EEFF' }]}>
+                <AppText style={[previewStyles.contactInitial, { color: '#6949AA' }]}>A</AppText>
+              </View>
+              <View style={previewStyles.contactInfo}>
+                <AppText style={previewStyles.contactName}>{attachment.name}</AppText>
+                <AppText style={previewStyles.contactMeta}>Document</AppText>
+              </View>
+            </View>
+          ))}
+        </>
+      )}
     </View>
   );
 }
+
+const previewStyles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  scrollContent: { paddingBottom: 40 },
+  bannerWrap: { width: '100%', height: 200, backgroundColor: '#1C1340' },
+  bannerImage: { width: '100%', height: '100%' },
+  contentWrap: { padding: 16 },
+  
+  metaRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  tagsWrap: { flexDirection: 'row', gap: 12 },
+  tagText: { color: '#6949AA', fontFamily: 'Urbanist', fontSize: 12, fontWeight: '600' },
+  shareCircle: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#F3F4F6', alignItems: 'center', justifyContent: 'center' },
+  shareIcon: { borderColor: '#584D5A', borderRadius: 2, borderWidth: 1.5, borderTopWidth: 0, borderRightWidth: 0, height: 10, width: 10, position: 'relative' },
+  
+  title: { color: '#100013', fontFamily: 'Aeonik Pro', fontSize: 24, fontWeight: '700', lineHeight: 30, marginBottom: 20 },
+  
+  infoRow: { flexDirection: 'row', gap: 14, marginBottom: 16, alignItems: 'center' },
+  infoIconBox: { width: 44, height: 44, borderRadius: 10, backgroundColor: '#FAFAFA', borderColor: '#E8E6E8', borderWidth: 1, alignItems: 'center', justifyContent: 'center', position: 'relative' },
+  calMonth: { color: '#584D5A', fontFamily: 'Urbanist', fontSize: 10, fontWeight: '600' },
+  calDay: { color: '#100013', fontFamily: 'Urbanist', fontSize: 16, fontWeight: '700' },
+  pinHead: { borderColor: '#584D5A', borderRadius: 7, borderWidth: 1.5, height: 12, position: 'absolute', top: 12, width: 12 },
+  pinTail: { backgroundColor: '#584D5A', borderRadius: 1, bottom: 12, height: 6, position: 'absolute', width: 2 },
+  infoCol: { flex: 1, justifyContent: 'center' },
+  infoMain: { color: '#100013', fontFamily: 'Urbanist', fontSize: 14, fontWeight: '600' },
+  infoSub: { color: '#7C737E', fontFamily: 'Urbanist', fontSize: 12, marginTop: 2 },
+  
+  tabsScroll: { marginTop: 12, marginBottom: 20 },
+  tabsContent: { gap: 10, paddingRight: 20 },
+  tabBtn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 100, borderWidth: 1, borderColor: '#E8E6E8', backgroundColor: '#FFFFFF' },
+  tabBtnActive: { borderColor: '#D8B4FE', backgroundColor: '#F3EEFF' },
+  tabText: { color: '#584D5A', fontFamily: 'Urbanist', fontSize: 13, fontWeight: '500' },
+  tabTextActive: { color: '#6949AA', fontWeight: '600' },
+  
+  sectionContent: { marginTop: 4 },
+  sectionTitle: { color: '#100013', fontFamily: 'Aeonik Pro', fontSize: 18, fontWeight: '600', marginBottom: 12 },
+  descText: { color: '#584D5A', fontFamily: 'Urbanist', fontSize: 13, lineHeight: 20 },
+  readMoreBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 8 },
+  readMoreText: { color: '#6949AA', fontFamily: 'Urbanist', fontSize: 13, fontWeight: '600' },
+  readMoreChevron: { borderBottomColor: '#6949AA', borderRightColor: '#6949AA', borderBottomWidth: 1.5, borderRightWidth: 1.5, width: 6, height: 6, transform: [{ rotate: '45deg' }] },
+  
+  emptyText: { color: '#7C737E', fontFamily: 'Urbanist', fontSize: 13 },
+  
+  contactCard: { flexDirection: 'row', gap: 14, padding: 16, borderRadius: 12, borderWidth: 1, borderColor: '#E8E6E8', marginBottom: 12 },
+  contactAvatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#2E194D', alignItems: 'center', justifyContent: 'center' },
+  contactInitial: { color: '#FFFFFF', fontFamily: 'Aeonik Pro', fontSize: 18, fontWeight: '600' },
+  contactInfo: { flex: 1, justifyContent: 'center' },
+  contactName: { color: '#100013', fontFamily: 'Urbanist', fontSize: 15, fontWeight: '600', marginBottom: 2 },
+  contactMeta: { color: '#7C737E', fontFamily: 'Urbanist', fontSize: 12 },
+});
 
 // ─── Basic Details ────────────────────────────────────────────────────────────
 
@@ -249,9 +611,11 @@ type BasicModal = 'date' | 'time' | 'location' | 'description' | null;
 
 function BasicDetailsContent({
   hackathon,
+  isSaving = false,
   onSave,
 }: {
   readonly hackathon: LiveHackathon;
+  readonly isSaving?: boolean;
   readonly onSave: (h: LiveHackathon) => void;
 }) {
   const [title, setTitle] = useState(hackathon.title);
@@ -260,13 +624,27 @@ function BasicDetailsContent({
   const [locationMode, setLocationMode] = useState<LocationMode>(hackathon.locationMode);
   const [locationValue, setLocationValue] = useState(hackathon.locationValue);
   const [description, setDescription] = useState(hackathon.description);
+  const [imageUrl, setImageUrl] = useState(hackathon.imageUrl ?? null);
   const [activeModal, setActiveModal] = useState<BasicModal>(null);
 
   const parsedDate = parseDateStr(startDate);
   const timeValue = parseTimeStr(startTime);
 
+  async function pickImage() {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [16, 9],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets && result.assets.length > 0 && result.assets[0]?.uri) {
+      setImageUrl(result.assets[0].uri);
+    }
+  }
+
   function handleSave() {
-    onSave({ ...hackathon, title, startDate, startTime, locationMode, locationValue, description });
+    onSave({ ...hackathon, title, startDate, startTime, locationMode, locationValue, description, imageUrl });
   }
 
   return (
@@ -276,9 +654,9 @@ function BasicDetailsContent({
       showsVerticalScrollIndicator={false}
     >
       <View style={bdStyles.bannerWrap}>
-        <Image resizeMode="cover" source={subtractPlaceholder} style={bdStyles.banner} />
-        <Pressable style={bdStyles.changeBannerBtn}>
-          <AppText style={bdStyles.changeBannerText}>Change Banner</AppText>
+        <Image resizeMode="cover" source={imageUrl ? { uri: imageUrl } : subtractPlaceholder} style={bdStyles.banner} />
+        <Pressable onPress={pickImage} style={bdStyles.changeBannerBtn}>
+          <AppText style={bdStyles.changeBannerText}>{imageUrl ? 'Change Banner' : 'Add Banner'}</AppText>
         </Pressable>
       </View>
 
@@ -362,8 +740,12 @@ function BasicDetailsContent({
 
       <View style={bdStyles.divider} />
 
-      <Pressable onPress={handleSave} style={bdStyles.saveBtn}>
-        <AppText style={bdStyles.saveBtnText}>Save Changes</AppText>
+      <Pressable disabled={isSaving} onPress={handleSave} style={[bdStyles.saveBtn, isSaving ? { opacity: 0.6 } : null]}>
+        {isSaving ? (
+          <ActivityIndicator color="#FFFFFF" size="small" />
+        ) : (
+          <AppText style={bdStyles.saveBtnText}>Save Changes</AppText>
+        )}
       </Pressable>
 
       <DatePickerModal
@@ -409,160 +791,214 @@ function BasicDetailsContent({
   );
 }
 
-// ─── Registration Settings ────────────────────────────────────────────────────
+// ─── Rounds ───────────────────────────────────────────────────────────────────
 
-type RegModal = 'reg-deadline-date' | 'reg-deadline-time' | 'event-date' | 'event-time' | null;
-
-function RegistrationSettingsContent({
+function RoundsContent({
   hackathon,
+  hackathonId,
+  isSavingRounds = false,
   onSave,
 }: {
   readonly hackathon: LiveHackathon;
-  readonly onSave: (h: LiveHackathon) => void;
+  readonly hackathonId?: string;
+  readonly isSavingRounds?: boolean;
+  readonly onSave: (hackathon: LiveHackathon) => void;
 }) {
-  const [eligibleCandidates, setEligibleCandidates] = useState<EligibilityKey[]>(
-    hackathon.eligibleCandidates ? [...hackathon.eligibleCandidates] : ['everyone']
-  );
-  const [regDeadlineDate, setRegDeadlineDate] = useState(hackathon.registrationDeadlineDate ?? '');
-  const [regDeadlineTime, setRegDeadlineTime] = useState(hackathon.registrationDeadlineTime ?? '');
-  const [startDate, setStartDate] = useState(hackathon.startDate);
-  const [startTime, setStartTime] = useState(hackathon.startTime);
-  const [maxAttendees, setMaxAttendees] = useState(hackathon.maxAttendees ?? '');
-  const [activeModal, setActiveModal] = useState<RegModal>(null);
-
-  function toggleEligibility(key: EligibilityKey) {
-    setEligibleCandidates((prev) =>
-      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
-    );
-  }
-
-  function handleSave() {
-    onSave({ ...hackathon, eligibleCandidates, registrationDeadlineDate: regDeadlineDate, registrationDeadlineTime: regDeadlineTime, startDate, startTime, maxAttendees });
-  }
-
-  const regDeadlineParsed = parseDateStr(regDeadlineDate);
-  const regDeadlineTimeVal = parseTimeStr(regDeadlineTime);
-  const eventDateParsed = parseDateStr(startDate);
-  const eventTimeVal = parseTimeStr(startTime);
+  const rounds = hackathon.rounds ?? [];
 
   return (
-    <ScrollView contentContainerStyle={rsStyles.content} showsVerticalScrollIndicator={false}>
-      <AppText style={rsStyles.pageTitle}>Registration Settings</AppText>
-
+    <ScrollView contentContainerStyle={prStyles.content} showsVerticalScrollIndicator={false}>
+      <AppText style={rsStyles.pageTitle}>Rounds</AppText>
+      
       <View style={rsStyles.card}>
-        <AppText style={rsStyles.cardTitle}>Who Can Register</AppText>
-        <AppText style={rsStyles.cardSub}>Select the type(s) of eligible candidates</AppText>
+        <AppText style={rsStyles.cardTitle}>Manage Rounds</AppText>
+        <AppText style={rsStyles.cardSub}>Add and manage multiple rounds for your hackathon.</AppText>
         <View style={rsStyles.cardDivider} />
-        {ELIGIBILITY_OPTIONS.map((opt) => {
-          const selected = eligibleCandidates.includes(opt.key);
-          return (
+        
+        <Pressable
+          onPress={() => {
+            const newRound: HackathonRound = {
+              id: String(Date.now()),
+              title: `Round ${rounds.length + 1}`,
+              description: '',
+              startDate: '',
+              endDate: '',
+            };
+            onSave({ ...hackathon, rounds: [...rounds, newRound] });
+          }}
+          style={prStyles.addPrizeBtn}
+        >
+          <AppText style={prStyles.addPrizePlus}>+</AppText>
+          <AppText style={prStyles.addPrizeText}>Add New Round</AppText>
+        </Pressable>
+
+        {rounds.length === 0 && (
+          <View style={rdStyles.emptyRounds}>
+            <AppText style={rdStyles.emptyRoundsText}>No rounds added yet. Click "Add New Round" to begin.</AppText>
+          </View>
+        )}
+
+        {rounds.map((round, idx) => (
+          <View key={round.id} style={rdStyles.roundSummaryRow}>
+            <View style={rdStyles.roundBadgeSm}>
+              <AppText style={rdStyles.roundBadgeSmText}>{idx + 1}</AppText>
+            </View>
+            <AppText style={rdStyles.roundSummaryTitle}>{round.title || `Round ${idx + 1}`}</AppText>
             <Pressable
-              key={opt.key}
-              onPress={() => toggleEligibility(opt.key)}
-              style={[rsStyles.eligibilityRow, selected ? rsStyles.eligibilityRowSelected : null]}
+              onPress={() => {
+                const updatedRounds = rounds.filter((r) => r.id !== round.id);
+                onSave({ ...hackathon, rounds: updatedRounds });
+              }}
+              style={prStyles.prizeAction}
             >
-              <View style={[rsStyles.checkbox, selected ? rsStyles.checkboxSelected : null]}>
-                {selected && <View style={rsStyles.checkMark} />}
-              </View>
-              <View style={rsStyles.eligibilityText}>
-                <AppText style={[rsStyles.eligibilityLabel, selected ? rsStyles.eligibilityLabelSelected : null]}>
-                  {opt.label}
-                </AppText>
-                <AppText style={rsStyles.eligibilitySub}>{opt.sub}</AppText>
-              </View>
+              <AppText style={prStyles.prizeActionDelete}>Remove</AppText>
             </Pressable>
-          );
-        })}
+          </View>
+        ))}
+        {isSavingRounds && (
+          <View style={{ alignItems: 'center', paddingVertical: 8 }}>
+            <ActivityIndicator color="#6949AA" size="small" />
+            <AppText style={{ color: '#7C737E', fontSize: 11, marginTop: 4 }}>Saving rounds…</AppText>
+          </View>
+        )}
       </View>
 
-      <View style={rsStyles.card}>
-        <AppText style={rsStyles.cardTitle}>Registration and Schedule</AppText>
-        <AppText style={rsStyles.cardSub}>
-          Set when registration closes and when the hackathon runs. Changes autosave.
-        </AppText>
-        <View style={rsStyles.cardDivider} />
+      {rounds.map((round, idx) => (
+        <RoundDetailCard
+          key={round.id}
+          hackathon={hackathon}
+          onSave={onSave}
+          round={round}
+          roundIndex={idx}
+          rounds={rounds}
+        />
+      ))}
+    </ScrollView>
+  );
+}
 
-        <AppText style={rsStyles.scheduleLabel}>Registration Deadline</AppText>
-        <Pressable onPress={() => setActiveModal('reg-deadline-date')} style={rsStyles.scheduleCard}>
-          <AppText style={rsStyles.scheduleDateText}>
-            {regDeadlineDate ? formatLongDate(regDeadlineDate) : 'Select date'}
-          </AppText>
-          <View style={rsStyles.scheduleDividerV} />
-          <Pressable onPress={() => setActiveModal('reg-deadline-time')} style={rsStyles.scheduleTimeWrap}>
-            <AppText style={rsStyles.scheduleTimeText}>{regDeadlineTime || '06:00 PM'}</AppText>
-            <View style={rsStyles.clockIcon} />
-          </Pressable>
-        </Pressable>
+interface RoundDetailCardProps {
+  readonly hackathon: LiveHackathon;
+  readonly onSave: (hackathon: LiveHackathon) => void;
+  readonly round: HackathonRound;
+  readonly roundIndex: number;
+  readonly rounds: readonly HackathonRound[];
+}
 
-        <AppText style={[rsStyles.scheduleLabel, { marginTop: 12 }]}>Hackathon Date & Time</AppText>
-        <Pressable onPress={() => setActiveModal('event-date')} style={rsStyles.scheduleCard}>
-          <AppText style={rsStyles.scheduleDateText}>
-            {startDate ? formatLongDate(startDate) : 'Select date'}
-          </AppText>
-          <View style={rsStyles.scheduleDividerV} />
-          <Pressable onPress={() => setActiveModal('event-time')} style={rsStyles.scheduleTimeWrap}>
-            <AppText style={rsStyles.scheduleTimeText}>{startTime || '10:00 AM'}</AppText>
-            <View style={rsStyles.clockIcon} />
-          </Pressable>
-        </Pressable>
+function RoundDetailCard({ hackathon, onSave, round, roundIndex, rounds }: RoundDetailCardProps) {
+  const [title, setTitle] = useState(round.title);
+  const [description, setDescription] = useState(round.description);
+  const [startDate, setStartDate] = useState(round.startDate);
+  const [endDate, setEndDate] = useState(round.endDate);
+  const [type, setType] = useState<RoundType>(round.type ?? 'Online');
+  const [submissionsEnabled, setSubmissionsEnabled] = useState(round.submissionsEnabled ?? false);
+  const [typeDropdownOpen, setTypeDropdownOpen] = useState(false);
+
+  function handleSaveRound() {
+    const updatedRound: HackathonRound = { ...round, title, description, startDate, endDate, type, submissionsEnabled };
+    const updatedRounds = rounds.map((r) => (r.id === round.id ? updatedRound : r));
+    onSave({ ...hackathon, rounds: updatedRounds });
+  }
+
+  return (
+    <View style={rsStyles.card}>
+      <View style={rdStyles.roundHeader}>
+        <View style={rdStyles.roundBadge}>
+          <AppText style={rdStyles.roundBadgeText}>{roundIndex + 1}</AppText>
+        </View>
+        <AppText style={rsStyles.cardTitle}>Round {roundIndex + 1}</AppText>
       </View>
+      <View style={rsStyles.cardDivider} />
 
-      <View style={rsStyles.card}>
-        <AppText style={rsStyles.cardTitle}>Max Number Of Participants</AppText>
-        <AppText style={rsStyles.cardSub}>Restrict registrations</AppText>
-        <View style={rsStyles.cardDivider} />
-        <AppText style={rsStyles.maxUsersHint}>
-          Choose "No Limit" to allow unlimited registrations for this hackathon.
-        </AppText>
-        <View style={rsStyles.maxUsersRow}>
-          <Pressable
-            onPress={() => setMaxAttendees('')}
-            style={[rsStyles.noLimitBtn, maxAttendees === '' ? rsStyles.noLimitBtnActive : null]}
-          >
-            <AppText style={rsStyles.infinityIcon}>∞</AppText>
-            <AppText style={[rsStyles.noLimitText, maxAttendees === '' ? rsStyles.noLimitTextActive : null]}>
-              No Limit
-            </AppText>
-          </Pressable>
+      <View style={{ flexDirection: 'row', gap: 12 }}>
+        <View style={{ flex: 1 }}>
+          <AppText style={prStyles.inputLabel}>Round Title</AppText>
           <TextInput
-            keyboardType="number-pad"
-            onChangeText={setMaxAttendees}
-            placeholder="Set limit"
+            onChangeText={setTitle}
+            placeholder="e.g. Idea Submission"
             placeholderTextColor="#C3BFC4"
-            style={[rsStyles.maxInput, maxAttendees !== '' ? rsStyles.maxInputActive : null]}
-            value={maxAttendees}
+            style={prStyles.descInput}
+            value={title}
+          />
+        </View>
+        <View style={{ flex: 1, zIndex: 10 }}>
+          <AppText style={prStyles.inputLabel}>Round Type</AppText>
+          <Pressable 
+            onPress={() => setTypeDropdownOpen(!typeDropdownOpen)}
+            style={[prStyles.descInput, { justifyContent: 'center' }]}
+          >
+            <AppText style={{ color: type ? '#100013' : '#C3BFC4', fontFamily: 'Urbanist', fontSize: 14 }}>
+              {type || 'Select type'}
+            </AppText>
+            <View style={{ position: 'absolute', right: 12, top: 18, borderLeftWidth: 5, borderRightWidth: 5, borderTopWidth: 5, borderLeftColor: 'transparent', borderRightColor: 'transparent', borderTopColor: '#6949AA' }} />
+          </Pressable>
+          {typeDropdownOpen && (
+            <View style={{ position: 'absolute', top: 76, left: 0, right: 0, backgroundColor: '#FFF', borderRadius: 8, borderWidth: 1, borderColor: '#F2EBFF', elevation: 4, zIndex: 20 }}>
+              {(['Online', 'Offline', 'Presentation'] as RoundType[]).map((t) => (
+                <Pressable
+                  key={t}
+                  onPress={() => { setType(t); setTypeDropdownOpen(false); }}
+                  style={{ padding: 12, borderBottomWidth: 1, borderBottomColor: '#F9F6FF' }}
+                >
+                  <AppText style={{ fontFamily: 'Urbanist', fontSize: 14, color: '#100013' }}>{t}</AppText>
+                </Pressable>
+              ))}
+            </View>
+          )}
+        </View>
+      </View>
+
+      <AppText style={[prStyles.inputLabel, { marginTop: 14 }]}>Description</AppText>
+      <TextInput
+        multiline
+        numberOfLines={3}
+        onChangeText={setDescription}
+        placeholder="Describe what happens in this round…"
+        placeholderTextColor="#C3BFC4"
+        style={[prStyles.descInput, { height: 80, textAlignVertical: 'top', paddingTop: 10 }]}
+        value={description}
+      />
+
+      <View style={[rdStyles.datesRow, { zIndex: -1 }]}>
+        <View style={rdStyles.dateField}>
+          <AppText style={prStyles.inputLabel}>Start Date</AppText>
+          <TextInput
+            onChangeText={setStartDate}
+            placeholder="DD Mon YY"
+            placeholderTextColor="#C3BFC4"
+            style={prStyles.descInput}
+            value={startDate}
+          />
+        </View>
+        <View style={rdStyles.dateField}>
+          <AppText style={prStyles.inputLabel}>End Date</AppText>
+          <TextInput
+            onChangeText={setEndDate}
+            placeholder="DD Mon YY"
+            placeholderTextColor="#C3BFC4"
+            style={prStyles.descInput}
+            value={endDate}
           />
         </View>
       </View>
 
-      <Pressable onPress={handleSave} style={bdStyles.saveBtn}>
-        <AppText style={bdStyles.saveBtnText}>Save Changes</AppText>
-      </Pressable>
+      <View style={{ marginTop: 16, backgroundColor: '#FAF5FF', padding: 16, borderRadius: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', zIndex: -1 }}>
+        <View style={{ flex: 1, paddingRight: 16 }}>
+          <AppText style={{ fontFamily: 'Urbanist', fontSize: 16, fontWeight: '600', color: '#100013' }}>Submissions</AppText>
+          <AppText style={{ fontFamily: 'Urbanist', fontSize: 14, color: '#7C737E', marginTop: 4 }}>Enable participants to upload files for this round.</AppText>
+        </View>
+        <Switch
+          value={submissionsEnabled}
+          onValueChange={setSubmissionsEnabled}
+          trackColor={{ false: '#E2E8F0', true: '#D8B4FE' }}
+          thumbColor={submissionsEnabled ? '#6949AA' : '#FFFFFF'}
+        />
+      </View>
 
-      <DatePickerModal
-        onClose={() => setActiveModal(null)}
-        onConfirm={(date) => {
-          const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-          const formatted = `${date.getDate()} ${MONTHS[date.getMonth()]} ${String(date.getFullYear()).slice(2)}`;
-          if (activeModal === 'reg-deadline-date') setRegDeadlineDate(formatted);
-          else setStartDate(formatted);
-          setActiveModal(null);
-        }}
-        value={activeModal === 'event-date' ? eventDateParsed : regDeadlineParsed}
-        visible={activeModal === 'reg-deadline-date' || activeModal === 'event-date'}
-      />
-      <TimePickerModal
-        onClose={() => setActiveModal(null)}
-        onConfirm={(t: TimeValue) => {
-          const formatted = `${t.hour}:${t.minute} ${t.period}`;
-          if (activeModal === 'reg-deadline-time') setRegDeadlineTime(formatted);
-          else setStartTime(formatted);
-          setActiveModal(null);
-        }}
-        value={activeModal === 'event-time' ? eventTimeVal : regDeadlineTimeVal}
-        visible={activeModal === 'reg-deadline-time' || activeModal === 'event-time'}
-      />
-    </ScrollView>
+      <Pressable onPress={handleSaveRound} style={rdStyles.saveBtn}>
+        <AppText style={rdStyles.saveBtnText}>Save Round</AppText>
+      </Pressable>
+    </View>
   );
 }
 
@@ -715,6 +1151,7 @@ function AdditionalInfoContent({
   readonly onSave: (h: LiveHackathon) => void;
 }) {
   const [contacts, setContacts] = useState<HackathonContact[]>(hackathon.contacts ? [...hackathon.contacts] : []);
+  const [attachments, setAttachments] = useState<HackathonAttachment[]>(hackathon.attachments ? [...hackathon.attachments] : []);
   const [showContactModal, setShowContactModal] = useState(false);
   const [editingContact, setEditingContact] = useState<HackathonContact | null>(null);
 
@@ -728,13 +1165,53 @@ function AdditionalInfoContent({
     setContacts(updatedContacts);
     setEditingContact(null);
     setShowContactModal(false);
-    onSave({ ...hackathon, contacts: updatedContacts });
+    onSave({ ...hackathon, contacts: updatedContacts, attachments });
   }
 
   function handleDeleteContact(id: string) {
     const updatedContacts = contacts.filter((c) => c.id !== id);
     setContacts(updatedContacts);
-    onSave({ ...hackathon, contacts: updatedContacts });
+    onSave({ ...hackathon, contacts: updatedContacts, attachments });
+  }
+
+  async function handleAddAttachment() {
+    try {
+      const res = await DocumentPicker.getDocumentAsync({
+        type: ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+        copyToCacheDirectory: true,
+      });
+      if (res.canceled) return;
+      
+      const file = res.assets[0];
+      const formData = new FormData();
+      formData.append('file', {
+        uri: file.uri,
+        name: file.name,
+        type: file.mimeType || 'application/octet-stream',
+      } as any);
+
+      const uploadRes = await apiClient.post<{ url: string }>('/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+
+      const newAttachment: HackathonAttachment = {
+        id: String(Date.now()),
+        name: file.name,
+        url: uploadRes.data.url,
+      };
+
+      const updatedAttachments = [...attachments, newAttachment];
+      setAttachments(updatedAttachments);
+      onSave({ ...hackathon, contacts, attachments: updatedAttachments });
+    } catch (e) {
+      console.error('Failed to upload attachment', e);
+    }
+  }
+
+  function handleDeleteAttachment(id: string) {
+    const updatedAttachments = attachments.filter((a) => a.id !== id);
+    setAttachments(updatedAttachments);
+    onSave({ ...hackathon, contacts, attachments: updatedAttachments });
   }
 
   return (
@@ -788,14 +1265,27 @@ function AdditionalInfoContent({
             <AppText style={rsStyles.cardTitle}>Attachments</AppText>
             <AppText style={rsStyles.cardSub}>Upload documents relevant to the hackathon (Rules, Brochure, etc.)</AppText>
           </View>
-          <Pressable style={aiStyles.addBtn}>
+          <Pressable onPress={handleAddAttachment} style={aiStyles.addBtn}>
             <AppText style={aiStyles.addBtnText}>+ Upload Document</AppText>
           </Pressable>
         </View>
         <View style={rsStyles.cardDivider} />
-        <View style={aiStyles.attachmentsEmpty}>
-          <AppText style={aiStyles.emptyText}>No attachments added yet.</AppText>
-        </View>
+        {attachments.length === 0 ? (
+          <View style={aiStyles.attachmentsEmpty}>
+            <AppText style={aiStyles.emptyText}>No attachments added yet.</AppText>
+          </View>
+        ) : (
+          attachments.map((a) => (
+            <View key={a.id} style={[aiStyles.contactRow, { alignItems: 'center' }]}>
+              <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
+                <AppText style={[aiStyles.contactName, { marginLeft: 0 }]} numberOfLines={1}>{a.name}</AppText>
+              </View>
+              <Pressable onPress={() => handleDeleteAttachment(a.id)} style={aiStyles.actionBtn}>
+                <AppText style={aiStyles.actionDelete}>Delete</AppText>
+              </Pressable>
+            </View>
+          ))
+        )}
       </View>
 
       <ContactFormModal
@@ -808,70 +1298,7 @@ function AdditionalInfoContent({
   );
 }
 
-// ─── Pass Settings ────────────────────────────────────────────────────────────
 
-function PassSettingsContent({
-  hackathon,
-  onSave,
-}: {
-  readonly hackathon: LiveHackathon;
-  readonly onSave: (h: LiveHackathon) => void;
-}) {
-  const [passSendingMode, setPassSendingMode] = useState<PassSendingMode>(hackathon.passSendingMode ?? 'immediate');
-  const [restrictToColleges, setRestrictToColleges] = useState(hackathon.restrictToColleges ?? false);
-
-  function handleSave() {
-    onSave({ ...hackathon, passSendingMode, restrictToColleges });
-  }
-
-  return (
-    <ScrollView contentContainerStyle={psStyles.content} showsVerticalScrollIndicator={false}>
-      <View style={rsStyles.card}>
-        <AppText style={rsStyles.cardTitle}>Hackathon Pass Settings</AppText>
-        <AppText style={rsStyles.cardSub}>
-          Configure how hackathon passes are sent to participants and restrict registrations by college or email domain.
-        </AppText>
-        <View style={rsStyles.cardDivider} />
-
-        <AppText style={psStyles.sectionLabel}>Pass Sending Mode</AppText>
-
-        <Pressable
-          onPress={() => setPassSendingMode('immediate')}
-          style={[psStyles.radioRow, passSendingMode === 'immediate' ? psStyles.radioRowActive : null]}
-        >
-          <View style={[psStyles.radio, passSendingMode === 'immediate' ? psStyles.radioSelected : null]}>
-            {passSendingMode === 'immediate' && <View style={psStyles.radioDot} />}
-          </View>
-          <AppText style={psStyles.radioLabel}>Send pass immediately after registration</AppText>
-        </Pressable>
-
-        <Pressable
-          onPress={() => setPassSendingMode('after-approval')}
-          style={[psStyles.radioRow, passSendingMode === 'after-approval' ? psStyles.radioRowActive : null]}
-        >
-          <View style={[psStyles.radio, passSendingMode === 'after-approval' ? psStyles.radioSelected : null]}>
-            {passSendingMode === 'after-approval' && <View style={psStyles.radioDot} />}
-          </View>
-          <AppText style={psStyles.radioLabel}>Send pass after organizer approval</AppText>
-        </Pressable>
-
-        <Pressable
-          onPress={() => setRestrictToColleges((v) => !v)}
-          style={[psStyles.checkRow, restrictToColleges ? psStyles.checkRowActive : null]}
-        >
-          <View style={[psStyles.checkBox, restrictToColleges ? psStyles.checkBoxSelected : null]}>
-            {restrictToColleges && <View style={psStyles.checkBoxMark} />}
-          </View>
-          <AppText style={psStyles.radioLabel}>Restrict registration to specific colleges</AppText>
-        </Pressable>
-      </View>
-
-      <Pressable onPress={handleSave} style={bdStyles.saveBtn}>
-        <AppText style={bdStyles.saveBtnText}>Save Changes</AppText>
-      </Pressable>
-    </ScrollView>
-  );
-}
 
 // ─── Modals ───────────────────────────────────────────────────────────────────
 
@@ -887,13 +1314,17 @@ function ContactFormModal({ visible, initialContact, onConfirm, onClose }: Conta
   const [phone, setPhone] = useState(initialContact?.phone ?? '');
   const [email, setEmail] = useState(initialContact?.email ?? '');
 
-  useState(() => {
+  useEffect(() => {
     if (visible) {
       setName(initialContact?.name ?? '');
       setPhone(initialContact?.phone ?? '');
       setEmail(initialContact?.email ?? '');
+    } else {
+      setName('');
+      setPhone('');
+      setEmail('');
     }
-  });
+  }, [visible, initialContact]);
 
   if (!visible) return null;
 
@@ -944,6 +1375,16 @@ interface PrizeFormModalProps {
 function PrizeFormModal({ visible, initialPrize, onConfirm, onClose }: PrizeFormModalProps) {
   const [title, setTitle] = useState(initialPrize?.title ?? '');
   const [amount, setAmount] = useState(initialPrize?.amount ?? '');
+
+  useEffect(() => {
+    if (visible) {
+      setTitle(initialPrize?.title ?? '');
+      setAmount(initialPrize?.amount ?? '');
+    } else {
+      setTitle('');
+      setAmount('');
+    }
+  }, [visible, initialPrize]);
 
   if (!visible) return null;
 
@@ -1066,10 +1507,11 @@ function formatLongDate(dateStr: string): string {
 }
 
 function parseDateStr(dateStr: string): Date | null {
-  if (!dateStr) return null;
+  if (!dateStr || dateStr === 'Date TBD' || dateStr === 'Select date') return null;
   const MONTHS: Record<string, number> = { Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5, Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11 };
   const parts = dateStr.split(' ');
   const day = parseInt(parts[0] ?? '1', 10);
+  if (isNaN(day)) return null;
   const month = parts[1] ? (MONTHS[parts[1]] ?? 0) : 0;
   const year = parts[2] ? 2000 + parseInt(parts[2], 10) : new Date().getFullYear();
   return new Date(year, month, day);
@@ -1253,6 +1695,24 @@ const aiStyles = StyleSheet.create({
   actionDelete: { color: '#9CA3AF', fontFamily: 'Urbanist', fontSize: 13 },
   attachmentsEmpty: { alignItems: 'center', borderColor: '#E8E6E8', borderRadius: 10, borderStyle: 'dashed', borderWidth: 1.5, paddingVertical: 20 },
 });
+
+const rdStyles = StyleSheet.create({
+  emptyRounds: { alignItems: 'center', paddingVertical: 16 },
+  emptyRoundsText: { color: '#9CA3AF', fontFamily: 'Urbanist', fontSize: 13, textAlign: 'center' },
+  roundSummaryRow: { alignItems: 'center', borderTopColor: '#F3F4F6', borderTopWidth: 1, flexDirection: 'row', gap: 10, paddingVertical: 10 },
+  roundBadgeSm: { alignItems: 'center', backgroundColor: '#6949AA', borderRadius: 12, height: 24, justifyContent: 'center', width: 24 },
+  roundBadgeSmText: { color: '#FFFFFF', fontFamily: 'Urbanist', fontSize: 11, fontWeight: '700' },
+  roundSummaryTitle: { color: '#100013', flex: 1, fontFamily: 'Urbanist', fontSize: 14, fontWeight: '500' },
+  roundHeader: { alignItems: 'center', flexDirection: 'row', gap: 10, marginBottom: 12 },
+  roundBadge: { alignItems: 'center', backgroundColor: '#6949AA', borderRadius: 16, height: 32, justifyContent: 'center', width: 32 },
+  roundBadgeText: { color: '#FFFFFF', fontFamily: 'Aeonik Pro', fontSize: 14, fontWeight: '700' },
+  datesRow: { flexDirection: 'row', gap: 12, marginTop: 14 },
+  dateField: { flex: 1 },
+  saveBtn: { alignItems: 'center', backgroundColor: '#42007A', borderRadius: 10, marginTop: 16, paddingVertical: 14 },
+  saveBtnText: { color: '#FFFFFF', fontFamily: 'Urbanist', fontSize: 14, fontWeight: '700' },
+});
+
+
 
 const psStyles = StyleSheet.create({
   content: { gap: 16, padding: 16, paddingBottom: 48 },

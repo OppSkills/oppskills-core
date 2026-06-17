@@ -37,7 +37,7 @@ export class MockSearchRepository implements SearchRepository {
     return [...this.recentQueries];
   }
 
-  getSuggestions(rawQuery: string): string[] {
+  async getSuggestions(rawQuery: string): Promise<string[]> {
     const query = rawQuery.trim().toLowerCase();
 
     if (!query) {
@@ -66,7 +66,7 @@ export class MockSearchRepository implements SearchRepository {
     return [...suggestions];
   }
 
-  getResults(rawQuery: string): SearchResultEntity[] {
+  async getResults(rawQuery: string): Promise<SearchResultEntity[]> {
     const query = rawQuery.trim().toLowerCase();
 
     if (!query) {

@@ -1,241 +1,324 @@
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
 import { AppText } from '../../../../shared/ui';
 
 export function FestivalNotificationsPanel() {
-  const [emailBody, setEmailBody] = useState('');
+  const [subject, setSubject] = useState('');
+  const [emailBody, setEmailBody] = useState(
+    'Optima, The Operations Club of IIM Ahmedabad proudly presents SimulOps – The Ultimate Operations Strategy Simulation.\n\nAbout Micro Simulation Game\n• Participants can take decisions for a virtual business unit by optimizing costs, evaluating demand scenarios and maximizing profitability.\n• Important Instructions:\nTeams must be represented solely through the Team Leader\'s account for Micro Simulation Game.',
+  );
 
   return (
-    <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-      {/* Broadcast mode banner */}
-      <View style={styles.broadcastBanner}>
-        <View style={styles.bannerIconWrap}>
-          <View style={styles.bannerTriangle} />
-          <View style={styles.bannerExclaim} />
+    <View style={styles.container}>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+
+        {/* Page description */}
+        <AppText style={styles.pageDescription}>
+          Send email to participants about festivals
+        </AppText>
+
+        {/* Send to */}
+        <View style={styles.fieldGroup}>
+          <AppText style={styles.fieldLabel}>Send to</AppText>
+          <Pressable style={styles.dropdownContainer}>
+            <AppText style={styles.dropdownText}>All Participants</AppText>
+            <ChevronDownIcon />
+          </Pressable>
+          <View style={styles.successRow}>
+            <CheckCircleIcon />
+            <AppText style={styles.successText}>Notifications will be sent to 2323 people</AppText>
+          </View>
         </View>
-        <View style={styles.bannerTextWrap}>
-          <AppText style={styles.bannerTitle}>Broadcast Mode</AppText>
-          <AppText style={styles.bannerBody}>
-            Your message will be sent to <AppText style={styles.bannerBold}>ALL</AppText> registered attendees and participants of this event.
-          </AppText>
+
+        {/* Subject */}
+        <View style={styles.fieldGroup}>
+          <AppText style={styles.fieldLabel}>Subject</AppText>
+          <View style={styles.dropdownContainer}>
+            <TextInput
+              onChangeText={setSubject}
+              placeholder="Subject Line"
+              placeholderTextColor="#9C8DAA"
+              style={styles.textInput}
+              value={subject}
+            />
+          </View>
         </View>
+
+        {/* When to send */}
+        <View style={styles.fieldGroup}>
+          <AppText style={styles.fieldLabel}>When to send</AppText>
+          <Pressable style={styles.dropdownContainer}>
+            <AppText style={styles.dropdownText}>Immediately</AppText>
+            <ChevronDownIcon />
+          </Pressable>
+          <View style={styles.successRow}>
+            <CheckCircleIcon />
+            <AppText style={styles.successText}>Notifications will be send at 9:00 AM</AppText>
+          </View>
+        </View>
+
+        {/* Main Body */}
+        <View style={styles.fieldGroup}>
+          <AppText style={styles.fieldLabel}>Main Body</AppText>
+          <View style={styles.mainBodyContainer}>
+            <AppText style={styles.mainBodyHeading}>
+              Everything you need to know about [Festival Name]
+            </AppText>
+            <TextInput
+              multiline
+              onChangeText={setEmailBody}
+              style={styles.mainBodyInput}
+              textAlignVertical="top"
+              value={emailBody}
+            />
+          </View>
+        </View>
+
+        {/* Bottom spacer so footer doesn't cover content */}
+        <View style={styles.footerSpacer} />
+      </ScrollView>
+
+      {/* Sticky footer */}
+      <View style={styles.footer}>
+        <View style={styles.footerUserRow}>
+          <Image
+            source={{ uri: 'https://i.pravatar.cc/100?img=11' }}
+            style={styles.footerAvatar}
+          />
+          <AppText style={styles.footerUserName}>Rohit</AppText>
+          <AppText style={styles.footerUserEmail}>tstrohittiwari@gmail.com</AppText>
+        </View>
+        <Pressable style={styles.sendButton}>
+          <AppText style={styles.sendButtonText}>Send Email</AppText>
+        </Pressable>
       </View>
-
-      {/* Header */}
-      <View style={styles.sectionHeader}>
-        <View style={styles.bellIconWrap}>
-          <View style={styles.bellBody} />
-          <View style={styles.bellTop} />
-          <View style={styles.bellClapper} />
-        </View>
-        <AppText style={styles.sectionTitle}>Send Broadcast Notification</AppText>
-      </View>
-
-      <AppText style={styles.sectionSubtitle}>
-        Compose your email update below. This will be sent as a direct email to all users associated with this event.
-      </AppText>
-
-      <View style={styles.divider} />
-
-      {/* Email body */}
-      <AppText style={styles.fieldLabel}>Email Body</AppText>
-      <View style={styles.textAreaWrap}>
-        <TextInput
-          multiline
-          onChangeText={setEmailBody}
-          placeholder="Write your message here..."
-          placeholderTextColor="#B0AAB3"
-          style={styles.textArea}
-          textAlignVertical="top"
-          value={emailBody}
-        />
-      </View>
-
-      {/* Send button */}
-      <Pressable style={styles.sendButton}>
-        <View style={styles.sendIcon}>
-          <View style={styles.sendArrow} />
-        </View>
-        <AppText style={styles.sendButtonText}>Send Broadcast to All Users</AppText>
-      </Pressable>
-    </ScrollView>
+    </View>
   );
 }
 
-const styles = StyleSheet.create({
-  content: {
-    gap: 16,
-    padding: 16,
-    paddingBottom: 48,
-  },
-  broadcastBanner: {
-    backgroundColor: '#EEF2FF',
-    borderColor: '#C7D2FE',
-    borderRadius: 12,
-    borderWidth: 1,
-    flexDirection: 'row',
-    gap: 12,
-    padding: 14,
-  },
-  bannerIconWrap: {
-    alignItems: 'center',
-    flexShrink: 0,
-    height: 22,
-    justifyContent: 'center',
-    marginTop: 2,
-    position: 'relative',
-    width: 18,
-  },
-  bannerTriangle: {
-    borderBottomColor: '#6366F1',
-    borderBottomWidth: 18,
-    borderLeftColor: 'transparent',
-    borderLeftWidth: 9,
-    borderRightColor: 'transparent',
-    borderRightWidth: 9,
-    height: 0,
-    width: 0,
-  },
-  bannerExclaim: {
-    backgroundColor: '#6366F1',
+function ChevronDownIcon() {
+  return (
+    <View style={chevron.wrap}>
+      <View style={chevron.line1} />
+      <View style={chevron.line2} />
+    </View>
+  );
+}
+
+const chevron = StyleSheet.create({
+  wrap: { height: 18, justifyContent: 'center', width: 18 },
+  line1: {
+    backgroundColor: '#100013',
     borderRadius: 1,
-    height: 7,
+    height: 1.5,
     position: 'absolute',
-    top: 4,
-    width: 2,
+    right: 2,
+    top: 9,
+    transform: [{ rotate: '45deg' }],
+    width: 9,
   },
-  bannerTextWrap: {
-    flex: 1,
-    gap: 2,
+  line2: {
+    backgroundColor: '#100013',
+    borderRadius: 1,
+    height: 1.5,
+    left: 2,
+    position: 'absolute',
+    top: 9,
+    transform: [{ rotate: '-45deg' }],
+    width: 9,
   },
-  bannerTitle: {
-    color: '#4338CA',
-    fontFamily: 'Urbanist',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  bannerBody: {
-    color: '#4338CA',
-    fontFamily: 'Urbanist',
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  bannerBold: {
-    fontWeight: '700',
-  },
-  sectionHeader: {
+});
+
+function CheckCircleIcon() {
+  return (
+    <View style={check.circle}>
+      {/* Checkmark built from two rectangles */}
+      <View style={check.short} />
+      <View style={check.long} />
+    </View>
+  );
+}
+
+const check = StyleSheet.create({
+  circle: {
     alignItems: 'center',
-    flexDirection: 'row',
-    gap: 12,
-  },
-  bellIconWrap: {
-    alignItems: 'center',
-    backgroundColor: '#EDE9FF',
-    borderRadius: 12,
-    height: 48,
-    justifyContent: 'center',
-    position: 'relative',
-    width: 48,
-  },
-  bellBody: {
-    borderColor: '#8359D5',
-    borderRadius: 6,
-    borderWidth: 2,
-    height: 16,
-    left: 14,
-    position: 'absolute',
-    top: 14,
-    width: 20,
-  },
-  bellTop: {
-    borderColor: '#8359D5',
-    borderTopLeftRadius: 6,
-    borderTopRightRadius: 6,
-    borderWidth: 2,
-    height: 8,
-    left: 18,
-    position: 'absolute',
-    top: 10,
-    width: 12,
-  },
-  bellClapper: {
-    backgroundColor: '#8359D5',
-    borderRadius: 3,
-    height: 5,
-    left: 21,
-    position: 'absolute',
-    top: 29,
-    width: 6,
-  },
-  sectionTitle: {
-    color: '#100013',
-    flex: 1,
-    fontFamily: 'Aeonik Pro',
-    fontSize: 20,
-    fontWeight: '700',
-  },
-  sectionSubtitle: {
-    color: '#584D5A',
-    fontFamily: 'Urbanist',
-    fontSize: 14,
-    lineHeight: 22,
-  },
-  divider: {
-    backgroundColor: '#E8E6E8',
-    height: 1,
-  },
-  fieldLabel: {
-    color: '#100013',
-    fontFamily: 'Urbanist',
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  textAreaWrap: {
-    borderColor: '#E8E6E8',
-    borderRadius: 12,
+    borderColor: '#22C55E',
+    borderRadius: 8,
     borderWidth: 1.5,
-    minHeight: 180,
-    overflow: 'hidden',
-  },
-  textArea: {
-    color: '#100013',
-    fontFamily: 'Urbanist',
-    fontSize: 14,
-    lineHeight: 22,
-    minHeight: 180,
-    padding: 14,
-  },
-  sendButton: {
-    alignItems: 'center',
-    alignSelf: 'flex-end',
-    backgroundColor: '#42007A',
-    borderRadius: 100,
-    flexDirection: 'row',
-    gap: 10,
-    paddingHorizontal: 22,
-    paddingVertical: 14,
-  },
-  sendIcon: {
-    alignItems: 'center',
     height: 16,
     justifyContent: 'center',
     width: 16,
   },
-  sendArrow: {
-    borderBottomColor: 'transparent',
-    borderBottomWidth: 7,
-    borderLeftColor: '#FFFFFF',
-    borderLeftWidth: 14,
-    borderTopColor: 'transparent',
-    borderTopWidth: 7,
-    height: 0,
-    width: 0,
+  short: {
+    backgroundColor: '#22C55E',
+    borderRadius: 1,
+    height: 1.5,
+    position: 'absolute',
+    top: 9,
+    left: 2,
+    transform: [{ rotate: '45deg' }],
+    width: 5,
+  },
+  long: {
+    backgroundColor: '#22C55E',
+    borderRadius: 1,
+    height: 1.5,
+    position: 'absolute',
+    top: 7,
+    left: 5,
+    transform: [{ rotate: '-45deg' }],
+    width: 8,
+  },
+});
+
+const styles = StyleSheet.create({
+  container: {
+    backgroundColor: '#FAFAFA',
+    flex: 1,
+  },
+  content: {
+    padding: 16,
+  },
+  pageDescription: {
+    color: '#584D5A',
+    fontFamily: 'Urbanist',
+    fontSize: 16,
+    lineHeight: 24,
+    marginBottom: 24,
+  },
+
+  /* Field groups */
+  fieldGroup: {
+    marginBottom: 20,
+  },
+  fieldLabel: {
+    color: '#584D5A',
+    fontFamily: 'Urbanist',
+    fontSize: 13,
+    marginBottom: 8,
+  },
+  dropdownContainer: {
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderColor: '#C3BFC4',
+    borderRadius: 100,
+    borderWidth: 1,
+    flexDirection: 'row',
+    height: 48,
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+  },
+  dropdownText: {
+    color: '#584D5A',
+    fontFamily: 'Urbanist',
+    fontSize: 15,
+  },
+  textInput: {
+    color: '#100013',
+    flex: 1,
+    fontFamily: 'Urbanist',
+    fontSize: 15,
+    padding: 0,
+  },
+  successRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 6,
+    marginTop: 8,
+    paddingHorizontal: 4,
+  },
+  successText: {
+    color: '#22C55E',
+    fontFamily: 'Urbanist',
+    fontSize: 12,
+  },
+
+  /* Main body */
+  mainBodyContainer: {
+    backgroundColor: '#FFFFFF',
+    borderColor: '#C3BFC4',
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 16,
+  },
+  mainBodyHeading: {
+    color: '#100013',
+    fontFamily: 'Aeonik Pro',
+    fontSize: 20,
+    fontWeight: '600',
+    lineHeight: 26,
+    marginBottom: 16,
+  },
+  mainBodyInput: {
+    color: '#584D5A',
+    fontFamily: 'Urbanist',
+    fontSize: 14,
+    lineHeight: 22,
+    minHeight: 200,
+    padding: 0,
+  },
+  footerSpacer: {
+    height: 140,
+  },
+
+  /* Sticky footer */
+  footer: {
+    backgroundColor: '#F3EEFF',
+    borderColor: '#E5D8FF',
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderTopWidth: 1,
+    bottom: 0,
+    elevation: 8,
+    left: 0,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    position: 'absolute',
+    right: 0,
+    shadowColor: '#42007A',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+  },
+  footerUserRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginBottom: 14,
+  },
+  footerAvatar: {
+    borderRadius: 10,
+    height: 24,
+    marginRight: 8,
+    width: 24,
+  },
+  footerUserName: {
+    color: '#584D5A',
+    fontFamily: 'Urbanist',
+    fontSize: 14,
+    fontWeight: '600',
+    marginRight: 8,
+  },
+  footerUserEmail: {
+    color: '#584D5A',
+    fontFamily: 'Urbanist',
+    fontSize: 14,
+  },
+  sendButton: {
+    alignItems: 'center',
+    backgroundColor: '#42007A',
+    borderRadius: 100,
+    height: 52,
+    justifyContent: 'center',
+    width: '100%',
   },
   sendButtonText: {
     color: '#FFFFFF',
     fontFamily: 'Urbanist',
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '600',
   },
 });

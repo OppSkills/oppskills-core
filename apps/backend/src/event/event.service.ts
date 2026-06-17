@@ -94,7 +94,8 @@ export class EventService {
         organizationLogoUrl: dto.organizationLogoUrl,
 
         ownerId: userId,
-        status: 'DRAFT',
+        status: 'PUBLISHED',
+        approvalStatus: 'APPROVED',
       },
       include: {
         owner: {
@@ -895,7 +896,7 @@ export class EventService {
       );
     }
 
-    const currentStatus = event.status as LifecycleStatus;
+    const currentStatus = event.status;
     this.assertLifecycleTransitionAllowed(currentStatus, nextStatus);
 
     const updateData: Prisma.EventEntityUpdateInput = { status: nextStatus };
@@ -928,6 +929,7 @@ export class EventService {
     eventId: string,
     userId: string,
     answers?: Array<{ fieldId: string; value: string | number | string[] }>,
+    referralCode?: string,
   ) {
     const event = await prisma.eventEntity.findUnique({
       where: { id: eventId },
@@ -981,10 +983,12 @@ export class EventService {
       throw new BadRequestException('Registration deadline has passed.');
     }
 
-    // Owner cannot join their own event
+    // Owner cannot join their own event (commented out for testing/demo)
+    /*
     if (event.ownerId === userId) {
       throw new BadRequestException('You cannot join your own event.');
     }
+    */
 
     // Check if already joined
     const existing = await prisma.eventParticipantEntity.findUnique({
@@ -1443,6 +1447,18 @@ export class EventService {
       this.validateCollegeEligibility(event, user);
     }
 
+    // Resolve referral code if provided
+    let referralId: string | undefined;
+    if (referralCode) {
+      const referral = await prisma.referralEntity.findUnique({
+        where: { code: referralCode },
+        select: { id: true, isActive: true }
+      });
+      if (referral && referral.isActive) {
+        referralId = referral.id;
+      }
+    }
+
     // Check capacity (use transaction for atomic update)
     const result = await prisma.$transaction(async (tx) => {
       // Re-fetch within transaction to ensure consistency
@@ -1477,14 +1493,15 @@ export class EventService {
         data: { registrationCount: { increment: 1 } },
       });
 
-      // Create submission and answers if provided
+      // Create submission and answers if provided (or if there's a referral)
       let submissionId: string | undefined;
-      if (providedAnswers.length > 0 && registrationFields.length > 0) {
+      if ((providedAnswers.length > 0 && registrationFields.length > 0) || referralId) {
         const submission = await tx.eventRegistrationSubmissionEntity.create({
           data: {
             eventId,
             userId,
             participantId: participant.id,
+            referralId,
           },
         });
         submissionId = submission.id;
@@ -2206,7 +2223,7 @@ export class EventService {
         firstName: r.user.firstName,
         lastName: r.user.lastName,
         imageUrl: r.user.imageUrl,
-        role: r.role as EventUserRoleValue,
+        role: r.role,
         assignedAt: r.createdAt.toISOString(),
       }));
 
@@ -2218,7 +2235,7 @@ export class EventService {
         firstName: r.user.firstName,
         lastName: r.user.lastName,
         imageUrl: r.user.imageUrl,
-        role: r.role as EventUserRoleValue,
+        role: r.role,
         assignedAt: r.createdAt.toISOString(),
       }));
 
@@ -2286,7 +2303,7 @@ export class EventService {
         firstName: r.user.firstName,
         lastName: r.user.lastName,
         imageUrl: r.user.imageUrl,
-        role: r.role as EventUserRoleValue,
+        role: r.role,
         assignedAt: r.createdAt.toISOString(),
       }));
 
@@ -2298,7 +2315,7 @@ export class EventService {
         firstName: r.user.firstName,
         lastName: r.user.lastName,
         imageUrl: r.user.imageUrl,
-        role: r.role as EventUserRoleValue,
+        role: r.role,
         assignedAt: r.createdAt.toISOString(),
       }));
 

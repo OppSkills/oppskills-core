@@ -6,6 +6,7 @@ import {
   ScrollView,
   StyleSheet,
   View,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -234,6 +235,31 @@ export function OpportunityDetailScreen({ detail, onBack, onRegisterNow }: Oppor
             ))}
           </View>
         </View>
+
+        {detail.attachments && detail.attachments.length > 0 && (
+          <View style={styles.sectionWrap}>
+            <AppText style={styles.sectionHeading} variant="sectionHeading">
+              Attachments
+            </AppText>
+
+            <View style={styles.attachmentsStack}>
+              {detail.attachments.map((attachment) => (
+                <Pressable
+                  key={attachment.id}
+                  onPress={() => Linking.openURL(attachment.url)}
+                  style={styles.attachmentCard}
+                >
+                  <AppText colorToken="textPrimary" style={styles.attachmentName} variant="bodyStrong">
+                    {attachment.name}
+                  </AppText>
+                  <AppText colorToken="brandPrimary" variant="label">
+                    View Document
+                  </AppText>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+        )}
 
         <View style={styles.sectionWrap}>
           <AppText style={styles.sectionHeading} variant="sectionHeading">
@@ -1071,6 +1097,30 @@ const styles = StyleSheet.create({
     backgroundColor: '#F2F2F3',
     height: 6,
     width: '100%',
+  },
+  categoryTileImage: {
+    height: 72,
+    width: '100%',
+  },
+  attachmentsStack: {
+    gap: 12,
+  },
+  attachmentCard: {
+    backgroundColor: '#FAFAFA',
+    borderColor: '#EFEFEF',
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  attachmentName: {
+    flex: 1,
+    marginRight: 16,
+  },
+  descriptionBlock: {
+    gap: 8,
   },
   welcomeText: {
     color: '#584D5A',

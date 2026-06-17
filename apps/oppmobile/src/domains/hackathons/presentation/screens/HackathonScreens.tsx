@@ -28,7 +28,7 @@ import subtractHeroImage from '../../../../../assets/Subtract.png';
 interface DiscoverHackathonsScreenProps {
   readonly onOpenCompetitions: () => void;
   readonly onOpenEvents: () => void;
-  readonly onOpenHackathonPage: () => void;
+  readonly onOpenHackathonPage: (id: string) => void;
   readonly onSearchTyping: () => void;
 }
 
@@ -195,19 +195,23 @@ function HackathonCard({
   readonly image: ImageSourcePropType;
   readonly bookmarked: boolean;
   readonly onToggleBookmark: (itemId: string) => void;
-  readonly onOpenHackathonPage: () => void;
+  readonly onOpenHackathonPage: (id: string) => void;
 }) {
   return (
-    <Pressable onPress={onOpenHackathonPage} style={styles.hackathonCard}>
-      <ImageBackground imageStyle={styles.hackathonHeroImage} source={image} style={styles.hackathonHero}>
+    <Pressable onPress={() => onOpenHackathonPage(item.id)} style={styles.hackathonCard}>
+      <ImageBackground imageStyle={styles.hackathonHeroImage} source={item.imageUrl ? { uri: item.imageUrl } : image} style={styles.hackathonHero}>
         <View style={styles.modePill}>
           <AppText colorToken="brandPrimaryStrong" style={styles.modePillText} variant="caption">
-            Free
+            {item.modeLabel.split(' · ')[0] || 'Free'}
           </AppText>
-          <View style={styles.modeDot} />
-          <AppText colorToken="brandPrimaryStrong" style={styles.modePillText} variant="caption">
-            Offline
-          </AppText>
+          {item.modeLabel.split(' · ')[1] ? (
+            <>
+              <View style={styles.modeDot} />
+              <AppText colorToken="brandPrimaryStrong" style={styles.modePillText} variant="caption">
+                {item.modeLabel.split(' · ')[1]}
+              </AppText>
+            </>
+          ) : null}
         </View>
 
         <Pressable
@@ -245,7 +249,7 @@ function HackathonCard({
 
           <View style={styles.metricBlock}>
             <AppText colorToken="textMuted" style={styles.metricLabel} variant="caption">
-              Prizes Worth
+              {item.valueLabel}
             </AppText>
             <AppText colorToken="textSecondary" style={styles.metricValue} variant="body">
               {item.value}
@@ -262,13 +266,14 @@ function heroImageByIndex(_index: number): ImageSourcePropType {
 }
 
 interface HackathonPageScreenProps {
+  readonly hackathonId: string;
   readonly onBackToDiscover: () => void;
-  readonly onRegisterNow?: () => void;
+  readonly onRegisterNow?: (hackathonInfo: { hackathonId: string; title: string; bannerImageUrl: string | null }) => void;
 }
 
-export function HackathonPageScreen({ onBackToDiscover, onRegisterNow }: HackathonPageScreenProps) {
+export function HackathonPageScreen({ hackathonId, onBackToDiscover, onRegisterNow }: HackathonPageScreenProps) {
   useHideTabBar();
-  const { data: detail, isError, isLoading, refetch } = useHackathonDetail();
+  const { data: detail, isError, isLoading, refetch } = useHackathonDetail(hackathonId);
 
   if (isLoading) {
     return <DetailLoadingState />;
@@ -293,7 +298,7 @@ export function HackathonPageScreen({ onBackToDiscover, onRegisterNow }: Hackath
     <OpportunityDetailScreen
       detail={detail}
       onBack={onBackToDiscover}
-      {...(onRegisterNow ? { onRegisterNow } : {})}
+      {...(onRegisterNow ? { onRegisterNow: () => onRegisterNow({ hackathonId, title: detail.heroTitle, bannerImageUrl: detail.bannerImageUrl }) } : {})}
     />
   );
 }

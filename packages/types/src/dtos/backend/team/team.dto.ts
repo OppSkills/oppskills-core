@@ -105,6 +105,14 @@ export class CreateTeamDto {
   @ValidateNested({ each: true })
   @Type(() => RegistrationAnswerDto)
   answers?: RegistrationAnswerDto[];
+
+  @ApiPropertyOptional({
+    description: "Referral code for attribution",
+    example: "REF_XYZ123",
+  })
+  @IsOptional()
+  @IsString()
+  referralCode?: string;
 }
 
 /**
@@ -136,4 +144,47 @@ export class JoinTeamDto {
   @ValidateNested({ each: true })
   @Type(() => RegistrationAnswerDto)
   answers?: RegistrationAnswerDto[];
+
+  @ApiPropertyOptional({
+    description: "Referral code for attribution",
+    example: "REF_XYZ123",
+  })
+  @IsOptional()
+  @IsString()
+  referralCode?: string;
 }
+
+/**
+ * DTO for requesting to join a team.
+ */
+export class RequestJoinTeamDto {
+  @ApiProperty({
+    description: "Team ID to request joining",
+    example: "cmjs132o7001yq901uh8byh07",
+  })
+  @IsOptional()
+  @IsString()
+  teamId?: string;
+
+  @ApiPropertyOptional({
+    description: "Invitation code to join a team",
+    example: "ABC123XY",
+  })
+  @IsOptional()
+  @IsString()
+  invitationCode?: string;
+}
+
+/**
+ * DTO for responding to a team join request.
+ */
+export class RespondJoinRequestDto {
+  @ApiProperty({
+    description: "Status to set for the request",
+    enum: ["ACCEPTED", "REJECTED"],
+    example: "ACCEPTED",
+  })
+  @IsString()
+  status: "ACCEPTED" | "REJECTED";
+}
+

@@ -17,6 +17,7 @@ import { ManageFestivalRegistrationScreen } from './ManageFestivalRegistrationSc
 import { EditFestivalScreen } from './EditFestivalScreen';
 import { SendFestivalNotificationsPanel } from './SendFestivalNotificationsPanel';
 import { FestivalReferralsPanel } from './FestivalReferralsPanel';
+import { FestivalPaymentsPanel } from './FestivalPaymentsPanel';
 
 export interface LiveFestival {
   readonly id: string;
@@ -26,6 +27,22 @@ export interface LiveFestival {
   readonly candidatesLabel: string;
   readonly eventsLabel: string;
   readonly competitionsLabel: string;
+  readonly imageUrl?: string | null;
+  readonly startDate?: string;
+  readonly startTime?: string;
+  readonly locationMode?: 'online' | 'offline';
+  readonly locationValue?: string;
+  readonly description?: string;
+  readonly organizationName?: string;
+  readonly ticketType?: 'paid' | 'free';
+  // Registration Settings
+  readonly eligibleCandidates?: readonly ('everyone' | 'school' | 'college' | 'freshers' | 'professionals')[];
+  readonly registrationStartDate?: string;
+  readonly registrationStartTime?: string;
+  readonly registrationDeadlineDate?: string;
+  readonly registrationDeadlineTime?: string;
+  readonly maxAttendees?: string;
+  readonly additionalQuestions?: readonly any[];
 }
 
 interface FestivalDetailScreenProps {
@@ -93,11 +110,13 @@ export function FestivalDetailScreen({
       {activeContextSection === 'dashboard' ? (
         <FestivalDashboardScreen festival={festival} />
       ) : activeContextSection === 'manage-registration' ? (
-        <ManageFestivalRegistrationScreen />
+        <ManageFestivalRegistrationScreen festivalId={festival.id} />
       ) : activeContextSection === 'edit-festival' ? (
         <EditFestivalScreen festival={festival} onUpdateFestival={handleUpdateFestival} />
       ) : activeContextSection === 'referrals' ? (
         <FestivalReferralsPanel festival={festival} />
+      ) : activeContextSection === 'payments' ? (
+        <FestivalPaymentsPanel festival={festival} />
       ) : activeContextSection === 'send-notifications' ? (
         <SendFestivalNotificationsPanel onOpenSidebar={() => setDrawerVisible(true)} />
       ) : (

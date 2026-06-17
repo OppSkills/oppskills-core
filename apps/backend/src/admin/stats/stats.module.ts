@@ -5,9 +5,9 @@ import { AdminStatsService } from './stats.service';
 import { AdminAuthModule } from '../auth/auth.module';
 
 @Module({
-    imports: [AdminAuthModule],
-    controllers: [AdminStatsController],
-    providers: [AdminStatsService],
-    exports: [AdminStatsService]
+  imports: [AdminAuthModule],
+  controllers: [AdminStatsController],
+  providers: [AdminStatsService],
+  exports: [AdminStatsService],
 })
-export class StatsModule { }
+export class StatsModule {}

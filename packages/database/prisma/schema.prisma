@@ -98,6 +98,15 @@ enum RoundStatus {
   @@schema("oppskills")
 }
 
+enum TeamJoinRequestStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+
+  @@map("TeamJoinRequestStatus")
+  @@schema("oppskills")
+}
+
 enum RegistrationFieldType {
   TEXT
   PHONE_NO
@@ -133,6 +142,16 @@ enum EventType {
   OTHER
 
   @@map("EventType")
+  @@schema("oppskills")
+}
+
+/// Type of entity a referral link points to.
+enum ReferralEntityType {
+  HACKATHON
+  EVENT
+  FESTIVAL
+
+  @@map("ReferralEntityType")
   @@schema("oppskills")
 }
 
@@ -416,6 +435,12 @@ model UserEntity {
   // Feature waitlist
   featureWaitlist FeatureWaitlistEntity[] @relation("UserFeatureWaitlist")
 
+  // Team join requests
+  teamJoinRequests TeamJoinRequestEntity[] @relation("UserTeamJoinRequests")
+
+  // Referrals
+  referrals ReferralEntity[] @relation("UserReferrals")
+
   @@map("user")
   @@schema("oppskills")
 }
@@ -448,6 +473,7 @@ model HackathonEntity {
   locationVirtualLink String?       @map("location_virtual_link")
 
   // Registration
+  registrationStartDate    DateTime?               @map("registration_start_date")
   registrationDeadline     DateTime?               @map("registration_deadline")
   externalRegistrationLink String?                 @map("external_registration_link")
   registrationForm         RegistrationFormEntity?
@@ -899,7 +925,27 @@ model TeamEntity {
   // Payments for this team (for PER_TEAM charge mode)
   payments HackathonPaymentEntity[]
 
+  // Join requests
+  joinRequests TeamJoinRequestEntity[]
+
   @@map("team")
+  @@schema("oppskills")
+}
+
+model TeamJoinRequestEntity {
+  id        String                @id @default(cuid())
+  teamId    String                @map("team_id")
+  team      TeamEntity            @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  userId    String                @map("user_id")
+  user      UserEntity            @relation("UserTeamJoinRequests", fields: [userId], references: [id], onDelete: Cascade)
+  status    TeamJoinRequestStatus @default(PENDING)
+  createdAt DateTime              @default(now()) @map("created_at")
+  updatedAt DateTime              @updatedAt @map("updated_at")
+
+  @@unique([teamId, userId]) // one user can't request to join the same team multiple times
+  @@index([teamId])
+  @@index([userId])
+  @@map("team_join_request")
   @@schema("oppskills")
 }
 
@@ -930,8 +976,8 @@ model HackathonRegistrationSubmissionEntity {
   hackathon   HackathonEntity @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
   userId      String          @map("user_id")
   user        UserEntity      @relation("UserHackathonSubmissions", fields: [userId], references: [id], onDelete: Cascade)
-  teamId      String          @map("team_id")
-  team        TeamEntity      @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  teamId      String?         @map("team_id")
+  team        TeamEntity?     @relation(fields: [teamId], references: [id], onDelete: Cascade)
 
   /// Optional link to team member (null for team leader who is not in members table)
   teamMemberId String?           @unique @map("team_member_id")
@@ -940,9 +986,13 @@ model HackathonRegistrationSubmissionEntity {
   /// Whether this user is the team leader
   isLeader Boolean @default(false) @map("is_leader")
 
+  // Referral tracking
+  referralId  String?         @map("referral_id")
+  referral    ReferralEntity? @relation(fields: [referralId], references: [id], onDelete: SetNull)
+
   submittedAt DateTime @default(now()) @map("submitted_at")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   answers HackathonRegistrationAnswerEntity[]
 
@@ -950,6 +1000,7 @@ model HackathonRegistrationSubmissionEntity {
   @@index([hackathonId])
   @@index([userId])
   @@index([teamId])
+  @@index([referralId])
   @@map("hackathon_registration_submission")
   @@schema("oppskills")
 }
@@ -1110,15 +1161,20 @@ model EventRegistrationSubmissionEntity {
   participantId String                 @unique @map("participant_id")
   participant   EventParticipantEntity @relation(fields: [participantId], references: [id], onDelete: Cascade)
 
+  // Referral tracking
+  referralId    String?                @map("referral_id")
+  referral      ReferralEntity?        @relation(fields: [referralId], references: [id], onDelete: SetNull)
+
   submittedAt DateTime @default(now()) @map("submitted_at")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   answers EventRegistrationAnswerEntity[]
 
   @@unique([eventId, userId])
   @@index([eventId])
   @@index([userId])
+  @@index([referralId])
   @@map("event_registration_submission")
   @@schema("oppskills")
 }
@@ -1237,6 +1293,10 @@ model UserOnboardingProfileEntity {
   collegeCurrentYear String?        @map("college_current_year")
   collegePassoutYear Int?           @map("college_passout_year")
   collegeSkipped     Boolean        @default(false) @map("college_skipped")
+
+  course         String?
+  specialization String?
+  rollNumber     String?        @map("roll_number")
 
   // Working professional fields
   companyName String? @map("company_name")
@@ -1612,6 +1672,50 @@ model EventDiscountRedemptionEntity {
   @@index([discountCodeId])
   @@index([userId])
   @@map("event_discount_redemption")
+  @@schema("oppskills")
+}
+
+// =============================================================================
+// REFERRAL MODELS
+// =============================================================================
+
+/// Tracks a referral code assigned to a user for an opportunity.
+model ReferralEntity {
+  id          String             @id @default(cuid())
+  code        String             @unique
+  entityType  ReferralEntityType @map("entity_type")
+  entityId    String             @map("entity_id")
+  referrerId  String             @map("referrer_id")
+  referrer    UserEntity         @relation("UserReferrals", fields: [referrerId], references: [id], onDelete: Cascade)
+  
+  clicks      Int                @default(0)
+  isActive    Boolean            @default(true) @map("is_active")
+
+  createdAt   DateTime           @default(now()) @map("created_at")
+  updatedAt   DateTime           @updatedAt @map("updated_at")
+
+  // Relations
+  referralClicks                    ReferralClickEntity[]
+  hackathonRegistrationSubmissions  HackathonRegistrationSubmissionEntity[]
+  eventRegistrationSubmissions      EventRegistrationSubmissionEntity[]
+
+  @@index([entityType, entityId])
+  @@index([referrerId])
+  @@map("referral")
+  @@schema("oppskills")
+}
+
+/// Tracks individual clicks on a referral link for analytics.
+model ReferralClickEntity {
+  id          String         @id @default(cuid())
+  referralId  String         @map("referral_id")
+  referral    ReferralEntity @relation(fields: [referralId], references: [id], onDelete: Cascade)
+  source      String?        // e.g. URL where click originated
+  
+  createdAt   DateTime       @default(now()) @map("created_at")
+
+  @@index([referralId])
+  @@map("referral_click")
   @@schema("oppskills")
 }
 

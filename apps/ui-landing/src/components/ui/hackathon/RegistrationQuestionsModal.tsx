@@ -24,7 +24,6 @@ export type QuestionType =
   | "Text"
   | "Phone No."
   | "Email"
-  | "Attachments"
   | "Number"
   | "Options";
 
@@ -299,7 +298,6 @@ export default function RegistrationQuestionsModal({
                         <SelectItem value="Number">Number</SelectItem>
                         <SelectItem value="Phone No.">Phone No.</SelectItem>
                         <SelectItem value="Email">Email</SelectItem>
-                        <SelectItem value="Attachments">Attachments</SelectItem>
                         <SelectItem value="Options">Options</SelectItem>
                       </SelectContent>
                     </Select>
@@ -397,7 +395,6 @@ export default function RegistrationQuestionsModal({
                   <SelectItem value="Number">Number</SelectItem>
                   <SelectItem value="Phone No.">Phone No.</SelectItem>
                   <SelectItem value="Email">Email</SelectItem>
-                  <SelectItem value="Attachments">Attachments</SelectItem>
                   <SelectItem value="Options">Options</SelectItem>
                 </SelectContent>
               </Select>

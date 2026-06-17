@@ -82,19 +82,17 @@ export function EventDetailScreen({ event: initialEvent, onBack, onOpenMainSideb
       {activeContextSection === 'dashboard' ? (
         <EventDashboardScreen event={event} />
       ) : activeContextSection === 'manage-registration' ? (
-        <ManageRegistrationScreen />
+        <ManageRegistrationScreen slug={event.slug ?? event.id} />
       ) : activeContextSection === 'edit-event' ? (
         <EditEventScreen event={event} onUpdateEvent={handleUpdateEvent} />
       ) : activeContextSection === 'referrals' ? (
         <ReferralsPanel event={event} />
       ) : activeContextSection === 'manage-roles' ? (
-        <ManageRolesPanel />
+        <ManageRolesPanel eventId={event.id} />
       ) : activeContextSection === 'payments' ? (
         <PaymentsPanel event={event} />
       ) : activeContextSection === 'send-notifications' ? (
-        <NotificationsPanel />
-      ) : activeContextSection === 'settings' ? (
-        <SettingsPanel event={event} />
+        <NotificationsPanel eventId={event.id} eventTitle={event.title} />
       ) : (
         <View style={styles.placeholderWrap}>
           <AppText style={styles.placeholderText}>Coming soon</AppText>

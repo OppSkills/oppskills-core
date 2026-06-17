@@ -1,0 +1,1 @@
+const { PrismaClient } = require('@prisma/client'); const prisma = new PrismaClient(); prisma.eventEntity.findMany({ select: { id: true, name: true, isFree: true, ownerId: true } }).then(console.log).finally(() => prisma.$disconnect());

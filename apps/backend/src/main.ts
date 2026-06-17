@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
@@ -53,43 +54,46 @@ async function bootstrap() {
   const allowedOrigins: string[] =
     process.env.NODE_ENV === 'production'
       ? [
-        'https://oppskills.com',
-        'https://www.oppskills.com',
-        // If the app is hosted on a subdomain (common), allow it explicitly.
-        'https://app.oppskills.com',
-        "https://admin.oppskills.com"
-      ]
+          'https://oppskills.com',
+          'https://www.oppskills.com',
+          // If the app is hosted on a subdomain (common), allow it explicitly.
+          'https://app.oppskills.com',
+          'https://admin.oppskills.com',
+        ]
       : [
-        'http://localhost:3000',
-        'http://127.0.0.1:3000',
-        'http://localhost:3002',
-        'http://127.0.0.1:3002',
-        'https://oppskills.com',
-        'https://www.oppskills.com',
-        'https://app.oppskills.com',
-        "https://admin.oppskills.com"
-      ];
+          'http://localhost:3000',
+          'http://127.0.0.1:3000',
+          'http://localhost:3002',
+          'http://127.0.0.1:3002',
+          'https://oppskills.com',
+          'https://www.oppskills.com',
+          'https://app.oppskills.com',
+          'https://admin.oppskills.com',
+        ];
 
   app.enableCors({
-    origin: (
-      origin: string | undefined,
-      callback: (err: Error | null, allow?: boolean) => void,
-    ): void => {
-      // Allow same-origin / server-to-server / tools like curl (no Origin header).
-      if (!origin) {
-        callback(null, true);
-        return;
-      }
+    origin:
+      process.env.NODE_ENV === 'production'
+        ? (
+            origin: string | undefined,
+            callback: (err: Error | null, allow?: boolean) => void,
+          ): void => {
+            // Allow same-origin / server-to-server / tools like curl (no Origin header).
+            if (!origin) {
+              callback(null, true);
+              return;
+            }
 
-      if (allowedOrigins.includes(origin)) {
-        callback(null, true);
-        return;
-      }
+            if (allowedOrigins.includes(origin)) {
+              callback(null, true);
+              return;
+            }
 
-      // Properly reject CORS request with false, not an error
-      console.warn(`CORS blocked for origin: ${origin}`);
-      callback(null, false);
-    },
+            // Properly reject CORS request with false, not an error
+            console.warn(`CORS blocked for origin: ${origin}`);
+            callback(null, false);
+          }
+        : true, // Allow all origins in dev mode
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   });
@@ -115,6 +119,6 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api-reference', app, document);
 
-  await app.listen(process.env.PORT ?? 3001);
+  await app.listen(process.env.PORT ?? 3001, '0.0.0.0');
 }
 bootstrap();

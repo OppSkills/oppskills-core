@@ -32,12 +32,29 @@ import {
 } from "@/hooks/usePayments";
 import { useHackathonBySlug } from "@/hooks/useHackathonBySlug";
 import { useAuth } from "@clerk/nextjs";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { PayoutDetailsInput } from "@/lib/api/paymentsApi";
+import {
+  PayoutDetailsInput,
+  DiscountCode,
+  CreateDiscountCodeParams,
+  getDiscountCodes,
+  createDiscountCode,
+  updateDiscountCode,
+  deleteDiscountCode,
+} from "@/lib/api/paymentsApi";
 import { updateHackathon } from "@/lib/api/hackathonApi";
 import { searchColleges, getCollegesByIds } from "@/lib/api/collegesApi";
 import { format } from "date-fns";
+import {
+  Tag,
+  Plus,
+  Trash2,
+  ToggleLeft,
+  ToggleRight,
+} from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
 
 type ChargeMode = "PER_TEAM" | "PER_USER";
 type AutoSaveStatus = "idle" | "dirty" | "saving" | "saved" | "error";
@@ -108,12 +125,79 @@ export default function Page() {
   const saveQueuedRef = useRef<boolean>(false);
   const lastSavedAtRef = useRef<number | null>(null);
 
+  // --- Discount Code State ---
+  const [showNewCodeForm, setShowNewCodeForm] = useState(false);
+  const [newCode, setNewCode] = useState<CreateDiscountCodeParams>({
+    code: "",
+    type: "PERCENT",
+    value: 0,
+    maxRedemptions: undefined,
+    maxPerUser: 1,
+  });
+
   const { data: hackathonData } = useHackathonBySlug(slug ?? "");
   const hackathon = hackathonData as HackathonData | undefined;
 
   const { data: payoutDetails, isLoading: payoutLoading } = usePayoutDetails();
   const upsertPayoutDetails = useUpsertPayoutDetails();
   const { data: earnings } = useHackathonEarnings(slug ?? "");
+
+  // Fetch discount codes
+  const { data: discountCodes, isLoading: isLoadingCodes, refetch: refetchCodes } = useQuery<DiscountCode[]>({
+    queryKey: ["discount-codes", slug],
+    enabled: !!slug && !!hackathon,
+    queryFn: async () => {
+      const token = await getToken();
+      if (!token || !slug) return [];
+      return getDiscountCodes(token, slug);
+    },
+  });
+
+  const createCodeMutation = useMutation({
+    mutationFn: async (params: CreateDiscountCodeParams) => {
+      const token = await getToken();
+      if (!token || !slug) throw new Error("Not authenticated");
+      return createDiscountCode(token, slug, params);
+    },
+    onSuccess: () => {
+      toast.success("Discount code created!");
+      setShowNewCodeForm(false);
+      setNewCode({ code: "", type: "PERCENT", value: 0, maxRedemptions: undefined, maxPerUser: 1 });
+      refetchCodes();
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || "Failed to create discount code");
+    },
+  });
+
+  const toggleCodeMutation = useMutation({
+    mutationFn: async ({ codeId, active }: { codeId: string; active: boolean }) => {
+      const token = await getToken();
+      if (!token || !slug) throw new Error("Not authenticated");
+      return updateDiscountCode(token, slug, codeId, { active });
+    },
+    onSuccess: () => {
+      refetchCodes();
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || "Failed to update discount code");
+    },
+  });
+
+  const deleteCodeMutation = useMutation({
+    mutationFn: async (codeId: string) => {
+      const token = await getToken();
+      if (!token || !slug) throw new Error("Not authenticated");
+      return deleteDiscountCode(token, slug, codeId);
+    },
+    onSuccess: () => {
+      toast.success("Discount code deleted");
+      refetchCodes();
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || "Cannot delete code with existing redemptions. Deactivate it instead.");
+    },
+  });
 
   const currentPricing = useMemo(
     (): PricingState => ({
@@ -812,6 +896,223 @@ export default function Page() {
                     </div>
                   </>
                 )}
+              </div>
+            )}
+          </div>
+        </div>
+
+          {/* DISCOUNT CODES */}
+          <div className="flex flex-col items-start gap-4 p-6 self-stretch rounded-2xl border border-border bg-transparent">
+            <div className="flex justify-between items-center self-stretch">
+              <div className="flex flex-col gap-1">
+                <h6 className="font-poppins text-foreground text-xl font-semibold leading-tight capitalize flex items-center gap-2">
+                  <Tag className="w-5 h-5" /> Discount Codes
+                </h6>
+                <p className="font-sans text-muted-foreground text-sm">
+                  Create coupon codes that give participants a discount on registration fees.
+                </p>
+              </div>
+              <Button
+                size="sm"
+                onClick={() => setShowNewCodeForm((v) => !v)}
+                className="gap-2"
+              >
+                <Plus className="w-4 h-4" /> New Code
+              </Button>
+            </div>
+
+            {/* New code form */}
+            {showNewCodeForm && (
+              <div className="w-full border border-dashed border-primary/40 rounded-xl p-4 flex flex-col gap-4 bg-muted/20 animate-in fade-in slide-in-from-top-2 duration-200">
+                <h4 className="font-semibold text-sm">Create New Discount Code</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <Label className="text-xs font-semibold">Code *</Label>
+                    <Input
+                      placeholder="e.g. LAUNCH50"
+                      value={newCode.code}
+                      onChange={(e) =>
+                        setNewCode((p) => ({ ...p, code: e.target.value.toUpperCase() }))
+                      }
+                      className="uppercase"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <Label className="text-xs font-semibold">Type *</Label>
+                    <div className="flex gap-2">
+                      {(["PERCENT", "FIXED"] as const).map((t) => (
+                        <button
+                          key={t}
+                          onClick={() => setNewCode((p) => ({ ...p, type: t }))}
+                          className={cn(
+                            "flex-1 py-2 rounded-lg text-sm font-medium border transition-all",
+                            newCode.type === t
+                              ? "bg-primary text-primary-foreground border-primary"
+                              : "bg-background border-border text-muted-foreground hover:bg-muted"
+                          )}
+                        >
+                          {t === "PERCENT" ? "% Off" : "₹ Off"}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <Label className="text-xs font-semibold">
+                      {newCode.type === "PERCENT" ? "Discount %" : "Discount ₹"} *
+                    </Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={newCode.type === "PERCENT" ? 100 : undefined}
+                      placeholder={newCode.type === "PERCENT" ? "e.g. 20" : "e.g. 100"}
+                      value={newCode.value || ""}
+                      onChange={(e) =>
+                        setNewCode((p) => ({ ...p, value: parseFloat(e.target.value) || 0 }))
+                      }
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <Label className="text-xs font-semibold">Max Redemptions (optional)</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      placeholder="Unlimited"
+                      value={newCode.maxRedemptions ?? ""}
+                      onChange={(e) =>
+                        setNewCode((p) => ({
+                          ...p,
+                          maxRedemptions: e.target.value ? parseInt(e.target.value) : undefined,
+                        }))
+                      }
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <Label className="text-xs font-semibold">Max Uses Per User</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={newCode.maxPerUser ?? 1}
+                      onChange={(e) =>
+                        setNewCode((p) => ({ ...p, maxPerUser: parseInt(e.target.value) || 1 }))
+                      }
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      if (!newCode.code.trim()) {
+                        toast.error("Code is required");
+                        return;
+                      }
+                      if (!newCode.value || newCode.value <= 0) {
+                        toast.error("Discount value must be positive");
+                        return;
+                      }
+                      createCodeMutation.mutate(newCode);
+                    }}
+                    disabled={createCodeMutation.isPending}
+                  >
+                    {createCodeMutation.isPending ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      "Create Code"
+                    )}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setShowNewCodeForm(false)}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Codes list */}
+            {isLoadingCodes ? (
+              <div className="flex items-center justify-center p-8 w-full">
+                <Loader2 className="w-6 h-6 animate-spin text-primary" />
+              </div>
+            ) : !discountCodes || discountCodes.length === 0 ? (
+              <div className="flex flex-col items-center justify-center p-8 bg-muted/30 rounded-xl w-full gap-2">
+                <Tag className="w-10 h-10 text-muted-foreground/40" />
+                <p className="text-muted-foreground text-sm">
+                  No discount codes yet. Create one to offer discounts to participants.
+                </p>
+              </div>
+            ) : (
+              <div className="w-full overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border">
+                      <th className="text-left py-2 px-3 font-semibold text-muted-foreground">Code</th>
+                      <th className="text-left py-2 px-3 font-semibold text-muted-foreground">Discount</th>
+                      <th className="text-left py-2 px-3 font-semibold text-muted-foreground">Redemptions</th>
+                      <th className="text-left py-2 px-3 font-semibold text-muted-foreground">Status</th>
+                      <th className="text-left py-2 px-3 font-semibold text-muted-foreground">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {discountCodes.map((code) => (
+                      <tr
+                        key={code.id}
+                        className="border-b border-border/50 hover:bg-muted/20 transition-colors"
+                      >
+                        <td className="py-3 px-3">
+                          <span className="font-mono font-semibold text-primary tracking-wider">
+                            {code.code}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3">
+                          {code.type === "PERCENT"
+                            ? `${code.value}% off`
+                            : `₹${code.value} off`}
+                        </td>
+                        <td className="py-3 px-3">
+                          {(code as DiscountCode & { redemptionCount?: number }).redemptionCount ?? 0}
+                          {code.maxRedemptions ? ` / ${code.maxRedemptions}` : " / ∞"}
+                        </td>
+                        <td className="py-3 px-3">
+                          <Badge
+                            variant={code.active ? "default" : "secondary"}
+                            className={code.active ? "bg-green-100 text-green-700 border-green-200" : ""}
+                          >
+                            {code.active ? "Active" : "Inactive"}
+                          </Badge>
+                        </td>
+                        <td className="py-3 px-3">
+                          <div className="flex items-center gap-2">
+                            <button
+                              title={code.active ? "Deactivate" : "Activate"}
+                              onClick={() =>
+                                toggleCodeMutation.mutate({ codeId: code.id, active: !code.active })
+                              }
+                              className="hover:text-primary transition-colors"
+                              disabled={toggleCodeMutation.isPending}
+                            >
+                              {code.active ? (
+                                <ToggleRight className="w-5 h-5 text-green-600" />
+                              ) : (
+                                <ToggleLeft className="w-5 h-5 text-muted-foreground" />
+                              )}
+                            </button>
+                            <button
+                              title="Delete"
+                              onClick={() => deleteCodeMutation.mutate(code.id)}
+                              className="hover:text-destructive transition-colors"
+                              disabled={deleteCodeMutation.isPending}
+                            >
+                              <Trash2 className="w-4 h-4 text-muted-foreground hover:text-destructive" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
           </div>

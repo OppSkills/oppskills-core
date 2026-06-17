@@ -123,8 +123,8 @@ interface SearchPageResultsScreenProps {
   readonly query: string;
   readonly flowState: SearchFlowState;
   readonly results: readonly SearchResultEntity[];
-  readonly onCompetition: () => void;
-  readonly onHackathon: () => void;
+  readonly onCompetition: (id: string) => void;
+  readonly onHackathon: (id: string) => void;
   readonly onQueryChange: (nextQuery: string) => void;
   readonly onSubmitQuery: (query: string) => void;
 }
@@ -140,11 +140,11 @@ export function SearchPageResultsScreen({
 }: SearchPageResultsScreenProps) {
   const handleResultPress = (item: SearchResultEntity) => {
     if (item.kind === 'hackathon') {
-      onHackathon();
+      onHackathon(item.id);
       return;
     }
 
-    onCompetition();
+    onCompetition(item.id);
   };
 
   return (

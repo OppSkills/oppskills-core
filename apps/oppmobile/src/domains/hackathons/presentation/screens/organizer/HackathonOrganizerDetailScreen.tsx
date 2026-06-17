@@ -80,13 +80,13 @@ export function HackathonOrganizerDetailScreen({ hackathon: initialHackathon, on
       {activeContextSection === 'dashboard' ? (
         <HackathonDashboardScreen hackathon={hackathon} />
       ) : activeContextSection === 'manage-registration' ? (
-        <ManageHackathonRegistrationScreen />
+        <ManageHackathonRegistrationScreen slug={hackathon.slug ?? ''} />
       ) : activeContextSection === 'edit-hackathon' ? (
         <EditHackathonScreen hackathon={hackathon} onUpdateHackathon={handleUpdateHackathon} />
       ) : activeContextSection === 'referrals' ? (
         <HackathonReferralsPanel hackathon={hackathon} />
       ) : activeContextSection === 'send-notifications' ? (
-        <HackathonNotificationsPanel />
+        <HackathonNotificationsPanel hackathonId={hackathon.id} hackathonTitle={hackathon.title} />
       ) : activeContextSection === 'settings' ? (
         <HackathonSettingsPanel hackathon={hackathon} />
       ) : (

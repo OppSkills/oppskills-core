@@ -100,6 +100,18 @@ export class CreateOnboardingDto {
   @IsOptional()
   collegeSkipped?: boolean;
 
+  @IsString()
+  @IsOptional()
+  course?: string;
+
+  @IsString()
+  @IsOptional()
+  specialization?: string;
+
+  @IsString()
+  @IsOptional()
+  rollNumber?: string;
+
   // Working professional fields (for WORKING_PROFESSIONAL)
   @ValidateIf((o) => o.userCategory === UserCategoryValue.WORKING_PROFESSIONAL)
   @IsString()
@@ -194,6 +206,18 @@ export class UpdateOnboardingDto {
 
   @IsString()
   @IsOptional()
+  course?: string;
+
+  @IsString()
+  @IsOptional()
+  specialization?: string;
+
+  @IsString()
+  @IsOptional()
+  rollNumber?: string;
+
+  @IsString()
+  @IsOptional()
   companyName?: string;
 
   @IsString()
@@ -251,6 +275,9 @@ export interface OnboardingProfileResponseDto {
   collegeCurrentYear?: string | null;
   collegePassoutYear?: number | null;
   collegeSkipped: boolean;
+  course?: string | null;
+  specialization?: string | null;
+  rollNumber?: string | null;
   companyName?: string | null;
   jobTitle?: string | null;
   locationCity?: string | null;

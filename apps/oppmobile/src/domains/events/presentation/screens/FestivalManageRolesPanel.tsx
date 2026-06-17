@@ -1,7 +1,9 @@
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useQuery } from '@tanstack/react-query';
 
 import { AppText } from '../../../../shared/ui';
+import { apiClient } from '../../../../shared/api/apiClient';
 
 interface RoleMember {
   readonly id: string;
@@ -11,23 +13,80 @@ interface RoleMember {
   readonly color: string;
 }
 
-const MOCK_MANAGERS: RoleMember[] = [
-  { id: '1', name: 'oppskills', email: 'oppskills15@gmail.com', initial: 'O', color: '#4B7A3A' },
-  { id: '2', name: 'Harshit', email: 'harshitthakur012@gmail.com', initial: 'H', color: '#2D4A7A' },
-  { id: '3', name: '4154arpit Mehral', email: '4154arpitmehrl@gmail.com', initial: '4', color: '#7A4B2D' },
-  { id: '4', name: 'bca bca', email: 'bca@tiips.ac.in', initial: 'b', color: '#3A4B7A' },
-];
+interface EventRoleItem {
+  readonly id: string;
+  readonly email: string;
+  readonly firstName: string | null;
+  readonly lastName: string | null;
+  readonly imageUrl: string | null;
+}
 
-const MOCK_EVALUATORS: RoleMember[] = [
-  { id: '5', name: 'Evaluator User', email: 'evaluator@example.com', initial: 'E', color: '#8359D5' },
-];
+interface EventRolesResponse {
+  readonly owner: EventRoleItem;
+  readonly managers: readonly EventRoleItem[];
+  readonly evaluators: readonly EventRoleItem[];
+}
 
 type RoleTab = 'manager' | 'evaluator';
 
-export function FestivalManageRolesPanel() {
+interface FestivalManageRolesPanelProps {
+  readonly eventId: string;
+}
+
+function getPersonName(person: EventRoleItem) {
+  const name = `${person.firstName ?? ''} ${person.lastName ?? ''}`.trim();
+  return name || person.email;
+}
+
+function getColorForRole(role: RoleTab) {
+  return role === 'manager' ? '#4B7A3A' : '#8359D5';
+}
+
+export function FestivalManageRolesPanel({ eventId }: FestivalManageRolesPanelProps) {
   const [activeTab, setActiveTab] = useState<RoleTab>('manager');
 
-  const list = activeTab === 'manager' ? MOCK_MANAGERS : MOCK_EVALUATORS;
+  const { data, isLoading, isError } = useQuery<EventRolesResponse>({
+    queryKey: ['event', eventId, 'roles'],
+    queryFn: () => apiClient.getAuth<EventRolesResponse>(`/events/${eventId}/roles`),
+    enabled: !!eventId,
+    staleTime: 1000 * 60 * 2,
+    retry: false,
+  });
+
+  if (isLoading) {
+    return (
+      <View style={styles.loadingWrap}>
+        <ActivityIndicator size="large" color="#8359D5" />
+      </View>
+    );
+  }
+
+  if (isError || !data) {
+    return (
+      <View style={styles.errorWrap}>
+        <AppText style={styles.errorText}>Unable to load roles. Please try again.</AppText>
+      </View>
+    );
+  }
+
+  const ownerName = getPersonName(data.owner);
+  const ownerInitial = ownerName.charAt(0).toUpperCase();
+  const managers: RoleMember[] = data.managers.map((member) => ({
+    id: member.id,
+    name: getPersonName(member),
+    email: member.email,
+    initial: getPersonName(member).charAt(0).toUpperCase(),
+    color: getColorForRole('manager'),
+  }));
+  const evaluators: RoleMember[] = data.evaluators.map((member) => ({
+    id: member.id,
+    name: getPersonName(member),
+    email: member.email,
+    initial: getPersonName(member).charAt(0).toUpperCase(),
+    color: getColorForRole('evaluator'),
+  }));
+
+  const list = activeTab === 'manager' ? managers : evaluators;
 
   return (
     <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -35,20 +94,19 @@ export function FestivalManageRolesPanel() {
         Manage user roles, set permissions, and control access for a secure system.
       </AppText>
 
-      {/* Owner card */}
       <View style={styles.ownerCard}>
         <View style={styles.ownerLeft}>
           <View style={styles.ownerAvatar}>
-            <AppText style={styles.ownerInitial}>S</AppText>
+            <AppText style={styles.ownerInitial}>{ownerInitial}</AppText>
           </View>
           <View style={styles.ownerInfo}>
             <View style={styles.ownerNameRow}>
-              <AppText style={styles.ownerName}>Srishti Singh</AppText>
+              <AppText style={styles.ownerName}>{ownerName}</AppText>
               <View style={styles.ownerBadge}>
                 <AppText style={styles.ownerBadgeText}>Owner</AppText>
               </View>
             </View>
-            <AppText style={styles.ownerEmail}>srishti16uv05@gmail.com</AppText>
+            <AppText style={styles.ownerEmail}>{data.owner.email}</AppText>
           </View>
         </View>
         <AppText style={styles.cannotModify}>Cannot be modified</AppText>
@@ -56,14 +114,13 @@ export function FestivalManageRolesPanel() {
 
       <View style={styles.divider} />
 
-      {/* Role tabs */}
       <View style={styles.tabRow}>
         <Pressable
           onPress={() => setActiveTab('manager')}
           style={[styles.roleTab, activeTab === 'manager' ? styles.roleTabActive : null]}
         >
           <AppText style={[styles.roleTabText, activeTab === 'manager' ? styles.roleTabTextActive : null]}>
-            Manager ({MOCK_MANAGERS.length})
+            Manager ({managers.length})
           </AppText>
         </Pressable>
         <Pressable
@@ -71,12 +128,11 @@ export function FestivalManageRolesPanel() {
           style={[styles.roleTab, activeTab === 'evaluator' ? styles.roleTabActive : null]}
         >
           <AppText style={[styles.roleTabText, activeTab === 'evaluator' ? styles.roleTabTextActive : null]}>
-            Evaluator ({MOCK_EVALUATORS.length})
+            Evaluator ({evaluators.length})
           </AppText>
         </Pressable>
       </View>
 
-      {/* Members list */}
       {list.map((member) => (
         <View key={member.id} style={styles.memberCard}>
           <View style={styles.memberLeft}>
@@ -282,5 +338,23 @@ const styles = StyleSheet.create({
     fontFamily: 'Urbanist',
     fontSize: 14,
     fontWeight: '500',
+  },
+  loadingWrap: {
+    alignItems: 'center',
+    flex: 1,
+    justifyContent: 'center',
+    paddingVertical: 40,
+  },
+  errorWrap: {
+    alignItems: 'center',
+    flex: 1,
+    justifyContent: 'center',
+    paddingVertical: 40,
+  },
+  errorText: {
+    color: '#EF4444',
+    fontFamily: 'Urbanist',
+    fontSize: 14,
+    textAlign: 'center',
   },
 });

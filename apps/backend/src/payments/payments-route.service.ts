@@ -236,7 +236,7 @@ export class PaymentsRouteService {
       where: { userId },
       data: {
         status: newStatus,
-        requirements: requirements as object,
+        requirements: requirements,
       },
     });
 
@@ -336,7 +336,7 @@ export class PaymentsRouteService {
       where: { userId },
       data: {
         status: newStatus,
-        requirements: (updateResponse.requirements ?? null) as object,
+        requirements: updateResponse.requirements ?? null,
       },
     });
 
@@ -389,16 +389,7 @@ export class PaymentsRouteService {
       email: accountInfo.email,
       phone: accountInfo.phone,
       legalBusinessName: accountInfo.legalBusinessName,
-      businessType: accountInfo.businessType as
-        | 'individual'
-        | 'partnership'
-        | 'proprietorship'
-        | 'private_limited'
-        | 'public_limited'
-        | 'trust'
-        | 'society'
-        | 'ngo'
-        | 'llp',
+      businessType: accountInfo.businessType,
       contactName: accountInfo.contactName,
       profile: accountInfo.profile,
       legalInfo: accountInfo.legalInfo,
@@ -442,7 +433,7 @@ export class PaymentsRouteService {
       where: { userId },
       data: {
         status: newStatus,
-        requirements: (productConfig.requirements ?? null) as object,
+        requirements: productConfig.requirements ?? null,
       },
     });
 
@@ -473,7 +464,7 @@ export class PaymentsRouteService {
       where: { userId },
       data: {
         status: newStatus,
-        requirements: (updateResponse.requirements ?? null) as object,
+        requirements: updateResponse.requirements ?? null,
       },
     });
 

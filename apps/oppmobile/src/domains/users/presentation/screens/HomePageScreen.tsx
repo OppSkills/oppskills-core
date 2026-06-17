@@ -27,6 +27,7 @@ import {
   type HomeTrackItemEntity,
 } from '../../domain/entities/HomeFeed';
 import { useHomeFeed } from '../hooks/useHomeFeed';
+import { useCurrentUser } from '../hooks/useCurrentUser';
 import Svg, { Path } from 'react-native-svg';
 import { AppText, FooterSignatureBlock, OrganizerSidebarDrawer } from '../../../../shared/ui';
 import { styles } from './HomePageScreen.styles';
@@ -48,6 +49,7 @@ export function HomePageScreen({
 }: HomePageScreenProps) {
   const [homeSidebarOpen, setHomeSidebarOpen] = useState(false);
   const { data: homeFeed } = useHomeFeed();
+  const { data: currentUser } = useCurrentUser();
   const [activeCategoryId, setActiveCategoryId] = useState('');
   const [loadingSections, setLoadingSections] = useState(true);
 
@@ -111,14 +113,19 @@ export function HomePageScreen({
                 style={styles.profileInfoPressable}
               >
                 <View style={styles.avatar}>
-                  <AppText colorToken="textInverse" variant="label">
-                    RT
-                  </AppText>
+                  {currentUser?.imageUrl ? (
+                    <Image source={{ uri: currentUser.imageUrl }} style={{ width: '100%', height: '100%', borderRadius: 999 }} />
+                  ) : (
+                    <AppText colorToken="textInverse" variant="label">
+                      {currentUser?.firstName?.[0] || 'U'}
+                      {currentUser?.lastName?.[0] || ''}
+                    </AppText>
+                  )}
                 </View>
                 <View style={styles.profileMeta}>
-                  <AppText variant="title">Hello, Rohit Tiwari</AppText>
+                  <AppText variant="title">Hello, {currentUser?.firstName || 'User'} {currentUser?.lastName || ''}</AppText>
                   <AppText colorToken="textMuted" numberOfLines={1} variant="caption">
-                    Guru Jambheshwar University
+                    {currentUser?.onboardingProfile?.college?.name || currentUser?.onboardingProfile?.schoolName || currentUser?.onboardingProfile?.companyName || 'OppSkills User'}
                   </AppText>
                 </View>
               </Pressable>
@@ -472,7 +479,6 @@ function InlineArrowAction({ label }: { readonly label: string }) {
       </AppText>
       <View style={styles.inlineArrowActionIcon}>
         <View style={styles.inlineArrowActionStrokeUpper} />
-        <View style={styles.inlineArrowActionStrokeLower} />
       </View>
     </Pressable>
   );
@@ -586,12 +592,16 @@ function ListedCompetitionRail({
               <View style={styles.listedCompetitionHeroOverlay}>
                 <View style={styles.listedCompetitionModePill}>
                   <AppText colorToken="brandPrimaryStrong" variant="micro">
-                    Free
+                    {item.modeLabel.split(' · ')[0] || 'Free'}
                   </AppText>
-                  <View style={styles.listedCompetitionModeDot} />
-                  <AppText colorToken="brandPrimaryStrong" variant="micro">
-                    Offline
-                  </AppText>
+                  {item.modeLabel.split(' · ')[1] ? (
+                    <>
+                      <View style={styles.listedCompetitionModeDot} />
+                      <AppText colorToken="brandPrimaryStrong" variant="micro">
+                        {item.modeLabel.split(' · ')[1]}
+                      </AppText>
+                    </>
+                  ) : null}
                 </View>
                 <View style={styles.listedCompetitionBookmark}>
                   <View style={styles.listedCompetitionBookmarkIcon} />
@@ -622,6 +632,10 @@ function ListedCompetitionRail({
 }
 
 function getListedCompetitionHeroImage(item: HomeOpportunityItemEntity): ImageSourcePropType {
+  if (item.imageUrl) {
+    return { uri: item.imageUrl };
+  }
+
   if (item.id === 'listed-2' || item.title.toLowerCase().includes('public speaking')) {
     return subtractHeroImage;
   }
@@ -630,6 +644,10 @@ function getListedCompetitionHeroImage(item: HomeOpportunityItemEntity): ImageSo
 }
 
 function getHomeEventHeroImage(item: HomeEventItemEntity): ImageSourcePropType {
+  if (item.imageUrl) {
+    return { uri: item.imageUrl };
+  }
+
   if (item.id === 'event-2') {
     return subtractHeroImage;
   }

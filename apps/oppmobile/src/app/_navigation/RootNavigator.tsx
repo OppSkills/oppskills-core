@@ -1,12 +1,14 @@
-import { NavigationContainer, getFocusedRouteNameFromRoute } from '@react-navigation/native';
+import { NavigationContainer, getFocusedRouteNameFromRoute, useNavigation } from '@react-navigation/native';
 import {
   createBottomTabNavigator,
   type BottomTabBarProps,
   type BottomTabNavigationProp,
 } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { useOAuth } from '@clerk/clerk-expo';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Alert, Pressable, StyleSheet, View, ActivityIndicator } from 'react-native';
+import * as Linking from 'expo-linking';
 import Svg, { Path } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -43,6 +45,8 @@ import {
   HackathonPageScreen,
 } from '../../domains/hackathons/presentation/screens/HackathonScreens';
 import { HackathonRegistrationScreen } from '../../domains/hackathons/presentation/screens/HackathonRegistrationScreen';
+import { useSearchSuggestions } from '../../domains/search/presentation/hooks/useSearchSuggestions';
+import { useSearchResults } from '../../domains/search/presentation/hooks/useSearchResults';
 import {
   searchRepository,
 } from '../../domains/search/data/repositories';
@@ -53,7 +57,7 @@ import {
   SearchPageTypingScreen,
 } from '../../domains/search/presentation/screens/SearchScreens';
 import { transitionSearchFlowState, type SearchFlowState } from '../../domains/search/model/searchStateMachine';
-import { useMockSession } from '../../domains/user-accounts/presentation/providers/MockSessionProvider';
+import { useAppSession } from '../../shared/auth/useAppSession';
 import { HomePageScreen } from '../../domains/users/presentation/screens/HomePageScreen';
 import { OrganizerDashboardScreen } from '../../domains/users/presentation/screens/OrganizerDashboardScreen';
 import { ProfileEditScreen } from '../../domains/users/presentation/screens/ProfileEditScreen';
@@ -83,7 +87,7 @@ const TAB_BAR_HORIZONTAL_MARGIN = lightTheme.spacing[16];
 const TAB_BAR_BOTTOM_OFFSET = 48;
 
 function OnboardingNavigator() {
-  const session = useMockSession();
+  const session = useAppSession();
 
   return (
     <OnboardingStack.Navigator screenOptions={{ headerShown: false }}>
@@ -123,27 +127,38 @@ function OnboardingNavigator() {
   );
 }
 
-function AuthNavigator() {
-  const session = useMockSession();
-  const [email, setEmail] = useState(session.preferredEmail || '');
+import { useQueryClient } from '@tanstack/react-query';
+import { apiClient } from '../../shared/api/apiClient';
+
+function AuthNavigator({
+  startAtProfile = false,
+  onBackendOnboardingComplete,
+}: {
+  readonly startAtProfile?: boolean;
+  readonly onBackendOnboardingComplete?: () => void;
+}) {
+  const queryClient = useQueryClient();
+  const session = useAppSession();
+  const navigation = useNavigation<any>();
+  const [email, setEmail] = useState(session.userEmail ?? '');
   const [otpCode, setOtpCode] = useState('');
   const [personalInfo, setPersonalInfo] = useState<MockProfilePersonalInput>({
-    fullName: session.mockProfile?.fullName ?? '',
-    password: session.mockProfile?.password ?? '',
-    phoneNumber: session.mockProfile?.phoneNumber ?? '',
+    fullName: [session.firstName, session.lastName].filter(Boolean).join(' ').trim(),
+    password: '',
+    phoneNumber: '',
   });
   const [educationInfo, setEducationInfo] = useState<MockProfileEducationInput>({
-    college: session.mockProfile?.college ?? '',
-    course: session.mockProfile?.course ?? '',
-    specialization: session.mockProfile?.specialization ?? '',
-    startYear: session.mockProfile?.startYear ?? '',
-    endYear: session.mockProfile?.endYear ?? '',
-    gender: session.mockProfile?.gender ?? '',
-    rollNumber: session.mockProfile?.rollNumber ?? '',
+    college: '',
+    course: '',
+    specialization: '',
+    startYear: '',
+    endYear: '',
+    gender: '',
+    rollNumber: '',
   });
-  const [skills, setSkills] = useState<readonly string[]>(session.mockProfile?.skills ?? []);
+  const [skills, setSkills] = useState<readonly string[]>([]);
 
-  const persistedProfile = useMemo(
+  const _persistedProfile = useMemo(
     () => ({
       fullName: personalInfo.fullName,
       email,
@@ -161,30 +176,28 @@ function AuthNavigator() {
     [educationInfo, email, personalInfo, skills],
   );
 
-  const completeGoogleAuth = () => {
-    const googleProfile = {
-      fullName: 'Google User',
-      email: 'google.user@oppskills.app',
-      password: 'google-auth',
-      phoneNumber: '9999999999',
-      college: 'Google University',
-      course: 'B.Tech',
-      specialization: 'Computer Science',
-      startYear: '2022',
-      endYear: '2026',
-      gender: 'Prefer not to say',
-      rollNumber: 'GOOGLE-001',
-      skills: ['Organizers', 'Frontend'],
-    } as const;
+  // Real Clerk Google OAuth via useOAuth() + expo-web-browser
+  const { startOAuthFlow } = useOAuth({ strategy: 'oauth_google' });
 
-    session.setPreferredEmail(googleProfile.email);
-    session.saveMockProfile(googleProfile);
-    session.signIn();
-  };
+  const completeGoogleAuth = useCallback(async () => {
+    try {
+      const redirectUrl = Linking.createURL('/');
+      const { createdSessionId, setActive } = await startOAuthFlow({ redirectUrl });
+      if (createdSessionId && setActive) {
+        await setActive({ session: createdSessionId });
+        // If the user isn't fully onboarded, they need to complete their profile.
+        // If they ARE onboarded, this AuthNavigator will be unmounted automatically.
+        navigation.navigate(appRoutes.profileSetupPersonal);
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Google sign-in failed. Please try again.';
+      Alert.alert('Sign-in failed', message);
+    }
+  }, [startOAuthFlow]);
 
   return (
     <AuthStack.Navigator
-      initialRouteName={session.authEntryRoute === 'sign-in' ? appRoutes.signIn : appRoutes.signUp}
+      initialRouteName={startAtProfile ? appRoutes.profileSetupPersonal : appRoutes.signUp}
       screenOptions={{ headerShown: false }}
     >
       <AuthStack.Screen name={appRoutes.signUp}>
@@ -193,7 +206,6 @@ function AuthNavigator() {
             initialEmail={email}
             onContinue={(capturedEmail) => {
               setEmail(capturedEmail);
-              session.setPreferredEmail(capturedEmail);
               navigation.navigate(appRoutes.verifyIdentityOtpEmpty);
             }}
             onGoogleContinue={completeGoogleAuth}
@@ -256,10 +268,41 @@ function AuthNavigator() {
         {({ navigation }) => (
           <ProfileSetupSkillsScreen
             initialSkills={skills}
-            onContinue={(selectedSkills) => {
+            onContinue={async (selectedSkills) => {
               setSkills(selectedSkills);
-              session.saveMockProfile({ ...persistedProfile, skills: selectedSkills });
-              navigation.navigate(appRoutes.signIn);
+              try {
+                if (session.isAuthenticated) {
+                  // Save profile to backend so isBackendOnboarded becomes true
+                  const genderMap: Record<string, string> = {
+                    'Female': 'FEMALE',
+                    'Male': 'MALE',
+                    'Rather not to say': 'OTHER',
+                  };
+                  await apiClient.put('/user-accounts/onboarding', {
+                    gender: genderMap[educationInfo.gender] ?? 'MALE',
+                    userCategory: 'COLLEGE_STUDENT',
+                    collegeName: educationInfo.college || 'Unknown',
+                    collegeSkipped: !educationInfo.college,
+                    collegeCurrentYear: educationInfo.startYear || null,
+                    collegePassoutYear: educationInfo.endYear ? parseInt(educationInfo.endYear, 10) : null,
+                    course: educationInfo.course || null,
+                    specialization: educationInfo.specialization || null,
+                    rollNumber: educationInfo.rollNumber || null,
+                    locationCity: 'India',
+                    locationState: 'India',
+                    locationCountry: 'India',
+                    skills: selectedSkills,
+                  });
+                  // Trigger query invalidation
+                  await queryClient.invalidateQueries({ queryKey: ['user', 'me'] });
+                  onBackendOnboardingComplete?.();
+                } else {
+                  navigation.navigate(appRoutes.signIn);
+                }
+              } catch (e) {
+                console.error('Failed to submit onboarding', e);
+                Alert.alert('Error', e instanceof Error ? e.message : 'Failed to save profile setup.');
+              }
             }}
             onSkip={() => navigation.navigate(appRoutes.signIn)}
           />
@@ -268,14 +311,13 @@ function AuthNavigator() {
       <AuthStack.Screen name={appRoutes.signIn}>
         {({ navigation }) => (
           <SignInScreen
-            expectedPassword={session.mockProfile?.password}
-            initialEmail={email || session.preferredEmail || session.mockProfile?.email || ''}
+            expectedPassword={undefined}
+            initialEmail={email || session.userEmail || ''}
             onContinue={({ email: signInEmail }) => {
-              session.setPreferredEmail(signInEmail);
-              if (!session.mockProfile) {
-                session.saveMockProfile(persistedProfile);
-              }
-              session.signIn();
+              setEmail(signInEmail);
+              // If the user isn't fully onboarded, they need to complete their profile.
+              // If they ARE onboarded, this AuthNavigator will be unmounted automatically in a few ms.
+              navigation.navigate(appRoutes.profileSetupPersonal);
             }}
             onGoogleContinue={completeGoogleAuth}
             onSignUp={() => navigation.navigate(appRoutes.signUp)}
@@ -294,7 +336,7 @@ function HomeStackNavigator() {
           const tabNavigation = navigation.getParent() as BottomTabNavigationProp<MainTabParamList> | undefined;
 
           const openDiscoverScreen = (screen: keyof DiscoverStackParamList) => {
-            tabNavigation?.navigate(appRoutes.discoverTab, { screen });
+            tabNavigation?.navigate(appRoutes.discoverTab, { screen } as never);
           };
 
           return (
@@ -351,13 +393,19 @@ function HomeStackNavigator() {
         )}
       </HomeStack.Screen>
       <HomeStack.Screen name={appRoutes.competitionPage}>
-        {({ navigation }) => (
-          <CompetitionPageScreen onBackToDiscover={() => navigation.navigate(appRoutes.homeStack)} />
+        {({ navigation, route }) => (
+          <CompetitionPageScreen
+            competitionId={route.params.competitionId}
+            onBackToDiscover={() => navigation.navigate(appRoutes.homeStack)}
+          />
         )}
       </HomeStack.Screen>
       <HomeStack.Screen name={appRoutes.hackathonPage}>
-        {({ navigation }) => (
-          <HackathonPageScreen onBackToDiscover={() => navigation.navigate(appRoutes.homeStack)} />
+        {({ navigation, route }) => (
+          <HackathonPageScreen
+            hackathonId={route.params.hackathonId}
+            onBackToDiscover={() => navigation.navigate(appRoutes.homeStack)}
+          />
         )}
       </HomeStack.Screen>
     </HomeStack.Navigator>
@@ -370,8 +418,11 @@ function DiscoverStackNavigator() {
   const [searchFlowState, setSearchFlowState] = useState<SearchFlowState>('idle');
   const [recentQueries, setRecentQueries] = useState<string[]>(() => searchRepository.listRecentQueries());
 
-  const searchSuggestions = useMemo(() => searchRepository.getSuggestions(searchQuery), [searchQuery]);
-  const searchResults = useMemo(() => searchRepository.getResults(searchQuery), [searchQuery]);
+  const { data: suggestionsData } = useSearchSuggestions(searchQuery);
+  const searchSuggestions = suggestionsData ?? [];
+  
+  const { data: resultsData } = useSearchResults(searchQuery);
+  const searchResults = resultsData ?? [];
 
   return (
     <DiscoverStack.Navigator screenOptions={{ headerShown: false }}>
@@ -394,7 +445,7 @@ function DiscoverStackNavigator() {
           <DiscoverHackathonsScreen
             onOpenCompetitions={() => navigation.navigate(appRoutes.discoverCompetitions)}
             onOpenEvents={() => navigation.navigate(appRoutes.discoverEventsPrimary)}
-            onOpenHackathonPage={() => navigation.navigate(appRoutes.hackathonPage)}
+            onOpenHackathonPage={(id) => navigation.navigate(appRoutes.hackathonPage, { hackathonId: id })}
             onSearchTyping={() => {
               setSearchFlowState((current) => transitionSearchFlowState(current, { type: 'OPEN_TYPING' }));
               navigation.navigate(appRoutes.searchTyping);
@@ -407,7 +458,7 @@ function DiscoverStackNavigator() {
           <DiscoverCompetitionsScreen
             onOpenEvents={() => navigation.navigate(appRoutes.discoverEventsPrimary)}
             onOpenHackathons={() => navigation.navigate(appRoutes.discoverHackathons)}
-            onOpenCompetitionPage={() => navigation.navigate(appRoutes.competitionPage)}
+            onOpenCompetitionPage={(id) => navigation.navigate(appRoutes.competitionPage, { competitionId: id })}
             onSearchResults={() => {
               const fallbackQuery = searchQuery.trim() || 'Hack';
               setSearchQuery(fallbackQuery);
@@ -425,8 +476,8 @@ function DiscoverStackNavigator() {
           <DiscoverEventsPrimaryScreen
             onOpenCompetitions={() => navigation.navigate(appRoutes.discoverCompetitions)}
             onOpenHackathons={() => navigation.navigate(appRoutes.discoverHackathons)}
-            onOpenEventFreePage={() => navigation.navigate(appRoutes.eventPageFree)}
-            onOpenEventPaidPage={() => navigation.navigate(appRoutes.eventPagePaid)}
+            onOpenEventFreePage={(id) => navigation.navigate(appRoutes.eventPageFree, { eventId: id })}
+            onOpenEventPaidPage={(id) => navigation.navigate(appRoutes.eventPagePaid, { eventId: id })}
             onOpenCommunities={() => {
               setSearchFlowState((current) => transitionSearchFlowState(current, { type: 'OPEN_RECENT' }));
               navigation.navigate(appRoutes.searchRecent);
@@ -443,8 +494,8 @@ function DiscoverStackNavigator() {
           <DiscoverEventsSecondaryScreen
             onOpenCompetitions={() => navigation.navigate(appRoutes.discoverCompetitions)}
             onOpenHackathons={() => navigation.navigate(appRoutes.discoverHackathons)}
-            onOpenEventFreePage={() => navigation.navigate(appRoutes.eventPageFree)}
-            onOpenEventPaidPage={() => navigation.navigate(appRoutes.eventPagePaid)}
+            onOpenEventFreePage={(id) => navigation.navigate(appRoutes.eventPageFree, { eventId: id })}
+            onOpenEventPaidPage={(id) => navigation.navigate(appRoutes.eventPagePaid, { eventId: id })}
             onOpenCommunities={() => {
               setSearchFlowState((current) => transitionSearchFlowState(current, { type: 'OPEN_POPULAR' }));
               navigation.navigate(appRoutes.searchPopular);
@@ -573,8 +624,8 @@ function DiscoverStackNavigator() {
             flowState={searchFlowState}
             query={searchQuery}
             results={searchResults}
-            onCompetition={() => navigation.navigate(appRoutes.competitionPage)}
-            onHackathon={() => navigation.navigate(appRoutes.hackathonPage)}
+            onCompetition={(id) => navigation.navigate(appRoutes.competitionPage, { competitionId: id })}
+            onHackathon={(id) => navigation.navigate(appRoutes.hackathonPage, { hackathonId: id })}
             onQueryChange={(nextQuery) => {
               setSearchQuery(nextQuery);
               setSearchFlowState((current) =>
@@ -602,8 +653,9 @@ function DiscoverStackNavigator() {
         )}
       </DiscoverStack.Screen>
       <DiscoverStack.Screen name={appRoutes.competitionPage}>
-        {({ navigation }) => (
+        {({ navigation, route }) => (
           <CompetitionPageScreen
+            competitionId={route.params.competitionId}
             onBackToDiscover={() => {
               if (navigation.canGoBack()) {
                 navigation.goBack();
@@ -616,8 +668,9 @@ function DiscoverStackNavigator() {
         )}
       </DiscoverStack.Screen>
       <DiscoverStack.Screen name={appRoutes.hackathonPage}>
-        {({ navigation }) => (
+        {({ navigation, route }) => (
           <HackathonPageScreen
+            hackathonId={route.params.hackathonId}
             onBackToDiscover={() => {
               if (navigation.canGoBack()) {
                 navigation.goBack();
@@ -626,27 +679,33 @@ function DiscoverStackNavigator() {
 
               navigation.navigate(appRoutes.discoverStack);
             }}
-            onRegisterNow={() => navigation.navigate(appRoutes.hackathonRegistration)}
+            onRegisterNow={(hackathonInfo) => navigation.navigate(appRoutes.hackathonRegistration, hackathonInfo)}
           />
         )}
       </DiscoverStack.Screen>
       <DiscoverStack.Screen name={appRoutes.hackathonRegistration}>
-        {({ navigation }) => (
+        {({ navigation, route }) => (
           <HackathonRegistrationScreen
+            hackathon={{
+              id: route.params.hackathonId,
+              title: route.params.title,
+              bannerImageUrl: route.params.bannerImageUrl,
+            }}
             onBack={() => {
               if (navigation.canGoBack()) {
                 navigation.goBack();
                 return;
               }
 
-              navigation.navigate(appRoutes.hackathonPage);
+              navigation.navigate(appRoutes.hackathonPage, { hackathonId: route.params.hackathonId });
             }}
           />
         )}
       </DiscoverStack.Screen>
       <DiscoverStack.Screen name={appRoutes.eventPageFree}>
-        {({ navigation }) => (
+        {({ navigation, route }) => (
           <EventFreePageScreen
+            eventId={route.params.eventId}
             onBackToDiscover={() => {
               if (navigation.canGoBack()) {
                 navigation.goBack();
@@ -659,8 +718,9 @@ function DiscoverStackNavigator() {
         )}
       </DiscoverStack.Screen>
       <DiscoverStack.Screen name={appRoutes.eventPagePaid}>
-        {({ navigation }) => (
+        {({ navigation, route }) => (
           <EventPaidPageScreen
+            eventId={route.params.eventId}
             onBackToDiscover={() => {
               if (navigation.canGoBack()) {
                 navigation.goBack();
@@ -677,27 +737,42 @@ function DiscoverStackNavigator() {
 }
 
 function AppliedStackNavigator() {
-  const session = useMockSession();
+  const session = useAppSession();
 
   return (
     <AppliedStack.Navigator screenOptions={{ headerShown: false }}>
       <AppliedStack.Screen name={appRoutes.appliedStack}>
         {({ navigation }) => (
           <AppliedScreen
-            onOpenCompetition={() => navigation.navigate(appRoutes.competitionPage)}
-            onOpenHackathon={() => navigation.navigate(appRoutes.hackathonPage)}
+            onOpenCompetition={(id: string) => navigation.navigate(appRoutes.competitionPage, { competitionId: id })}
+            onOpenHackathon={(id: string) => navigation.navigate(appRoutes.hackathonPage, { hackathonId: id })}
+            onOpenEvent={(id: string) => navigation.navigate(appRoutes.eventPageFree, { eventId: id })}
             onSignOut={session.signOut}
           />
         )}
       </AppliedStack.Screen>
+      <AppliedStack.Screen name={appRoutes.eventPageFree}>
+        {({ navigation, route }) => (
+          <EventFreePageScreen
+            eventId={route.params.eventId}
+            onBackToDiscover={() => navigation.navigate(appRoutes.appliedStack)}
+          />
+        )}
+      </AppliedStack.Screen>
       <AppliedStack.Screen name={appRoutes.competitionPage}>
-        {({ navigation }) => (
-          <CompetitionPageScreen onBackToDiscover={() => navigation.navigate(appRoutes.appliedStack)} />
+        {({ navigation, route }) => (
+          <CompetitionPageScreen
+            competitionId={route.params.competitionId}
+            onBackToDiscover={() => navigation.navigate(appRoutes.appliedStack)}
+          />
         )}
       </AppliedStack.Screen>
       <AppliedStack.Screen name={appRoutes.hackathonPage}>
-        {({ navigation }) => (
-          <HackathonPageScreen onBackToDiscover={() => navigation.navigate(appRoutes.appliedStack)} />
+        {({ navigation, route }) => (
+          <HackathonPageScreen
+            hackathonId={route.params.hackathonId}
+            onBackToDiscover={() => navigation.navigate(appRoutes.appliedStack)}
+          />
         )}
       </AppliedStack.Screen>
     </AppliedStack.Navigator>
@@ -705,7 +780,7 @@ function AppliedStackNavigator() {
 }
 
 function ProfileRegistrationsStackNavigator({ onBackToHome }: { readonly onBackToHome: () => void }) {
-  const session = useMockSession();
+  const session = useAppSession();
 
   return (
     <ProfileRegistrationsStack.Navigator initialRouteName={appRoutes.appliedStack} screenOptions={{ headerShown: false }}>
@@ -716,21 +791,36 @@ function ProfileRegistrationsStackNavigator({ onBackToHome }: { readonly onBackT
               onBackToHome();
               navigation.navigate(appRoutes.homeTab, { screen: appRoutes.homeStack });
             }}
-            onOpenCompetition={() => navigation.navigate(appRoutes.competitionPage)}
-            onOpenHackathon={() => navigation.navigate(appRoutes.hackathonPage)}
+            onOpenCompetition={(id: string) => navigation.navigate(appRoutes.competitionPage, { competitionId: id })}
+            onOpenHackathon={(id: string) => navigation.navigate(appRoutes.hackathonPage, { hackathonId: id })}
+            onOpenEvent={(id: string) => navigation.navigate(appRoutes.eventPageFree, { eventId: id })}
             onSignOut={session.signOut}
             variant="registrations"
           />
         )}
       </ProfileRegistrationsStack.Screen>
+      <ProfileRegistrationsStack.Screen name={appRoutes.eventPageFree}>
+        {({ navigation, route }) => (
+          <EventFreePageScreen
+            eventId={route.params.eventId}
+            onBackToDiscover={() => navigation.navigate(appRoutes.appliedStack)}
+          />
+        )}
+      </ProfileRegistrationsStack.Screen>
       <ProfileRegistrationsStack.Screen name={appRoutes.competitionPage}>
-        {({ navigation }) => (
-          <CompetitionPageScreen onBackToDiscover={() => navigation.navigate(appRoutes.appliedStack)} />
+        {({ navigation, route }) => (
+          <CompetitionPageScreen
+            competitionId={route.params.competitionId}
+            onBackToDiscover={() => navigation.navigate(appRoutes.appliedStack)}
+          />
         )}
       </ProfileRegistrationsStack.Screen>
       <ProfileRegistrationsStack.Screen name={appRoutes.hackathonPage}>
-        {({ navigation }) => (
-          <HackathonPageScreen onBackToDiscover={() => navigation.navigate(appRoutes.appliedStack)} />
+        {({ navigation, route }) => (
+          <HackathonPageScreen
+            hackathonId={route.params.hackathonId}
+            onBackToDiscover={() => navigation.navigate(appRoutes.appliedStack)}
+          />
         )}
       </ProfileRegistrationsStack.Screen>
     </ProfileRegistrationsStack.Navigator>
@@ -738,7 +828,7 @@ function ProfileRegistrationsStackNavigator({ onBackToHome }: { readonly onBackT
 }
 
 function ProfileAchievementsStackNavigator({ onBackToHome }: { readonly onBackToHome: () => void }) {
-  const session = useMockSession();
+  const session = useAppSession();
 
   return (
     <ProfileAchievementsStack.Navigator initialRouteName={appRoutes.appliedStack} screenOptions={{ headerShown: false }}>
@@ -749,21 +839,36 @@ function ProfileAchievementsStackNavigator({ onBackToHome }: { readonly onBackTo
               onBackToHome();
               navigation.navigate(appRoutes.homeTab, { screen: appRoutes.homeStack });
             }}
-            onOpenCompetition={() => navigation.navigate(appRoutes.competitionPage)}
-            onOpenHackathon={() => navigation.navigate(appRoutes.hackathonPage)}
+            onOpenCompetition={(id: string) => navigation.navigate(appRoutes.competitionPage, { competitionId: id })}
+            onOpenHackathon={(id: string) => navigation.navigate(appRoutes.hackathonPage, { hackathonId: id })}
+            onOpenEvent={(id: string) => navigation.navigate(appRoutes.eventPageFree, { eventId: id })}
             onSignOut={session.signOut}
             variant="achievements"
           />
         )}
       </ProfileAchievementsStack.Screen>
+      <ProfileAchievementsStack.Screen name={appRoutes.eventPageFree}>
+        {({ navigation, route }) => (
+          <EventFreePageScreen
+            eventId={route.params.eventId}
+            onBackToDiscover={() => navigation.navigate(appRoutes.appliedStack)}
+          />
+        )}
+      </ProfileAchievementsStack.Screen>
       <ProfileAchievementsStack.Screen name={appRoutes.competitionPage}>
-        {({ navigation }) => (
-          <CompetitionPageScreen onBackToDiscover={() => navigation.navigate(appRoutes.appliedStack)} />
+        {({ navigation, route }) => (
+          <CompetitionPageScreen
+            competitionId={route.params.competitionId}
+            onBackToDiscover={() => navigation.navigate(appRoutes.appliedStack)}
+          />
         )}
       </ProfileAchievementsStack.Screen>
       <ProfileAchievementsStack.Screen name={appRoutes.hackathonPage}>
-        {({ navigation }) => (
-          <HackathonPageScreen onBackToDiscover={() => navigation.navigate(appRoutes.appliedStack)} />
+        {({ navigation, route }) => (
+          <HackathonPageScreen
+            hackathonId={route.params.hackathonId}
+            onBackToDiscover={() => navigation.navigate(appRoutes.appliedStack)}
+          />
         )}
       </ProfileAchievementsStack.Screen>
     </ProfileAchievementsStack.Navigator>
@@ -864,9 +969,13 @@ function MainTabBar({
   profileTabTarget,
   setProfileTabTarget,
   state,
+  bottomOffset,
+  horizontalInset,
 }: BottomTabBarProps & {
   readonly profileTabTarget: keyof MainTabParamList | null;
   readonly setProfileTabTarget: (target: keyof MainTabParamList | null) => void;
+  readonly bottomOffset: number;
+  readonly horizontalInset: number;
 }) {
   const activeRoute = state.routes[state.index] ?? state.routes[0];
 
@@ -882,7 +991,7 @@ function MainTabBar({
   const activeStyle = descriptors[activeRoute.key]?.options.tabBarStyle;
 
   return (
-    <View style={[tabStyles.tabBar, activeStyle as object | undefined]}>
+    <View style={[tabStyles.tabBar, { bottom: bottomOffset, left: horizontalInset, right: horizontalInset }, activeStyle as object | undefined]}>
       {state.routes.map((route, index) => {
         const focused = state.index === index;
 
@@ -949,6 +1058,8 @@ function MainTabNavigator() {
         return (
           <MainTabBar
             {...props}
+            bottomOffset={bottomOffset}
+            horizontalInset={horizontalInset}
             profileTabTarget={profileTabTarget}
             setProfileTabTarget={setProfileTabTarget}
             state={{
@@ -963,7 +1074,13 @@ function MainTabNavigator() {
       }}
       screenOptions={({ route }) => {
         const focusedRouteName = getFocusedRouteNameFromRoute(route);
-        const hideTabBar = focusedRouteName === appRoutes.organizerDashboard;
+        const showTabBarScreens: string[] = [
+          appRoutes.homeStack,
+          appRoutes.discoverStack,
+          appRoutes.appliedStack,
+          appRoutes.profilePage,
+        ];
+        const hideTabBar = focusedRouteName !== undefined && !showTabBarScreens.includes(focusedRouteName as string);
 
         return {
           headerShown: false,
@@ -1004,14 +1121,58 @@ function MainTabNavigator() {
   );
 }
 
+import { useCurrentUser } from '../../domains/users/presentation/hooks/useCurrentUser';
+
 export function RootNavigator() {
-  const session = useMockSession();
+  const session = useAppSession();
+  const { data: currentUser, isLoading: isUserLoading } = useCurrentUser(session.isAuthenticated);
+  const [backendOnboardingComplete, setBackendOnboardingComplete] = useState(false);
+  const [initialRouteResolved, setInitialRouteResolved] = useState(false);
+
+  useEffect(() => {
+    if (!session.isAuthenticated) {
+      setBackendOnboardingComplete(false);
+    }
+  }, [session.isAuthenticated]);
+
+  useEffect(() => {
+    if (session.isLoaded) {
+      if (!session.isAuthenticated) {
+        setInitialRouteResolved(true);
+      } else if (!isUserLoading) {
+        setInitialRouteResolved(true);
+      }
+    }
+  }, [session.isLoaded, session.isAuthenticated, isUserLoading]);
+
+  // While Clerk or the user profile is loading initially, render a splash screen to prevent navigation flash.
+  // Once resolved, do NOT unmount the NavigationContainer to avoid wiping navigation state mid-onboarding.
+  if (!initialRouteResolved) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#FAFAFA', alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator size="large" color="#6949AA" />
+      </View>
+    );
+  }
+
+  const isBackendOnboarded = currentUser?.onboarded ?? false;
+  
+  // Decide which navigator to show
+  const showOnboarding = !session.isAuthenticated && !session.hasCompletedOnboarding;
+  const showAuth = (!session.isAuthenticated && session.hasCompletedOnboarding) ||
+    (session.isAuthenticated && !isBackendOnboarded && !backendOnboardingComplete);
+  const showMain = session.isAuthenticated && (isBackendOnboarded || backendOnboardingComplete);
 
   return (
     <NavigationContainer>
-      {!session.hasSeenOnboarding ? <OnboardingNavigator /> : null}
-      {session.hasSeenOnboarding && !session.isAuthenticated ? <AuthNavigator /> : null}
-      {session.hasSeenOnboarding && session.isAuthenticated ? <MainTabNavigator /> : null}
+      {showOnboarding ? <OnboardingNavigator /> : null}
+      {showAuth ? (
+        <AuthNavigator
+          startAtProfile={session.isAuthenticated}
+          onBackendOnboardingComplete={() => setBackendOnboardingComplete(true)}
+        />
+      ) : null}
+      {showMain ? <MainTabNavigator /> : null}
     </NavigationContainer>
   );
 }

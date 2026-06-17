@@ -966,6 +966,14 @@ export class JoinEventDto {
   @ValidateNested({ each: true })
   @Type(() => EventRegistrationAnswerDto)
   answers?: EventRegistrationAnswerDto[];
+
+  @ApiPropertyOptional({
+    description: "Referral code for attribution",
+    example: "REF_XYZ123",
+  })
+  @IsOptional()
+  @IsString()
+  referralCode?: string;
 }
 
 /**

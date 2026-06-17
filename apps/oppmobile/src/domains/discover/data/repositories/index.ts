@@ -1,4 +1,4 @@
 import type { DiscoverFeedRepository } from '../../domain/repositories/DiscoverFeedRepository';
-import { MockDiscoverFeedRepository } from './MockDiscoverFeedRepository';
+import { ApiDiscoverFeedRepository } from './ApiDiscoverFeedRepository';
 
-export const discoverFeedRepository: DiscoverFeedRepository = new MockDiscoverFeedRepository();
+export const discoverFeedRepository: DiscoverFeedRepository = new ApiDiscoverFeedRepository();

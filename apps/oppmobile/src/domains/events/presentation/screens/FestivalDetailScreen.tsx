@@ -14,10 +14,10 @@ import Svg, { Path } from 'react-native-svg';
 import { AppText } from '../../../../shared/ui';
 import { type LiveEvent } from './OrganizerCreateEventScreen';
 import { EventDashboardScreen } from './EventDashboardScreen';
-import { ManageRegistrationScreen } from './ManageRegistrationScreen';
+import { FestivalManageRegistrationScreen } from './FestivalManageRegistrationScreen';
 import { EditEventScreen } from './EditEventScreen';
 import { FestivalManageRolesPanel } from './FestivalManageRolesPanel';
-import { FestivalNotificationsPanel } from './FestivalNotificationsPanel';
+import { NotificationsPanel } from './NotificationsPanel';
 import { FestivalPaymentsPanel } from './FestivalPaymentsPanel';
 import { ReferralsPanel } from './ReferralsPanel';
 import { FestivalSettingsPanel } from './FestivalSettingsPanel';
@@ -82,17 +82,17 @@ export function FestivalDetailScreen({ event: initialEvent, onBack, onOpenMainSi
       {activeContextSection === 'dashboard' ? (
         <EventDashboardScreen event={event} />
       ) : activeContextSection === 'manage-registration' ? (
-        <ManageRegistrationScreen />
+        <FestivalManageRegistrationScreen slug={event.slug ?? ''} />
       ) : activeContextSection === 'edit-event' ? (
         <EditEventScreen event={event} onUpdateEvent={handleUpdateEvent} />
       ) : activeContextSection === 'referrals' ? (
         <ReferralsPanel event={event} />
       ) : activeContextSection === 'manage-roles' ? (
-        <FestivalManageRolesPanel />
+        <FestivalManageRolesPanel eventId={event.id} />
       ) : activeContextSection === 'payments' ? (
         <FestivalPaymentsPanel event={event} />
       ) : activeContextSection === 'send-notifications' ? (
-        <FestivalNotificationsPanel />
+        <NotificationsPanel eventId={event.id} eventTitle={event.title} />
       ) : activeContextSection === 'settings' ? (
         <FestivalSettingsPanel event={event} />
       ) : (

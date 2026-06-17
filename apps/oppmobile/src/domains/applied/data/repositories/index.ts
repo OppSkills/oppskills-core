@@ -1,4 +1,4 @@
 import type { AppliedFeedRepository } from '../../domain/repositories/AppliedFeedRepository';
-import { MockAppliedFeedRepository } from './MockAppliedFeedRepository';
+import { ApiAppliedFeedRepository } from './ApiAppliedFeedRepository';
 
-export const appliedFeedRepository: AppliedFeedRepository = new MockAppliedFeedRepository();
+export const appliedFeedRepository: AppliedFeedRepository = new ApiAppliedFeedRepository();

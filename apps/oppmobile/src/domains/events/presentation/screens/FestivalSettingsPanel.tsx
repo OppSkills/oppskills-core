@@ -8,7 +8,7 @@ interface FestivalSettingsPanelProps {
   readonly event: LiveEvent;
 }
 
-export function FestivalSettingsPanel({ event }: FestivalSettingsPanelProps) {
+export function FestivalSettingsPanel({ event: _event }: FestivalSettingsPanelProps) {
   const [pauseRegistrations, setPauseRegistrations] = useState(false);
 
   return (
