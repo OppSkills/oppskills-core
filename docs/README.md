@@ -24,6 +24,8 @@ This documentation is organized into the following sections:
 - [Deployment Guide](./deployment.md) - Infrastructure, CI/CD, and production deployment
 - [Paid registration answers (escrow + flows)](./paid-registration-answers-flow.md) - How form answers sync with Razorpay and edge cases
 - [Features & Business Logic](./features.md) - Key features, workflows, and implementation patterns
+- [Chat Feature](./chat.md) - End-to-end guide: DMs, groups, WebSocket, attachments, presence
+- [Meet Feature](./meet.md) - End-to-end guide: LiveKit video calls, invite links, community meets
 
 ## Quick Start
 
